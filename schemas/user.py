@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -19,6 +21,12 @@ class UserResponse(BaseModel):
     user_email: str
     user_address: str
     user_money: int
+
+# 로그인 응답은 비밀번호를 제외한 사용자 정보만 포함합니다.
+class UserLoginResponse(BaseModel):
+    role: Literal["user"] = "user"
+    account: UserResponse
+
 
 class UserUpdate(BaseModel):
     user_phone: str

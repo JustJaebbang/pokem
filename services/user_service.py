@@ -6,6 +6,7 @@ from pymysql.err import IntegrityError
 from security import hash_password, verify_password
 
 from schemas.user import UserCreate, UserResponse, UserLoginResponse, UserUpdate, UserQuitRequest, UserQuitResponse
+from schemas.auth import LoginRequest
 
 
 # 저장된 비밀번호 해시를 검증합니다. 토큰 발급은 다음 단계에서 구현합니다.
