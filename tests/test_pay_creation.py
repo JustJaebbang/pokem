@@ -24,7 +24,7 @@ class PayCreationTests(unittest.TestCase):
         with patch("services.pay_service.datetime") as clock:
             clock.now.return_value = datetime(2026, 10, 28, 20, 30, 45, tzinfo=ZoneInfo("Asia/Seoul"))
             result = pay_service.create_pay(self.db, self.request)
-        self.assertEqual(result.pay_no, "2026102800000120261028203045")
+        self.assertEqual(result.pay_no, "2026102800000120261028")
         self.assertEqual(result.pay_date, "2026-10-28 20:30:45")
         self.assertEqual(result.pay_status, "결제대기")
         self.assertEqual(result.user_user_id, "user01")
