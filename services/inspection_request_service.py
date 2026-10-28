@@ -4,6 +4,9 @@ from zoneinfo import ZoneInfo
 from fastapi import HTTPException
 from pymysql.err import IntegrityError
 
+from schemas.pay import PayCreate
+from services import pay_service
+
 from schemas.inspection_request import (
     InspectionRequestCreate,
     InspectionRequestManagerUpdate,
@@ -44,7 +47,7 @@ def create_inspection_request(
             if seq > 999999:
                 raise HTTPException(status_code=409, detail="일일 검수 요청 번호가 소진되었습니다.")
             # 예: 2026-10-28의 첫 요청 → 20261028000001 (YYYYMMDD + 6자리 SEQ).
-            request_no = int(f"{now:%Y%m%d}{seq:06d}")
+            request_no = f"{now:%Y%m%d}{seq:06d}"
             # 3. 자동 증가 번호 대신 직접 조합한 번호로 검수 요청을 저장한다.
             cursor.execute(
                 """
@@ -100,7 +103,7 @@ def get_inspection_requests(db) -> list[InspectionRequestResponse]:
     return [InspectionRequestResponse(**row) for row in rows]
 
 
-def get_inspection_request(db, inspection_request_no: int) -> InspectionRequestResponse | None:
+def get_inspection_request(db, inspection_request_no: str) -> InspectionRequestResponse | None:
     # 요청 번호로 한 건을 조회한다. 없으면 router에서 404로 처리하도록 None을 반환한다.
     with db.cursor() as cursor:
         cursor.execute(
@@ -117,7 +120,7 @@ def get_inspection_request(db, inspection_request_no: int) -> InspectionRequestR
 
 
 def assign_inspection_request_manager(
-    db, inspection_request_no: int, request: InspectionRequestManagerUpdate
+    db, inspection_request_no: str, request: InspectionRequestManagerUpdate
 ) -> InspectionRequestResponse:
     try:
         db.begin()
@@ -153,6 +156,14 @@ def assign_inspection_request_manager(
             if cursor.rowcount != 1:
                 raise HTTPException(status_code=409, detail="담당 매니저를 배정할 수 없습니다.")
 
+        # 매니저 확인과 결제 생성을 함께 확정한다. 결제 저장 실패 시 배정도 취소된다.
+        pay_service.create_pay(
+            db,
+            PayCreate(
+                inspection_request_inspection_request_no=inspection_request_no,
+                pay_price=request.pay_price,
+            ),
+        )
         result = get_inspection_request(db, inspection_request_no)
         if result is None:
             raise RuntimeError("변경한 검수 요청을 조회할 수 없습니다.")

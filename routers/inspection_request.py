@@ -26,7 +26,7 @@ def get_inspection_requests(db=Depends(get_db)):
 # 양수인 요청 번호만 허용하며, 조회 결과가 없으면 404를 반환한다.
 @router.get("/{inspection_request_no}", response_model=InspectionRequestResponse)
 def get_inspection_request(
-    inspection_request_no: int = Path(gt=0), db=Depends(get_db)
+    inspection_request_no: str = Path(pattern=r"^[0-9]{14}$"), db=Depends(get_db)
 ):
     request = inspection_request_service.get_inspection_request(db, inspection_request_no)
     if request is None:
@@ -38,7 +38,7 @@ def get_inspection_request(
 @router.patch("/{inspection_request_no}/manager", response_model=InspectionRequestResponse)
 def assign_inspection_request_manager(
     request: InspectionRequestManagerUpdate,
-    inspection_request_no: int = Path(gt=0),
+    inspection_request_no: str = Path(pattern=r"^[0-9]{14}$"),
     db=Depends(get_db),
 ):
     return inspection_request_service.assign_inspection_request_manager(
