@@ -10,6 +10,8 @@ from routers.post_item import router as post_item_router
 from routers.wishlist import router as wishlist_router
 from routers.purchase_item import router as purchase_item_router
 from routers.recharge import router as recharge_router
+from routers.manager import router as manager_router
+from routers.auth import router as auth_router
 
 app = FastAPI()
 
@@ -19,6 +21,8 @@ app.include_router(post_item_router)
 app.include_router(wishlist_router)
 app.include_router(purchase_item_router)
 app.include_router(recharge_router)
+app.include_router(manager_router)
+app.include_router(auth_router)
 
 @app.get("/")
 def root():
@@ -28,6 +32,7 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         app, 
-        host="192.168.45.218", 
+        #host="192.168.45.218", // 재영이 ip
+        host="192.168.20.33",
         port=8000
     )
