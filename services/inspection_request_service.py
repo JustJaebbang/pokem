@@ -88,16 +88,18 @@ def create_inspection_request(
         raise
 
 
-def get_inspection_requests(db) -> list[InspectionRequestResponse]:
+def get_inspection_requests(db, user_id: str | None = None) -> list[InspectionRequestResponse]:
+    owner_filter = "WHERE user_user_id = %s" if user_id is not None else ""
     # 날짜와 순번이 큰 요청부터 조회한다. 결과가 없으면 빈 목록을 반환한다.
     with db.cursor() as cursor:
         cursor.execute(
-            """
+            f"""
             SELECT inspection_request_no, inspection_request_date,
                    inspection_request_amount, user_user_id, manager_manager_id
-            FROM inspection_request
+            FROM inspection_request {owner_filter}
             ORDER BY inspection_request_no DESC
-            """
+            """,
+            (user_id,) if user_id is not None else (),
         )
         rows = cursor.fetchall()
     return [InspectionRequestResponse(**row) for row in rows]

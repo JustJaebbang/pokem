@@ -56,15 +56,17 @@ def create_pay(db, request: PayCreate) -> PayResponse:
     return pay
 
 
-def get_pays(db, limit: int = 20, offset: int = 0) -> list[PayResponse]:
+def get_pays(db, limit: int = 20, offset: int = 0, user_id: str | None = None) -> list[PayResponse]:
+    owner_filter = "WHERE user_user_id = %s" if user_id is not None else ""
+    params = (user_id, limit, offset) if user_id is not None else (limit, offset)
     with db.cursor() as cursor:
         cursor.execute(
-            """
+            f"""
             SELECT pay_no, pay_status, pay_price, pay_date,
                    user_user_id, manager_manager_id, inspection_request_inspection_request_no
-            FROM pay ORDER BY pay_date DESC, pay_no DESC LIMIT %s OFFSET %s
+            FROM pay {owner_filter} ORDER BY pay_date DESC, pay_no DESC LIMIT %s OFFSET %s
             """,
-            (limit, offset),
+            params,
         )
         rows = cursor.fetchall()
     return [PayResponse(**row) for row in rows]

@@ -64,17 +64,19 @@ def create_deposit_refund(db, request: DepositRefundCreate) -> DepositRefundResp
         raise
 
 
-def get_deposit_refunds(db, limit: int = 20, offset: int = 0) -> list[DepositRefundResponse]:
+def get_deposit_refunds(db, limit: int = 20, offset: int = 0, user_id: str | None = None) -> list[DepositRefundResponse]:
+    owner_filter = "WHERE user_user_id = %s" if user_id is not None else ""
+    params = (user_id, limit, offset) if user_id is not None else (limit, offset)
     with db.cursor() as cursor:
         cursor.execute(
-            """
+            f"""
             SELECT deposit_refund_no, deposit_refund_price, deposit_refund_date,
                    user_user_id, manager_manager_id, pay_pay_no
-            FROM deposit_refund
+            FROM deposit_refund {owner_filter}
             ORDER BY deposit_refund_date DESC, deposit_refund_no DESC
             LIMIT %s OFFSET %s
             """,
-            (limit, offset),
+            params,
         )
         rows = cursor.fetchall()
     return [DepositRefundResponse(**row) for row in rows]

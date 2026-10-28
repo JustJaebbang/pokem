@@ -18,3 +18,11 @@ class InspectionRequestResponse(BaseModel):
     inspection_request_amount: int
     user_user_id: str
     manager_manager_id: str | None = None
+
+
+class InspectionRequestCreateRequest(InspectionRequestCreate):
+    user_user_id: str | None = Field(default=None, min_length=1)
+
+
+class InspectionRequestManagerRequest(InspectionRequestManagerUpdate):
+    manager_manager_id: str | None = Field(default=None, min_length=1, pattern=r"\S")

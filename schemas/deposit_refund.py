@@ -17,3 +17,7 @@ class DepositRefundResponse(BaseModel):
     user_user_id: str
     manager_manager_id: str
     pay_pay_no: str
+
+
+class DepositRefundRequest(DepositRefundCreate):
+    manager_manager_id: str | None = Field(default=None, min_length=1, max_length=45, pattern=r"\S")

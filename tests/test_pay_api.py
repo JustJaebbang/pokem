@@ -1,10 +1,12 @@
 import unittest
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from database import get_db
+from dependencies import get_current_account
 from routers.pay import router
 
 
@@ -21,6 +23,7 @@ class PayApiTests(unittest.TestCase):
         app = FastAPI()
         app.include_router(router)
         app.dependency_overrides[get_db] = lambda: self.db
+        app.dependency_overrides[get_current_account] = lambda: SimpleNamespace(role="manager", account=SimpleNamespace(manager_id="m"))
         self.client = TestClient(app)
 
     def test_list_has_bounded_pagination(self):
