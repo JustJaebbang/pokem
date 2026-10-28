@@ -1,8 +1,10 @@
 from fastapi import HTTPException
+from datetime import datetime, timedelta, timezone
 
 from schemas.auth import LoginRequest
+from pymysql.err import IntegrityError
 
-from schemas.user import UserCreate, UserResponse, UserLoginResponse
+from schemas.user import UserCreate, UserResponse, UserLoginResponse, UserUpdate, UserQuitRequest, UserQuitResponse
 
 
 # 현재 DB에 저장된 평문 비밀번호와 비교합니다. 로그인 상태는 생성하지 않습니다.
@@ -84,3 +86,88 @@ def get_user_id(db, user_id: str) -> UserResponse | None:
 
     return UserResponse(**row) if row else None
 
+
+# user_id에 해당하는 user 정보 변경
+def put_user_id(db, user: UserUpdate, user_id: str) -> UserResponse | None:
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE `user`
+                SET user_phone = %s,
+                    user_email = %s,
+                    user_address = %s
+                WHERE user_id = %s
+                """,
+                (
+                    user.user_phone,
+                    user.user_email,
+                    user.user_address,
+                    user_id,
+                ),
+            )
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return get_user_id(db, user_id)
+
+
+# 탈퇴 기록 저장과 사용자 삭제는 같은 트랜잭션으로 처리.
+# 사용자를 삭제하면 자동으로 quit(탈퇴) 테이블에 생성되도록.
+def delete_user_id(db, quit: UserQuitRequest, user_id: str) -> UserQuitResponse | None:
+    try:
+        db.begin()
+        with db.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT user_id 
+                FROM `user` 
+                WHERE user_id = %s FOR UPDATE
+                """,
+                (user_id),
+            )
+            if cursor.fetchone() is None:
+                db.rollback()
+                return None
+
+            quit_date = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec="seconds")
+            result = UserQuitResponse(
+                message="회원 탈퇴가 완료되었습니다.",
+                user_id=user_id,
+                quit_date=quit_date,
+                quit_reason=quit.quit_reason,
+            )
+            cursor.execute(
+                """
+                INSERT INTO `quit` (user_user_id, quit_date, quit_reason)
+                VALUES (%s, %s, %s)
+                """,
+                (user_id, quit_date, quit.quit_reason),
+            )
+            cursor.execute(
+                "DELETE FROM `user` WHERE user_id = %s",
+                (user_id,),
+            )
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        if exc.args[0] == 1451:
+            raise HTTPException(
+                status_code=409,
+                detail="연결된 기록이 있어 탈퇴할 수 없습니다. 외래 키 설정과 관련 기록을 확인해주세요.",
+            ) from exc
+        if exc.args[0] == 1062:
+            raise HTTPException(
+                status_code=409,
+                detail="이미 해당 아이디의 탈퇴 기록이 존재합니다.",
+            ) from exc
+        raise
+    except Exception:
+        db.rollback()
+        raise
+
+    return result

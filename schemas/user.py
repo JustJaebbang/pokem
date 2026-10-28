@@ -28,3 +28,20 @@ class UserResponse(BaseModel):
 class UserLoginResponse(BaseModel):
     role: Literal["user"] = "user"
     account: UserResponse
+      
+      
+class UserUpdate(BaseModel):
+    user_phone: str
+    user_email: str
+    user_address: str
+
+
+class UserQuitRequest(BaseModel):
+    quit_reason: str | None = Field(default=None, max_length=200)
+
+
+class UserQuitResponse(BaseModel):
+    message: str
+    user_id: str
+    quit_date: str
+    quit_reason: str | None
