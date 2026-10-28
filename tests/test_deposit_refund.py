@@ -1,11 +1,13 @@
 import unittest
 from datetime import datetime
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from database import get_db
+from dependencies import get_current_account
 from routers.deposit_refund import router
 
 
@@ -16,6 +18,7 @@ class DepositRefundTests(unittest.TestCase):
         app = FastAPI()
         app.include_router(router)
         app.dependency_overrides[get_db] = lambda: self.db
+        app.dependency_overrides[get_current_account] = lambda: SimpleNamespace(role="manager", account=SimpleNamespace(manager_id="m"))
         self.client = TestClient(app)
         self.body = {"pay_pay_no": "pay1", "manager_manager_id": "m", "deposit_refund_price": 3000}
 
