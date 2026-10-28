@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class UserCreate(BaseModel):
@@ -20,3 +20,19 @@ class UserResponse(BaseModel):
     user_email: str
     user_address: str
     user_money: int
+
+class UserUpdate(BaseModel):
+    user_phone: str
+    user_email: str
+    user_address: str
+
+
+class UserQuitRequest(BaseModel):
+    quit_reason: str | None = Field(default=None, max_length=200)
+
+
+class UserQuitResponse(BaseModel):
+    message: str
+    user_id: str
+    quit_date: str
+    quit_reason: str | None
