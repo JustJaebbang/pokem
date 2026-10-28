@@ -1,0 +1,34 @@
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
+
+from database import get_db
+from schemas.pay import PayResponse, PayUpdate
+from services import pay_service
+
+router = APIRouter(prefix="/pay", tags=["pay"])
+
+
+# 결제는 검수 요청 확인 시 생성하므로 별도 POST는 제공하지 않는다.
+@router.get("", response_model=list[PayResponse])
+def get_pays(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db=Depends(get_db),
+):
+    return pay_service.get_pays(db, limit, offset)
+
+
+@router.get("/{pay_no}", response_model=PayResponse)
+def get_pay(pay_no: str = Path(min_length=1, max_length=64), db=Depends(get_db)):
+    pay = pay_service.get_pay(db, pay_no)
+    if pay is None:
+        raise HTTPException(status_code=404, detail="해당 결제를 찾을 수 없습니다.")
+    return pay
+
+
+@router.patch("/{pay_no}", response_model=PayResponse)
+def update_pay(
+    request: PayUpdate,
+    pay_no: str = Path(min_length=1, max_length=64),
+    db=Depends(get_db),
+):
+    return pay_service.update_pay(db, pay_no, request)
