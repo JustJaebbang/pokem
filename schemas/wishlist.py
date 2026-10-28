@@ -13,3 +13,8 @@ class WishlistResponse(BaseModel):
     wishlist_update: str | None
     user_user_id: str
     sell_product_sell_product_code: str
+
+
+# 요청의 사용자 ID는 생략 가능하며 서버가 로그인한 사용자로 확정합니다.
+class WishlistRequest(WishlistCreate):
+    user_user_id: str | None = Field(default=None, min_length=1, max_length=20)
