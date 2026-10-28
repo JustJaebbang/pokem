@@ -9,6 +9,7 @@ from routers.sell_product import router as sell_product_router
 from routers.post_item import router as post_item_router
 from routers.manager import router as manager_router
 from routers.auth import router as auth_router
+from routers.inspection_request import router as inspection_request_router
 
 app = FastAPI()
 
@@ -17,6 +18,7 @@ app.include_router(sell_product_router)
 app.include_router(post_item_router)
 app.include_router(manager_router)
 app.include_router(auth_router)
+app.include_router(inspection_request_router)
 
 @app.get("/")
 def root():
