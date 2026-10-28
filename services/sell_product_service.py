@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 
-from schemas.sell_product import SellProductCreate, SellProductResponse
+from schemas.sell_product import SellProductCreate, SellProductResponse, SellProductUpdate, SellProductDelete
 from services import post_item_service
 
 
@@ -112,12 +112,13 @@ def create_sell_product(db, sp: SellProductCreate, user_id) -> SellProductRespon
 
         # 6. 두 테이블 저장이 모두 성공하면 확정
         db.commit()
-        # 생성하고 아래 함수를 통해 어떤 상품 생성했는지 보여주기
-        return get_sell_product_code(db, product_code)
 
     except Exception:
         db.rollback()
         raise
+
+    # 생성하고 아래 함수를 통해 어떤 상품 생성했는지 보여주기
+    return get_sell_product_code(db, product_code)
 
 
 # 전체 sell_product 정보 가져오기
@@ -151,26 +152,84 @@ def get_sell_product_code(db, sell_product_code: str) -> SellProductResponse | N
 
 
 # sell_product_code에 해당하는 sell_product 정보 변경하기
-def put_sell_product_code(db, sp: SellProductCreate, sell_product_code: str) -> SellProductResponse | None:
-    with db.cursor() as cursor:
-        cursor.execute(
-            """
-            UPDATE sell_product
-            SET sell_product_title = %s,
-                sell_product_image = %s,
-                sell_product_contents = %s,
-                sell_product_sell_price = %s,
-            WHERE sell_product_code = %s
-            """,
-            (
-                sp.sell_product_title, 
-                sp.sell_product_image, 
-                sp.sell_product_contents,
-                sp.sell_product_price, 
-                sell_product_code
-            ),
-        )
+def put_sell_product_code(db, sp: SellProductUpdate, sell_product_code: str) -> SellProductResponse | None:
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE sell_product
+                SET sell_product_title = %s,
+                    sell_product_image = %s,
+                    sell_product_contents = %s,
+                    sell_product_sell_price = %s
+                WHERE sell_product_code = %s
+                """,
+                (
+                    sp.sell_product_title, 
+                    sp.sell_product_image, 
+                    sp.sell_product_contents,
+                    sp.sell_product_sell_price, 
+                    sell_product_code
+                ),
+            )
         # row = cursor.fetchone()
 
-    return get_sell_product_code(db, sell_product_code)
+    # return get_sell_product_code(db, sell_product_code)
     # return SellProductResponse(**row) if row else None
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
+
+    # 변경하고 아래 함수를 통해 어떤 상품 어떻게 변경했는지 보여주기
+    return get_sell_product_code(db, sell_product_code)
+
+
+# sell_product_code에 해당하는 sell_product 삭제하기
+def delete_sell_product_code(db, sell_product_code: str) -> SellProductDelete | None:
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT *
+                FROM sell_product
+                WHERE sell_product_code = %s
+                FOR UPDATE
+                """,
+                (sell_product_code),
+            )
+            product = cursor.fetchone()
+
+            if product is None:
+                db.rollback()
+                return None
+
+            cursor.execute(
+                """
+                DELETE
+                FROM sell_product
+                WHERE sell_product_code = %s
+                """,
+                (sell_product_code),
+            )
+
+        db.commit()
+    
+    except Exception:
+        db.rollback()
+        raise
+
+    return {
+        "message": "해당 판매상품이 삭제되었습니다.",
+        "sell_product_code": product['sell_product_code'],
+        "sell_product_serial_code": product['sell_product_serial_code'],
+        "seq": product['seq'],
+        "sell_product_title": product['sell_product_title'],
+        "sell_product_image": product['sell_product_image'],
+        "sell_product_contents": product['sell_product_contents'],
+        "sell_product_sell_price": product['sell_product_sell_price'],
+        "sell_product_grade": product['sell_product_grade'],
+        "sell_product_sell_status": product['sell_product_sell_status'],
+    }
