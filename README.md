@@ -4,7 +4,7 @@ card 검수 및 대리판매, 사용자간 중고거래 플랫폼
 
 ## 허재영
 
-user CR
+user CRUD
 sell_product CRU
 post_item CR
 FastAPI 구현 및 검증 완료
