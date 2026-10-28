@@ -31,7 +31,7 @@ def create_pay(db, request: PayCreate) -> PayResponse:
 
         now = datetime.now(ZoneInfo("Asia/Seoul"))
         pay = PayResponse(
-            pay_no=f"{request.inspection_request_inspection_request_no}{now:%Y%m%d%H%M%S}",
+            pay_no=f"{request.inspection_request_inspection_request_no}{now:%Y%m%d}",
             pay_status="결제대기",
             # 매니저가 입력한 최종 금액을 저장한다.
             pay_price=request.pay_price,
