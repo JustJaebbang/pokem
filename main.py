@@ -5,16 +5,18 @@ from pydantic import BaseModel
 import joblib
 
 from routers.user import router as user_router
-from routers.manager import router as manager_router
 from routers.sell_product import router as sell_product_router
 from routers.post_item import router as post_item_router
+from routers.manager import router as manager_router
+from routers.auth import router as auth_router
 
 app = FastAPI()
 
 app.include_router(user_router)
-app.include_router(manager_router)
 app.include_router(sell_product_router)
 app.include_router(post_item_router)
+app.include_router(manager_router)
+app.include_router(auth_router)
 
 @app.get("/")
 def root():
@@ -24,6 +26,7 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         app, 
-        host="192.168.45.218", 
+        #host="192.168.45.218", // 재영이 ip
+        host="192.168.20.33",
         port=8000
     )

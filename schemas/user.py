@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from typing import Literal
+
+from pydantic import BaseModel
 
 
 class UserCreate(BaseModel):
@@ -21,6 +23,13 @@ class UserResponse(BaseModel):
     user_address: str
     user_money: int
 
+
+# 로그인 입력과 응답을 회원 가입 스키마와 분리합니다.
+class UserLoginResponse(BaseModel):
+    role: Literal["user"] = "user"
+    account: UserResponse
+      
+      
 class UserUpdate(BaseModel):
     user_phone: str
     user_email: str
