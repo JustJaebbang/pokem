@@ -9,6 +9,7 @@ from routers.sell_product import router as sell_product_router
 from routers.post_item import router as post_item_router
 from routers.wishlist import router as wishlist_router
 from routers.purchase_item import router as purchase_item_router
+from routers.recharge import router as recharge_router
 
 app = FastAPI()
 
@@ -17,6 +18,7 @@ app.include_router(sell_product_router)
 app.include_router(post_item_router)
 app.include_router(wishlist_router)
 app.include_router(purchase_item_router)
+app.include_router(recharge_router)
 
 @app.get("/")
 def root():

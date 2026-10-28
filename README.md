@@ -8,6 +8,7 @@ sell_product CRUD
 post_item CR
 wishlist CRD
 purchase_item CR
+recharge CR
 FastAPI 구현 및 검증 완료
 
 user가 sell_product 판매 등록(post_item)시 DB에 sell_product 생성 -> post_item 생성 후 commit 트랜잭션 구현 및 검증 완료
