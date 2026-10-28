@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from database import get_db
+from dependencies import get_current_manager
 from schemas.manager import ManagerCreate, ManagerResponse
 from services import manager_service
 
 # 관리자 API의 공통 경로와 Swagger 문서의 그룹 이름입니다.
-router = APIRouter(prefix="/manager", tags=["manager"])
+router = APIRouter(prefix="/manager", tags=["manager"], dependencies=[Depends(get_current_manager)])
 
 
 # 관리자를 등록합니다.

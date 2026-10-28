@@ -1,5 +1,7 @@
 from fastapi import HTTPException
 
+from security import hash_password, verify_password
+
 from schemas.auth import LoginRequest
 
 from schemas.manager import ManagerCreate, ManagerResponse, ManagerLoginResponse
@@ -12,12 +14,13 @@ def login_manager(db, login: LoginRequest) -> ManagerLoginResponse:
             """
             SELECT manager_id, manager_password, manager_name,
                    manager_phone, manager_email, manager_dept
-            FROM manager WHERE manager_id = %s
+            FROM manager
+            WHERE manager_id = %s
             """,
             (login.login_id,),
         )
         manager = cursor.fetchone()
-    if manager is None or manager["manager_password"] != login.password:
+    if manager is None or not verify_password(login.password, manager["manager_password"]):
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
     return ManagerLoginResponse(account=ManagerResponse(**manager))
 
@@ -25,6 +28,7 @@ def login_manager(db, login: LoginRequest) -> ManagerLoginResponse:
 # 관리자 정보를 저장하고 등록 결과를 반환합니다.
 def create_manager(db, manager: ManagerCreate) -> ManagerResponse:
     try:
+        password_hash = hash_password(manager.manager_password)
         with db.cursor() as cursor:
             # 입력값은 SQL에 직접 삽입하지 않고 별도 매개변수로 전달합니다.
             cursor.execute(
@@ -36,7 +40,7 @@ def create_manager(db, manager: ManagerCreate) -> ManagerResponse:
                 """,
                 (
                     manager.manager_id,
-                    manager.manager_password,
+                    password_hash,
                     manager.manager_name,
                     manager.manager_phone,
                     manager.manager_email,

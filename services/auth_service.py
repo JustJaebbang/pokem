@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 
-from schemas.auth import LoginRequest, LoginResponse
+from schemas.auth import LoginRequest, LoginResponse, UserTokenResponse, ManagerTokenResponse
+from security import create_access_token
 from services import manager_service, user_service
 
 
@@ -23,4 +24,12 @@ def login(db, request: LoginRequest) -> LoginResponse:
             status_code=409,
             detail="사용자와 관리자 계정 정보가 중복됩니다. 계정 ID를 변경해 주세요.",
         )
-    return matches[0]
+    account = matches[0]
+    subject = account.account.user_id if account.role == "user" else account.account.manager_id
+    token, expires_in = create_access_token(subject, account.role)
+    response_model = UserTokenResponse if account.role == "user" else ManagerTokenResponse
+    return response_model(
+        **account.model_dump(),
+        access_token=token,
+        expires_in=expires_in,
+    )

@@ -6,6 +6,8 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from database import get_db
+from dependencies import get_current_account
+from schemas.user import UserResponse, UserLoginResponse
 from main import app
 from schemas.purchase_item import PurchaseItemCreate, PurchaseItemResponse
 from services.purchase_item_service import create_purchase_item, get_purchase_item, get_purchase_item_code
@@ -92,6 +94,9 @@ class PurchaseItemTests(unittest.TestCase):
     def test_http_contract(self):
         result = PurchaseItemResponse(purchase_item_code="PI_test", user_user_id="buyer", purchase_item_date="date", sell_product_sell_product_code="product")
         app.dependency_overrides[get_db] = lambda: self.db
+        app.dependency_overrides[get_current_account] = lambda: UserLoginResponse(account=UserResponse(
+            user_id="buyer", user_nickname="nick", user_name="name", user_phone="010",
+            user_email="test@example.com", user_address="address", user_money=0))
         try:
             with TestClient(app) as client:
                 with patch("routers.purchase_item.purchase_item_service.create_purchase_item", return_value=result):
