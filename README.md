@@ -14,6 +14,11 @@ user가 sell_product 판매 등록(post_item)시 DB에 sell_product 생성, post
 ## 남궁인성
 
 manager CR
-FastAPI 구현
+inspection_request CRU
+FastAPI 구현 및 검증 완료
 
-login 시도 시 auth를 통하여 user, manager에 대해서 테이블 데이터를 확인 후 일치하는 사용자의 role(역할)을 반환하도록 구현
+- login 시도 시 auth를 통하여 user, manager에 대해서 테이블 데이터를 확인 후 일치하는 사용자의 role(역할)을 반환하도록 구현
+
+- 사용자가 inspection_request를 넣으면 로그인된 user_id와 수량을 적어서 보내고
+  date와 no는 자동 생성된다. 이때 no는 date+{seq:06d}로 생성된다.
+  추후 관리자가 확인하면 확인한 관리자의 id가 patch되어 들어간다.
