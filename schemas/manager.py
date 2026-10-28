@@ -1,11 +1,11 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ManagerCreate(BaseModel):
     manager_id: str
-    manager_password: str
+    manager_password: str = Field(min_length=1, repr=False)
     manager_name: str
     manager_phone: str
     manager_email: str
