@@ -23,6 +23,7 @@ from routers.director import router as director_router
 from routers.case import router as case_router
 from routers.delivery_company import router as delivery_company_router
 from routers.product_company import router as product_company_router
+from routers.proposal import router as proposal_router
 
 app = FastAPI()
 
@@ -45,6 +46,7 @@ app.include_router(director_router)
 app.include_router(case_router)
 app.include_router(delivery_company_router)
 app.include_router(product_company_router)
+app.include_router(proposal_router)
 
 @app.get("/")
 def root():
