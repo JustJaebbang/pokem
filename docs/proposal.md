@@ -13,7 +13,7 @@
 ```
 
 `GET /proposal?limit=20&offset=0`과 `GET /proposal/{proposal_no}`에서
-매니저는 본인이 작성한 제안만, director는 전체 제안을 조회할 수 있습니다.
+매니저와 director는 작성 매니저와 관계없이 전체 제안을 조회할 수 있습니다.
 일반 사용자는 접근할 수 없습니다.
 
 `PATCH /proposal/{proposal_no}/review`는 director만 처리할 수 있습니다.
@@ -30,5 +30,5 @@
 
 DB에 `sql/proposal_workflow.sql`을 한 번 적용해야 합니다.
 기존 제안의 상태와 director 정보는 유지하고 작성 매니저는 NULL로 둡니다.
-작성 매니저가 없는 기존 제안은 director만 조회할 수 있으며,
+작성 매니저가 없는 기존 제안도 매니저와 director가 조회할 수 있으며,
 기존 상태가 `대기`가 아니라면 승인·반려 대상으로 처리하지 않습니다.

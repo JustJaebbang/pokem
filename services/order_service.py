@@ -73,7 +73,7 @@ def create_order(db, request: OrderCreate) -> OrderResponse:
 
 
 def get_orders(db, limit: int = 20, offset: int = 0, manager_id: str | None = None) -> list[OrderResponse]:
-    # 라우터에서 로그인한 매니저 ID를 전달하여 본인 담당 주문만 조회한다.
+    # API에서는 전체를 조회하고, 내부 호출에서는 필요 시 매니저별 필터를 사용한다.
     owner_filter = "WHERE manager_manager_id = %s" if manager_id is not None else ""
     params = (manager_id, limit, offset) if manager_id is not None else (limit, offset)
     with db.cursor() as cursor:

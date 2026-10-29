@@ -20,19 +20,17 @@ def create_proposal(request: ProposalCreate, db=Depends(get_db), current=Depends
 def get_proposals(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    db=Depends(get_db), current=Depends(get_current_account),
+    db=Depends(get_db),
 ):
-    manager_id = current.account.manager_id if current.role == "manager" else None
-    return proposal_service.get_proposals(db, limit, offset, manager_id=manager_id)
+    return proposal_service.get_proposals(db, limit, offset)
 
 
 @router.get("/{proposal_no}", response_model=ProposalResponse)
 def get_proposal(
     proposal_no: str = Path(min_length=1, max_length=64),
-    db=Depends(get_db), current=Depends(get_current_account),
+    db=Depends(get_db),
 ):
-    manager_id = current.account.manager_id if current.role == "manager" else None
-    proposal = proposal_service.get_proposal(db, proposal_no, manager_id=manager_id)
+    proposal = proposal_service.get_proposal(db, proposal_no)
     if proposal is None:
         raise HTTPException(status_code=404, detail="제안을 찾을 수 없습니다.")
     return proposal

@@ -59,7 +59,7 @@ def create_proposal(db, request: ProposalCreate, manager_id: str) -> ProposalRes
 
 
 def get_proposals(db, limit: int = 20, offset: int = 0, manager_id: str | None = None) -> list[ProposalResponse]:
-    # 매니저는 본인 작성 건만, director는 전체 제안을 조회한다.
+    # API에서는 전체를 조회하고, 내부 호출에서는 필요 시 매니저별 필터를 사용한다.
     owner_filter = "WHERE manager_manager_id = %s" if manager_id is not None else ""
     params = (manager_id, limit, offset) if manager_id is not None else (limit, offset)
     with db.cursor() as cursor:
