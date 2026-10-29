@@ -5,6 +5,8 @@ from dependencies import get_current_user
 from schemas.chat_room import ChatRoomCreate, ChatRoomResponse
 from schemas.chat import ChatCreate, ChatResponse
 from services import chat_room_service, chat_service
+from starlette.concurrency import run_in_threadpool
+from services.chat_socket_manager import chat_socket_manager
 
 router = APIRouter(prefix="/chat_room", tags=["chat_room"])
 
@@ -28,8 +30,11 @@ def get_chat_room_id(room_id: str, db=Depends(get_db), user=Depends(get_current_
 
 
 @router.post("/{room_id}/messages", response_model=ChatResponse, status_code=201)
-def create_chat(room_id: str, chat: ChatCreate, db=Depends(get_db), user=Depends(get_current_user)):
-    return chat_service.create_chat(db, room_id, chat, user.user_id)
+async def create_chat(room_id: str, chat: ChatCreate, db=Depends(get_db), user=Depends(get_current_user)):
+    async with chat_socket_manager.serialize(room_id):
+        saved = await run_in_threadpool(chat_service.create_chat, db, room_id, chat, user.user_id)
+        await chat_socket_manager.publish(room_id, saved)
+    return saved
 
 
 @router.get("/{room_id}/messages", response_model=list[ChatResponse])
