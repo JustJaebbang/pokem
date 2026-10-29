@@ -62,9 +62,10 @@ def create_purchase_item(db, purchase: PurchaseItemCreate) -> PurchaseItemRespon
                 SELECT purchase_item_code
                 FROM purchase_item
                 WHERE sell_product_sell_product_code = %s
+                    AND purchase_item_status <> %s
                 FOR UPDATE
                 """,
-                (purchase.sell_product_sell_product_code,),
+                (purchase.sell_product_sell_product_code, "거래취소"),
             )
             if cursor.fetchone() is not None:
                 raise HTTPException(status_code=409, detail="이미 구매 기록이 있는 상품입니다.")
@@ -167,7 +168,7 @@ def confirm_purchase_item(db, purchase_item_code: str, buyer_id: str) -> Purchas
         with db.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT user_user_id, sell_product_sell_product_code
+                SELECT user_user_id, sell_product_sell_product_code, purchase_item_status, purchase_item_confirmed_at
                 FROM purchase_item
                 WHERE purchase_item_code = %s
                 """,
@@ -225,7 +226,7 @@ def confirm_purchase_item(db, purchase_item_code: str, buyer_id: str) -> Purchas
                 raise HTTPException(status_code=409, detail="거래 중인 상품만 구매확정할 수 있습니다.")
             cursor.execute(
                 """
-                SELECT user_user_id, sell_product_sell_product_code
+                SELECT user_user_id, sell_product_sell_product_code, purchase_item_status, purchase_item_confirmed_at
                 FROM purchase_item
                 WHERE purchase_item_code = %s
                 FOR UPDATE
@@ -237,6 +238,8 @@ def confirm_purchase_item(db, purchase_item_code: str, buyer_id: str) -> Purchas
                 raise HTTPException(status_code=404, detail="구매 정보를 찾을 수 없습니다.")
             if purchase["user_user_id"] != buyer_id or purchase["sell_product_sell_product_code"] != product_code:
                 raise HTTPException(status_code=409, detail="구매 정보가 변경되었습니다. 다시 확인해주세요.")
+            if purchase["purchase_item_status"] != "거래중" or purchase["purchase_item_confirmed_at"] is not None:
+                raise HTTPException(status_code=409, detail="취소 요청 중이거나 이미 종료된 구매는 확정할 수 없습니다.")
             cursor.execute(
                 """
                 SELECT post_item_code, user_user_id, post_item_complete_date
@@ -258,7 +261,7 @@ def confirm_purchase_item(db, purchase_item_code: str, buyer_id: str) -> Purchas
                 FROM cybermoney_pay
                 WHERE purchase_item_purchase_item_code = %s
                 FOR UPDATE
-                """,   
+                """,
                 (purchase_item_code,),
             )
             payments = cursor.fetchall()
@@ -344,6 +347,16 @@ def confirm_purchase_item(db, purchase_item_code: str, buyer_id: str) -> Purchas
             )
             if cursor.rowcount != 1:
                 raise HTTPException(status_code=409, detail="거래완료일을 변경할 수 없습니다.")
+            cursor.execute(
+                """
+                UPDATE purchase_item
+                SET purchase_item_status = %s, purchase_item_confirmed_at = %s
+                WHERE purchase_item_code = %s AND purchase_item_status = %s
+                """,
+                ("구매확정", now, purchase_item_code, "거래중"),
+            )
+            if cursor.rowcount != 1:
+                raise HTTPException(status_code=409, detail="구매 상태가 변경되었습니다.")
             cursor.execute(
                 """
                 UPDATE sell_product

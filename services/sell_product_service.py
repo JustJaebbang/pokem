@@ -233,3 +233,68 @@ def delete_sell_product_code(db, sell_product_code: str) -> SellProductDelete | 
         "sell_product_grade": product['sell_product_grade'],
         "sell_product_sell_status": product['sell_product_sell_status'],
     }
+
+# 환불 승인된 상품만 판매자가 명시적으로 재판매합니다.
+def relist_sell_product(db, product_code: str, seller_id: str) -> SellProductResponse:
+    try:
+        db.begin()
+        with db.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT user_id
+                FROM `user`
+                WHERE user_id = %s
+                FOR UPDATE
+                """, (seller_id,),
+            )
+            if cursor.fetchone() is None:
+                raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+            cursor.execute(
+                """
+                SELECT *
+                FROM sell_product
+                WHERE sell_product_code = %s
+                FOR UPDATE
+                """, (product_code,),
+            )
+            product = cursor.fetchone()
+            if product is None:
+                raise HTTPException(status_code=404, detail="판매상품을 찾을 수 없습니다.")
+            cursor.execute(
+                """
+                SELECT user_user_id, post_item_complete_date
+                FROM post_item
+                WHERE sell_product_sell_product_code = %s
+                FOR UPDATE
+                """, (product_code,),
+            )
+            posts = cursor.fetchall()
+            if len(posts) != 1 or posts[0]["user_user_id"] != seller_id:
+                raise HTTPException(status_code=403, detail="판매자만 재판매할 수 있습니다.")
+            if product["sell_product_sell_status"] != "거래취소" or posts[0]["post_item_complete_date"] is not None:
+                raise HTTPException(status_code=409, detail="거래취소된 상품만 재판매할 수 있습니다.")
+            cursor.execute(
+                """
+                SELECT purchase_item_code
+                FROM purchase_item
+                WHERE sell_product_sell_product_code = %s AND purchase_item_status <> %s
+                FOR UPDATE
+                """, (product_code, "거래취소"),
+            )
+            if cursor.fetchone() is not None:
+                raise HTTPException(status_code=409, detail="종료되지 않은 구매 건이 있습니다.")
+            cursor.execute(
+                """
+                UPDATE sell_product
+                SET sell_product_sell_status = %s
+                WHERE sell_product_code = %s AND sell_product_sell_status = %s
+                """, ("판매중", product_code, "거래취소"),
+            )
+            if cursor.rowcount != 1:
+                raise HTTPException(status_code=409, detail="상품 상태가 변경되었습니다.")
+            result = SellProductResponse(**{**product, "sell_product_sell_status": "판매중"})
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    return result

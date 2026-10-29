@@ -24,7 +24,7 @@ def create_review(db, review: ReviewCreate, user_id: str) -> ReviewResponse:
                 raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
             cursor.execute(
                 """
-                SELECT user_user_id, sell_product_sell_product_code
+                SELECT user_user_id, sell_product_sell_product_code, purchase_item_status, purchase_item_confirmed_at
                 FROM purchase_item
                 WHERE purchase_item_code = %s
                 """,
@@ -50,7 +50,7 @@ def create_review(db, review: ReviewCreate, user_id: str) -> ReviewResponse:
                 raise HTTPException(status_code=404, detail="판매상품을 찾을 수 없습니다.")
             cursor.execute(
                 """
-                SELECT user_user_id, sell_product_sell_product_code
+                SELECT user_user_id, sell_product_sell_product_code, purchase_item_status, purchase_item_confirmed_at
                 FROM purchase_item
                 WHERE purchase_item_code = %s
                 FOR UPDATE
@@ -64,9 +64,11 @@ def create_review(db, review: ReviewCreate, user_id: str) -> ReviewResponse:
                 raise HTTPException(status_code=403, detail="본인의 구매 건만 리뷰를 작성할 수 있습니다.")
             if purchase["sell_product_sell_product_code"] != product_code:
                 raise HTTPException(status_code=409, detail="구매 정보가 변경되었습니다. 다시 확인해주세요.")
+            if purchase["purchase_item_status"] != "구매확정" or not purchase["purchase_item_confirmed_at"]:
+                raise HTTPException(status_code=409, detail="구매확정된 구매 건에만 리뷰를 작성할 수 있습니다.")
             cursor.execute(
                 """
-                SELECT post_item_code, user_user_id, post_item_complete_date
+                SELECT post_item_code, user_user_id
                 FROM post_item
                 WHERE sell_product_sell_product_code = %s
                 FOR UPDATE
@@ -74,7 +76,7 @@ def create_review(db, review: ReviewCreate, user_id: str) -> ReviewResponse:
                 (product_code,),
             )
             posts = cursor.fetchall()
-            if len(posts) != 1 or not posts[0]["post_item_complete_date"]:
+            if len(posts) != 1:
                 raise HTTPException(status_code=409, detail="구매확정이 완료된 거래에만 리뷰를 작성할 수 있습니다.")
             if posts[0]["user_user_id"] == user_id:
                 raise HTTPException(status_code=409, detail="본인 상품에는 구매 리뷰를 작성할 수 없습니다.")
