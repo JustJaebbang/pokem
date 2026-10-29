@@ -58,6 +58,7 @@ manager CR
 inspection_request CRU
 pay CRU
 deposit_refund CR
+delivery CR
 FastAPI 구현 및 검증 완료
 
 - login 시도 시 auth를 통하여 user, manager에 대해서 테이블 데이터를 확인 후 일치하는 사용자의 role(역할)을 반환하도록 구현
@@ -71,3 +72,5 @@ FastAPI 구현 및 검증 완료
 - inspection_request가 확인되면 pay가 자동 생성
 
 - 검수 완료시 발생하면 deposit_refund가 생성
+
+- delivery는 pruchase_item 데이블을 통해 user_id와 sell_product_code를 가져온다.
