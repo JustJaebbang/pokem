@@ -5,7 +5,7 @@ card 검수 및 대리판매, 사용자간 중고거래 플랫폼
 ## 허재영
 ### 26.10.27~28
 - user CRUD - D user의 판매상품이나 참조하는 부분에 대한 CASCADE 설정 결정해야함
-- sell_product CRU - 로그인 기능 구현하면 C user_id 부분 수정해야함
+- sell_product CRU - 로그인 기능 구현으로 C user_id 부분 수정완료
 - post_item CR
 - wishlist CRD
 - purchase_item CR
