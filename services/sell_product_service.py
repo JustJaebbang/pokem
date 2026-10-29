@@ -1,3 +1,4 @@
+from services.sale_registration_service import get_sale_registrations
 from fastapi import HTTPException
 
 from schemas.sell_product import SellProductCreate, SellProductResponse, SellProductUpdate, SellProductDelete
@@ -235,18 +236,28 @@ def delete_sell_product_code(db, sell_product_code: str) -> SellProductDelete | 
     }
 
 # 환불 승인된 상품만 판매자가 명시적으로 재판매합니다.
-def relist_sell_product(db, product_code: str, seller_id: str) -> SellProductResponse:
+def relist_sell_product(db, product_code: str, seller_id: str, role: str = "user") -> SellProductResponse:
     try:
         db.begin()
         with db.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT user_id
-                FROM `user`
-                WHERE user_id = %s
-                FOR UPDATE
-                """, (seller_id,),
-            )
+            if role == "manager":
+                cursor.execute(
+                    """
+                    SELECT manager_id
+                    FROM manager
+                    WHERE manager_id = %s
+                    FOR UPDATE
+                    """, (seller_id,),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT user_id
+                    FROM `user`
+                    WHERE user_id = %s
+                    FOR UPDATE
+                    """, (seller_id,),
+                )
             if cursor.fetchone() is None:
                 raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
             cursor.execute(
@@ -260,16 +271,12 @@ def relist_sell_product(db, product_code: str, seller_id: str) -> SellProductRes
             product = cursor.fetchone()
             if product is None:
                 raise HTTPException(status_code=404, detail="판매상품을 찾을 수 없습니다.")
-            cursor.execute(
-                """
-                SELECT user_user_id, post_item_complete_date
-                FROM post_item
-                WHERE sell_product_sell_product_code = %s
-                FOR UPDATE
-                """, (product_code,),
+            posts = get_sale_registrations(cursor, product_code)
+            allowed = len(posts) == 1 and (
+                role == "manager" if posts[0].get("registration_type", "direct") == "consign"
+                else role == "user" and posts[0]["user_user_id"] == seller_id
             )
-            posts = cursor.fetchall()
-            if len(posts) != 1 or posts[0]["user_user_id"] != seller_id:
+            if not allowed:
                 raise HTTPException(status_code=403, detail="판매자만 재판매할 수 있습니다.")
             if product["sell_product_sell_status"] != "거래취소" or posts[0]["post_item_complete_date"] is not None:
                 raise HTTPException(status_code=409, detail="거래취소된 상품만 재판매할 수 있습니다.")

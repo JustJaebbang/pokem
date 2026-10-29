@@ -1,3 +1,4 @@
+from services.sale_registration_service import get_sale_registrations, complete_sale_registration
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
@@ -40,16 +41,7 @@ def create_purchase_item(db, purchase: PurchaseItemCreate) -> PurchaseItemRespon
             if product["sell_product_sell_status"] != "판매중":
                 raise HTTPException(status_code=409, detail="판매 중인 상품만 구매할 수 있습니다.")
 
-            cursor.execute(
-                """
-                SELECT user_user_id, post_item_complete_date
-                FROM post_item
-                WHERE sell_product_sell_product_code = %s
-                FOR UPDATE
-                """,
-                (purchase.sell_product_sell_product_code,),
-            )
-            posts = cursor.fetchall()
+            posts = get_sale_registrations(cursor, purchase.sell_product_sell_product_code)
             if len(posts) != 1:
                 raise HTTPException(status_code=409, detail="상품의 판매등록 정보를 확인해주세요.")
             if posts[0]["user_user_id"] == purchase.user_user_id:
@@ -180,15 +172,7 @@ def confirm_purchase_item(db, purchase_item_code: str, buyer_id: str) -> Purchas
             if purchase["user_user_id"] != buyer_id:
                 raise HTTPException(status_code=403, detail="본인의 구매 건만 확정할 수 있습니다.")
             product_code = purchase["sell_product_sell_product_code"]
-            cursor.execute(
-                """
-                SELECT user_user_id
-                FROM post_item
-                WHERE sell_product_sell_product_code = %s
-                """,
-                (product_code,),
-            )
-            posts = cursor.fetchall()
+            posts = get_sale_registrations(cursor, product_code)
             if len(posts) != 1:
                 raise HTTPException(status_code=409, detail="판매등록 정보를 확인해주세요.")
             seller_id = posts[0]["user_user_id"]
@@ -240,16 +224,7 @@ def confirm_purchase_item(db, purchase_item_code: str, buyer_id: str) -> Purchas
                 raise HTTPException(status_code=409, detail="구매 정보가 변경되었습니다. 다시 확인해주세요.")
             if purchase["purchase_item_status"] != "거래중" or purchase["purchase_item_confirmed_at"] is not None:
                 raise HTTPException(status_code=409, detail="취소 요청 중이거나 이미 종료된 구매는 확정할 수 없습니다.")
-            cursor.execute(
-                """
-                SELECT post_item_code, user_user_id, post_item_complete_date
-                FROM post_item
-                WHERE sell_product_sell_product_code = %s
-                FOR UPDATE
-                """,
-                (product_code,),
-            )
-            posts = cursor.fetchall()
+            posts = get_sale_registrations(cursor, product_code)
             if len(posts) != 1 or posts[0]["user_user_id"] != seller_id:
                 raise HTTPException(status_code=409, detail="판매등록 정보가 변경되었습니다.")
             post = posts[0]
@@ -336,15 +311,7 @@ def confirm_purchase_item(db, purchase_item_code: str, buyer_id: str) -> Purchas
                 """,
                 (result.cybermoney_give_code, pay_code, "지급완료", now, price),
             )
-            cursor.execute(
-                """
-                UPDATE post_item
-                SET post_item_complete_date = %s
-                WHERE post_item_code = %s
-                    AND post_item_complete_date IS NULL
-                """,
-                (now, post["post_item_code"]),
-            )
+            complete_sale_registration(cursor, post, product_code, now)
             if cursor.rowcount != 1:
                 raise HTTPException(status_code=409, detail="거래완료일을 변경할 수 없습니다.")
             cursor.execute(

@@ -1,3 +1,4 @@
+from services.sale_registration_service import get_sale_registrations
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
@@ -27,14 +28,7 @@ def _lock_trade(cursor, purchase_code, actor_id, actor_role):
     _require(initial is not None, "구매 정보를 찾을 수 없습니다.", 404)
     buyer_id = initial["user_user_id"]
     product_code = initial["sell_product_sell_product_code"]
-    cursor.execute(
-        """
-        SELECT user_user_id
-        FROM post_item
-        WHERE sell_product_sell_product_code = %s
-        """, (product_code,),
-    )
-    posts = cursor.fetchall()
+    posts = get_sale_registrations(cursor, product_code)
     _require(len(posts) == 1, "판매등록 정보를 확인해주세요.")
     seller_id = posts[0]["user_user_id"]
     _require(buyer_id != seller_id, "구매자와 판매자가 같을 수 없습니다.")
@@ -74,15 +68,7 @@ def _lock_trade(cursor, purchase_code, actor_id, actor_role):
     _require(purchase is not None, "구매 정보를 찾을 수 없습니다.", 404)
     _require(purchase["user_user_id"] == buyer_id and purchase["sell_product_sell_product_code"] == product_code,
              "구매 정보가 변경되었습니다.")
-    cursor.execute(
-        """
-        SELECT *
-        FROM post_item
-        WHERE sell_product_sell_product_code = %s
-        FOR UPDATE
-        """, (product_code,),
-    )
-    posts = cursor.fetchall()
+    posts = get_sale_registrations(cursor, product_code)
     _require(len(posts) == 1 and posts[0]["user_user_id"] == seller_id, "판매등록 정보가 변경되었습니다.")
     _require(posts[0]["post_item_complete_date"] is None, "구매확정 후에는 취소할 수 없습니다.")
     _require(product["sell_product_sell_status"] == "거래중", "거래 중인 상품만 취소할 수 있습니다.")
@@ -286,8 +272,15 @@ def get_purchase_cancel(db, current, cancel_code=None):
             FROM purchase_cancel pc
             JOIN purchase_item pi
                 ON pi.purchase_item_code = pc.purchase_item_purchase_item_code
-            JOIN post_item po
-                ON po.sell_product_sell_product_code = pi.sell_product_sell_product_code
+            JOIN (
+                SELECT sell_product_sell_product_code, user_user_id
+                FROM post_item
+                UNION ALL
+                SELECT pci.sell_product_sell_product_code, ir.user_user_id
+                FROM post_consign_item pci
+                JOIN inspect i ON i.inspect_code = pci.inspect_inspect_code
+                JOIN inspection_request ir ON ir.inspection_request_no = i.inspect_requested_no
+            ) po ON po.sell_product_sell_product_code = pi.sell_product_sell_product_code
             WHERE 1 = 1
         """
         params = []
