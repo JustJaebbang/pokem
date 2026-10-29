@@ -3,29 +3,31 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 
 from schemas.purchase_item import PurchaseItemCreate, PurchaseItemResponse
+from services import cybermoney_pay_service
 
 
-# 구매 기록과 거래중 상태를 함께 저장합니다. 거래완료일은 구매확정 시 기록합니다.
+# 결제·구매 기록·거래중 상태를 하나의 트랜잭션으로 확정합니다. 거래완료일은 구매확정 시 기록합니다.
 def create_purchase_item(db, purchase: PurchaseItemCreate) -> PurchaseItemResponse:
     try:
         db.begin()
         with db.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT user_id
+                SELECT user_id, user_money
                 FROM `user`
                 WHERE user_id = %s
                 FOR UPDATE
                 """,
                 (purchase.user_user_id,),
             )
-            if cursor.fetchone() is None:
+            user = cursor.fetchone()
+            if user is None:
                 raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
 
             # 상품 행 잠금으로 같은 상품의 동시 구매를 직렬화합니다.
             cursor.execute(
                 """
-                SELECT sell_product_sell_status
+                SELECT sell_product_sell_status, sell_product_sell_price
                 FROM sell_product
                 WHERE sell_product_code = %s
                 FOR UPDATE
@@ -78,6 +80,10 @@ def create_purchase_item(db, purchase: PurchaseItemCreate) -> PurchaseItemRespon
                 purchase_item_date=now,
                 sell_product_sell_product_code=purchase.sell_product_sell_product_code,
             )
+            # 잔액 차감을 먼저 수행하며, 이후 저장 실패 시 이 차감도 롤백됩니다.
+            balance = cybermoney_pay_service.deduct_cybermoney(
+                db, purchase.user_user_id, product["sell_product_sell_price"], user["user_money"]
+            )
             cursor.execute(
                 """
                 INSERT INTO purchase_item (
@@ -90,6 +96,15 @@ def create_purchase_item(db, purchase: PurchaseItemCreate) -> PurchaseItemRespon
                 """,
                 (result.purchase_item_code, result.user_user_id,
                  result.purchase_item_date, result.sell_product_sell_product_code),
+            )
+            # 결제 테이블이 구매 코드를 참조하므로 구매 INSERT 직후 결제를 기록합니다.
+            cybermoney_pay_service.insert_cybermoney_pay(
+                db=db,
+                purchase_code=result.purchase_item_code,
+                user_id=purchase.user_user_id,
+                price=product["sell_product_sell_price"],
+                balance=balance,
+                paid_at=purchased_at,
             )
             cursor.execute(
                 """

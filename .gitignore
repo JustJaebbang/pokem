@@ -425,4 +425,8 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# 검증 및 스키마 변경을 위한 scripts, sql -> gitignore에 추가.
+sql
+tests
+scripts
 # End of https://www.toptal.com/developers/gitignore/api/windows,flutter,python,dart,visualstudiocode,jetbrains
