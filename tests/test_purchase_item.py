@@ -17,8 +17,9 @@ class PurchaseItemTests(unittest.TestCase):
     def setUp(self):
         self.db = MagicMock()
         self.cursor = self.db.cursor.return_value.__enter__.return_value
+        self.cursor.rowcount = 1
         self.request = PurchaseItemCreate(user_user_id="buyer", sell_product_sell_product_code="product")
-        self.cursor.fetchone.side_effect = [{"user_id": "buyer"}, {"sell_product_sell_status": "판매중"}, None]
+        self.cursor.fetchone.side_effect = [{"user_id": "buyer", "user_money": 15000}, {"sell_product_sell_status": "판매중", "sell_product_sell_price": 10000}, None]
         self.cursor.fetchall.return_value = [{"user_user_id": "seller", "post_item_complete_date": None}]
 
     def test_purchase_sets_in_progress_without_completing_trade(self):
@@ -34,10 +35,16 @@ class PurchaseItemTests(unittest.TestCase):
         calls = self.cursor.execute.call_args_list
         for call in calls[:4]:
             self.assertIn("FOR UPDATE", call.args[0])
-        self.assertIn("INSERT INTO purchase_item", calls[4].args[0])
-        self.assertEqual(calls[4].args[1], (result.purchase_item_code, "buyer", result.purchase_item_date, "product"))
-        self.assertEqual(calls[5].args[1], ("거래중", "product"))
-        self.assertEqual(len(calls), 6)
+        self.assertIn("UPDATE `user`", calls[4].args[0])
+        self.assertEqual(calls[4].args[1], (10000, "buyer", 10000))
+        self.assertIn("INSERT INTO purchase_item", calls[5].args[0])
+        self.assertEqual(calls[5].args[1], (result.purchase_item_code, "buyer", result.purchase_item_date, "product"))
+        self.assertIn("INSERT INTO cybermoney_pay", calls[6].args[0])
+        payment_params = calls[6].args[1]
+        self.assertTrue(payment_params[0].startswith(result.purchase_item_code + "_"))
+        self.assertEqual(payment_params[1:], ("결제완료", result.purchase_item_date, 10000, result.purchase_item_code))
+        self.assertEqual(calls[7].args[1], ("거래중", "product"))
+        self.assertEqual(len(calls), 8)
         for call in calls:
             self.assertNotIn("UPDATE post_item", call.args[0])
         self.db.begin.assert_called_once()
@@ -47,12 +54,12 @@ class PurchaseItemTests(unittest.TestCase):
     def test_rejected_purchases_never_commit(self):
         cases = [
             ([None], [], 404),
-            ([{"user_id": "buyer"}, None], [], 404),
-            ([{"user_id": "buyer"}, {"sell_product_sell_status": "판매완료"}], [], 409),
-            ([{"user_id": "buyer"}, {"sell_product_sell_status": "판매중"}], [], 409),
-            ([{"user_id": "buyer"}, {"sell_product_sell_status": "판매중"}], [{"user_user_id": "buyer", "post_item_complete_date": None}], 409),
-            ([{"user_id": "buyer"}, {"sell_product_sell_status": "판매중"}], [{"user_user_id": "seller", "post_item_complete_date": "done"}], 409),
-            ([{"user_id": "buyer"}, {"sell_product_sell_status": "판매중"}, {"purchase_item_code": "existing"}], [{"user_user_id": "seller", "post_item_complete_date": None}], 409),
+            ([{"user_id": "buyer", "user_money": 15000}, None], [], 404),
+            ([{"user_id": "buyer", "user_money": 15000}, {"sell_product_sell_status": "판매완료"}], [], 409),
+            ([{"user_id": "buyer", "user_money": 15000}, {"sell_product_sell_status": "판매중", "sell_product_sell_price": 10000}], [], 409),
+            ([{"user_id": "buyer", "user_money": 15000}, {"sell_product_sell_status": "판매중", "sell_product_sell_price": 10000}], [{"user_user_id": "buyer", "post_item_complete_date": None}], 409),
+            ([{"user_id": "buyer", "user_money": 15000}, {"sell_product_sell_status": "판매중", "sell_product_sell_price": 10000}], [{"user_user_id": "seller", "post_item_complete_date": "done"}], 409),
+            ([{"user_id": "buyer", "user_money": 15000}, {"sell_product_sell_status": "판매중", "sell_product_sell_price": 10000}, {"purchase_item_code": "existing"}], [{"user_user_id": "seller", "post_item_complete_date": None}], 409),
         ]
         for rows, posts, status in cases:
             with self.subTest(rows=rows, posts=posts):
@@ -68,7 +75,7 @@ class PurchaseItemTests(unittest.TestCase):
                     self.assertNotIn("INSERT INTO", call.args[0])
 
     def test_each_write_failure_rolls_back(self):
-        for write_index in (4, 5):
+        for write_index in (4, 5, 6, 7):
             with self.subTest(write_index=write_index):
                 self.setUp()
                 self.cursor.execute.side_effect = [None] * write_index + [RuntimeError("write failed")]
@@ -77,9 +84,47 @@ class PurchaseItemTests(unittest.TestCase):
                 self.db.rollback.assert_called_once()
                 self.db.commit.assert_not_called()
 
+    def test_insufficient_balance_creates_no_purchase_or_payment(self):
+        self.cursor.fetchone.side_effect = [
+            {"user_id": "buyer", "user_money": 9999},
+            {"sell_product_sell_status": "판매중", "sell_product_sell_price": 10000},
+            None,
+        ]
+        with self.assertRaises(HTTPException) as error:
+            create_purchase_item(self.db, self.request)
+        self.assertEqual(error.exception.status_code, 409)
+        self.db.rollback.assert_called_once()
+        self.db.commit.assert_not_called()
+        self.assertEqual(self.cursor.execute.call_count, 4)
+
+    def test_invalid_price_creates_no_purchase_or_payment(self):
+        for price in (None, 0, -1):
+            with self.subTest(price=price):
+                self.setUp()
+                self.cursor.fetchone.side_effect = [
+                    {"user_id": "buyer", "user_money": 15000},
+                    {"sell_product_sell_status": "판매중", "sell_product_sell_price": price},
+                    None,
+                ]
+                with self.assertRaises(HTTPException) as error:
+                    create_purchase_item(self.db, self.request)
+                self.assertEqual(error.exception.status_code, 409)
+                self.db.rollback.assert_called_once()
+                self.db.commit.assert_not_called()
+                self.assertEqual(self.cursor.execute.call_count, 4)
+
+    def test_balance_update_conflict_rolls_back_without_purchase(self):
+        self.cursor.rowcount = 0
+        with self.assertRaises(HTTPException) as error:
+            create_purchase_item(self.db, self.request)
+        self.assertEqual(error.exception.status_code, 409)
+        self.db.rollback.assert_called_once()
+        self.db.commit.assert_not_called()
+        self.assertEqual(self.cursor.execute.call_count, 5)
+
     def test_list_empty_and_missing_user(self):
         self.cursor.fetchone.side_effect = None
-        self.cursor.fetchone.return_value = {"user_id": "buyer"}
+        self.cursor.fetchone.return_value = {"user_id": "buyer", "user_money": 15000}
         self.cursor.fetchall.return_value = []
         self.assertEqual(get_purchase_item(self.db, "buyer"), [])
         self.cursor.fetchone.return_value = None
@@ -107,7 +152,7 @@ class PurchaseItemTests(unittest.TestCase):
                 with patch("routers.purchase_item.purchase_item_service.get_purchase_item_code", return_value=None):
                     self.assertEqual(client.get("/purchase_item/missing").status_code, 404)
                 with patch("routers.purchase_item.purchase_item_service.get_purchase_item", return_value=[]):
-                    self.assertEqual(client.get("/purchase_item", params={"user_id": "buyer"}).json(), [])
+                    self.assertEqual(client.get("/purchase_item", params={"user_id": "buyer", "user_money": 15000}).json(), [])
         finally:
             app.dependency_overrides.clear()
 
