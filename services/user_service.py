@@ -1,6 +1,7 @@
+from fastapi import HTTPException
 from datetime import datetime, timedelta, timezone
 
-from fastapi import HTTPException
+from schemas.auth import LoginRequest
 from pymysql.err import IntegrityError
 
 from security import hash_password, verify_password

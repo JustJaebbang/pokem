@@ -1,14 +1,14 @@
 from fastapi import HTTPException
 
-from schemas.auth import LoginRequest, LoginResponse, UserTokenResponse, ManagerTokenResponse
+from schemas.auth import LoginRequest, LoginResponse, UserTokenResponse, ManagerTokenResponse, DirectorTokenResponse
 from security import create_access_token
-from services import manager_service, user_service
+from services import manager_service, user_service, director_service
 
 
 def login(db, request: LoginRequest) -> LoginResponse:
     matches = []
-    # 한쪽이 성공해도 다른 테이블을 확인하여 중복 계정을 감지합니다.
-    checks = (user_service.login_user, manager_service.login_manager)
+    # 모든 계정 테이블을 확인해 역할 간 중복 인증을 감지한다.
+    checks = (user_service.login_user, manager_service.login_manager, director_service.login_director)
     for authenticate in checks:
         try:
             matches.append(authenticate(db, request))
@@ -22,12 +22,13 @@ def login(db, request: LoginRequest) -> LoginResponse:
     if len(matches) > 1:
         raise HTTPException(
             status_code=409,
-            detail="사용자와 관리자 계정 정보가 중복됩니다. 계정 ID를 변경해 주세요.",
+            detail="여러 역할의 계정 정보가 중복됩니다. 계정 ID를 변경해 주세요.",
         )
     account = matches[0]
-    subject = account.account.user_id if account.role == "user" else account.account.manager_id
+    id_field = {"user": "user_id", "manager": "manager_id", "director": "director_id"}[account.role]
+    subject = getattr(account.account, id_field)
     token, expires_in = create_access_token(subject, account.role)
-    response_model = UserTokenResponse if account.role == "user" else ManagerTokenResponse
+    response_model = {"user": UserTokenResponse, "manager": ManagerTokenResponse, "director": DirectorTokenResponse}[account.role]
     return response_model(
         **account.model_dump(),
         access_token=token,

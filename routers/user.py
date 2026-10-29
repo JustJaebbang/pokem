@@ -8,6 +8,7 @@ from services import user_service
 
 router = APIRouter(prefix="/user", tags=["user"])
 
+
 # user 입력
 @router.post("", response_model=UserResponse, status_code=201)
 def create_user(user: UserCreate, db=Depends(get_db)):
