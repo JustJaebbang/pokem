@@ -38,7 +38,7 @@ def _jwt_secret() -> str:
 
 
 def create_access_token(subject: str, role: str) -> tuple[str, int]:
-    if not subject or role not in ("user", "manager"):
+    if not subject or role not in ("user", "manager", "director"):
         raise ValueError("토큰의 계정 ID 또는 역할이 올바르지 않습니다.")
     minutes = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
     if minutes <= 0:
@@ -71,7 +71,7 @@ def decode_access_token(token: str) -> dict:
         )
         if (
             not isinstance(claims["sub"], str) or not claims["sub"]
-            or claims["role"] not in ("user", "manager")
+            or claims["role"] not in ("user", "manager", "director")
             or claims["token_type"] != "access"
             or not isinstance(claims["jti"], str) or not claims["jti"]
             or type(claims["iat"]) is not int
