@@ -4,8 +4,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from database import get_db
 from schemas.user import UserResponse, UserLoginResponse
 from schemas.manager import ManagerResponse, ManagerLoginResponse
+from schemas.director import DirectorResponse, DirectorLoginResponse
 from security import decode_access_token
-from services import user_service, manager_service
+from services import user_service, manager_service, director_service
 
 
 bearer = HTTPBearer(auto_error=False)
@@ -14,7 +15,7 @@ bearer = HTTPBearer(auto_error=False)
 def get_current_account(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
     db=Depends(get_db),
-) -> UserLoginResponse | ManagerLoginResponse:
+) -> UserLoginResponse | ManagerLoginResponse | DirectorLoginResponse:
     if credentials is None:
         raise HTTPException(status_code=401, detail="로그인이 필요합니다.", headers={"WWW-Authenticate": "Bearer"})
     claims = decode_access_token(credentials.credentials)
@@ -22,10 +23,14 @@ def get_current_account(
         account = user_service.get_user_id(db, claims["sub"])
         if account is not None:
             return UserLoginResponse(account=account)
-    else:
+    elif claims["role"] == "manager":
         account = manager_service.get_manager_id(db, claims["sub"])
         if account is not None:
             return ManagerLoginResponse(account=account)
+    elif claims["role"] == "director":
+        account = director_service.get_director_id(db, claims["sub"])
+        if account is not None:
+            return DirectorLoginResponse(account=account)
     # 유효한 토큰이라도 DB에서 삭제된 계정은 인증하지 않습니다.
     raise HTTPException(status_code=401, detail="유효한 계정을 찾을 수 없습니다.", headers={"WWW-Authenticate": "Bearer"})
 
@@ -36,9 +41,16 @@ def get_current_user(current=Depends(get_current_account)) -> UserResponse:
     return current.account
 
 
-def get_current_manager(current=Depends(get_current_account)) -> ManagerResponse:
-    if current.role != "manager":
+def get_current_manager(current=Depends(get_current_account)) -> ManagerResponse | DirectorResponse:
+    # director는 매니저 기능에 접근할 수 있는 상위 권한이다.
+    if current.role not in ("manager", "director"):
         raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다.")
+    return current.account
+
+
+def get_current_director(current=Depends(get_current_account)) -> DirectorResponse:
+    if current.role != "director":
+        raise HTTPException(status_code=403, detail="director 권한이 필요합니다.")
     return current.account
 
 
@@ -49,8 +61,20 @@ def ensure_self(user: UserResponse, requested_id: str | None = None) -> str:
 
 
 def ensure_account_access(current, user_id: str) -> None:
-    if current.role != "manager":
+    if current.role not in ("manager", "director"):
         ensure_self(current.account, user_id)
+
+
+def ensure_manager_self(manager: ManagerResponse | DirectorResponse, requested_id: str | None = None) -> str:
+    # 매니저 외래키가 필요한 작업에서는 director가 실제 담당 매니저를 지정한다.
+    # director ID를 manager 테이블의 ID로 저장하지 않는다.
+    if isinstance(manager, DirectorResponse):
+        if not requested_id:
+            raise HTTPException(status_code=422, detail="담당 매니저의 manager_manager_id를 지정해주세요.")
+        return requested_id
+    if requested_id is not None and requested_id != manager.manager_id:
+        raise HTTPException(status_code=403, detail="로그인한 매니저 ID만 사용할 수 있습니다.")
+    return manager.manager_id
 
 
 def resolve_user_id(current, requested_id: str | None) -> str:

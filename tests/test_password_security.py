@@ -86,7 +86,7 @@ class ManagerPasswordSecurityTests(unittest.TestCase):
     def test_login_through_common_auth_preserves_manager_role(self):
         db = MagicMock()
         db.cursor.return_value.__enter__.return_value.fetchone.side_effect = [
-            None, {**self.account, "manager_password": hash_password("test-password")}]
+            None, {**self.account, "manager_password": hash_password("test-password")}, None]
         response = auth_service.login(db, LoginRequest(login_id="test-manager", password="test-password"))
         self.assertEqual(response.role, "manager")
         self.assertEqual(response.account.manager_id, "test-manager")
