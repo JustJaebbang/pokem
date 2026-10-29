@@ -12,6 +12,7 @@ from routers.purchase_item import router as purchase_item_router
 from routers.recharge import router as recharge_router
 from routers.exchange import router as exchange_router
 from routers.review import router as review_router
+from routers.purchase_cancel import router as purchase_cancel_router
 from routers.manager import router as manager_router
 from routers.auth import router as auth_router
 from routers.cybermoney_pay import router as cybermoney_pay_router
@@ -35,6 +36,7 @@ app.include_router(purchase_item_router)
 app.include_router(recharge_router)
 app.include_router(exchange_router)
 app.include_router(review_router)
+app.include_router(purchase_cancel_router)
 app.include_router(manager_router)
 app.include_router(auth_router)
 app.include_router(cybermoney_pay_router)
