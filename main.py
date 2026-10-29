@@ -13,6 +13,9 @@ from routers.recharge import router as recharge_router
 from routers.manager import router as manager_router
 from routers.auth import router as auth_router
 from routers.cybermoney_pay import router as cybermoney_pay_router
+from routers.inspection_request import router as inspection_request_router
+from routers.pay import router as pay_router
+from routers.deposit_refund import router as deposit_refund_router
 
 app = FastAPI()
 
@@ -25,6 +28,9 @@ app.include_router(recharge_router)
 app.include_router(manager_router)
 app.include_router(auth_router)
 app.include_router(cybermoney_pay_router)
+app.include_router(inspection_request_router)
+app.include_router(pay_router)
+app.include_router(deposit_refund_router)
 
 @app.get("/")
 def root():
@@ -34,6 +40,7 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         app, 
-        host="192.168.45.218", 
+        #host="192.168.45.218", // 재영이 ip
+        host="192.168.20.33",
         port=8000
     )
