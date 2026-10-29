@@ -11,7 +11,7 @@ card 검수 및 대리판매, 사용자간 중고거래 플랫폼
 - purchase_item CR
 - recharge CR
 - login
-FastAPI 구현 및 검증 완료
+- 위 내용들의 FastAPI 구현 및 검증 완료
 
 - user가 sell_product 판매 등록(post_item)시 DB에 sell_product 생성 -> post_item 생성 후 commit 트랜잭션 구현 및 검증 완료
 
@@ -23,9 +23,21 @@ FastAPI 구현 및 검증 완료
 
 ### 26.10.29
 - cybermoney_pay CR
-FastAPI 구현 및 검증 완료
+- purchase_item/{purchase_item_code}/confirm (구매확정) API 
+- 위 내용들의 FastAPI 구현 및 검증 완료
 
 - purchase_item 생성 시 cybermoney_pay가 하나의 트랜잭션으로 작동하게 구현 및 검증 완료
+
+- user가 구매확정(app에서) 시 API 실행하여 아래 과정 구현 및 검증 완료
+```
+1. 로그인한 사용자가 해당 구매자인지 확인
+2. 결제 완료 여부와 아직 구매확정되지 않았는지 확인
+3. 관련 행을 잠근 뒤 실제 결제 금액을 판매자 잔액에 추가
+4. cybermoney_give에 지급 기록 저장
+5. post_item_complete_date에 완료일 저장
+6. sell_product_sell_status를 판매완료로 변경
+7. 전부 성공하면 커밋, 하나라도 실패하면 전체 롤백
+```
 
 ## 남궁인성
 
