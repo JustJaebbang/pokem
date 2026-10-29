@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 from schemas.manager import ManagerLoginResponse
+from schemas.director import DirectorLoginResponse
 from schemas.user import UserLoginResponse
 
 
@@ -26,12 +27,16 @@ class ManagerTokenResponse(ManagerLoginResponse, AccessTokenResponse):
     pass
 
 
+class DirectorTokenResponse(DirectorLoginResponse, AccessTokenResponse):
+    pass
+
+
 # 역할별 계정 정보와 access token을 함께 반환합니다.
 LoginResponse = Annotated[
-    UserTokenResponse | ManagerTokenResponse, Field(discriminator="role")
+    UserTokenResponse | ManagerTokenResponse | DirectorTokenResponse, Field(discriminator="role")
 ]
 
 
 CurrentAccountResponse = Annotated[
-    UserLoginResponse | ManagerLoginResponse, Field(discriminator="role")
+    UserLoginResponse | ManagerLoginResponse | DirectorLoginResponse, Field(discriminator="role")
 ]

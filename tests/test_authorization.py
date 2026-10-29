@@ -155,6 +155,78 @@ class AuthorizationTests(unittest.TestCase):
         self.assertEqual(count, 36)
         self.lookup_user.assert_not_called()
 
+    def test_inspection_creation_uses_logged_in_user(self):
+        from schemas.inspection_request import InspectionRequestResponse
+        result = InspectionRequestResponse(
+            inspection_request_no="20261028000001", inspection_request_date="2026-10-28",
+            inspection_request_amount=1, user_user_id="buyer",
+        )
+        with patch("routers.inspection_request.inspection_request_service.create_inspection_request", return_value=result) as service:
+            response = self.client.post("/inspection_request", json={"inspection_request_amount": 1}, headers=self.headers)
+            self.assertEqual(response.status_code, 201, response.text)
+            self.assertEqual(service.call_args.args[1].user_user_id, "buyer")
+            response = self.client.post("/inspection_request", json={"inspection_request_amount": 1, "user_user_id": "other"}, headers=self.headers)
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(service.call_count, 1)
+
+    def test_payment_refund_and_inspection_lists_filter_before_pagination(self):
+        cursor = self.db.cursor.return_value.__enter__.return_value
+        cursor.fetchall.return_value = []
+        for path in ("/inspection_request", "/pay", "/deposit_refund"):
+            with self.subTest(path=path):
+                response = self.client.get(path, headers=self.headers)
+                self.assertEqual(response.status_code, 200, response.text)
+                sql, params = cursor.execute.call_args.args
+                self.assertIn("WHERE user_user_id = %s", sql)
+                self.assertEqual(params[0], "buyer")
+                response = self.client.get(path, headers=self.admin_headers)
+                self.assertEqual(response.status_code, 200)
+                self.assertNotIn("WHERE user_user_id", cursor.execute.call_args.args[0])
+
+    def test_user_cannot_change_payment_or_create_refund_or_assign_manager(self):
+        cases = (
+            ("patch", "/pay/pay1", {"pay_price": 3000}),
+            ("post", "/deposit_refund", {"pay_pay_no": "pay1", "deposit_refund_price": 100}),
+            ("patch", "/inspection_request/20261028000001/manager", {"pay_price": 3000}),
+        )
+        for method, path, body in cases:
+            with self.subTest(path=path):
+                self.assertEqual(self.client.request(method, path, json=body, headers=self.headers).status_code, 403)
+        self.db.begin.assert_not_called()
+
+    def test_manager_identity_comes_from_token_and_cannot_be_impersonated(self):
+        from schemas.deposit_refund import DepositRefundResponse
+        from schemas.inspection_request import InspectionRequestResponse
+        cases = (
+            ("/deposit_refund", "post", {"pay_pay_no": "pay1", "deposit_refund_price": 100},
+             "routers.deposit_refund.deposit_refund_service.create_deposit_refund",
+             DepositRefundResponse(deposit_refund_no="refund1", user_user_id="buyer", manager_manager_id="manager", pay_pay_no="pay1")),
+            ("/inspection_request/20261028000001/manager", "patch", {"pay_price": 3000},
+             "routers.inspection_request.inspection_request_service.assign_inspection_request_manager",
+             InspectionRequestResponse(inspection_request_no="20261028000001", inspection_request_date="date", inspection_request_amount=1, user_user_id="buyer", manager_manager_id="manager")),
+        )
+        for path, method, body, target, result in cases:
+            with self.subTest(path=path), patch(target, return_value=result) as service:
+                response = self.client.request(method, path, json=body, headers=self.admin_headers)
+                self.assertIn(response.status_code, (200, 201), response.text)
+                self.assertEqual(service.call_args.args[-1].manager_manager_id, "manager")
+                response = self.client.request(method, path, json={**body, "manager_manager_id": "other"}, headers=self.admin_headers)
+                self.assertEqual(response.status_code, 403)
+                self.assertEqual(service.call_count, 1)
+
+    def test_other_users_inspection_and_payment_details_are_forbidden(self):
+        from types import SimpleNamespace
+        cases = (
+            ("/inspection_request/20261028000001", "routers.inspection_request.inspection_request_service.get_inspection_request"),
+            ("/pay/pay1", "routers.pay.pay_service.get_pay"),
+        )
+        for path, target in cases:
+            with self.subTest(path=path), patch(target, return_value=SimpleNamespace(user_user_id="other")):
+                self.assertEqual(self.client.get(path, headers=self.headers).status_code, 403)
+        with patch("routers.deposit_refund.deposit_refund_service.get_deposit_refund") as service:
+            response = self.client.get("/deposit_refund/refund1?user_user_id=other&pay_pay_no=pay1", headers=self.headers)
+            self.assertEqual(response.status_code, 403)
+            service.assert_not_called()
     def test_product_reads_stay_public_and_manager_cannot_buy(self):
         with patch("routers.sell_product.sell_product_service.get_sell_product", return_value=[]):
             self.assertEqual(self.client.get("/sell_product").status_code, 200)
