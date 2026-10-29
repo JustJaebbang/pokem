@@ -19,17 +19,17 @@ def create_order(request: OrderRequest, db=Depends(get_db), manager=Depends(get_
 @router.get("", response_model=list[OrderResponse])
 def get_orders(
     limit: int = Query(default=20, ge=1, le=100), offset: int = Query(default=0, ge=0),
-    db=Depends(get_db), manager=Depends(get_current_manager_only),
+    db=Depends(get_db),
 ):
-    return order_service.get_orders(db, limit, offset, manager_id=manager.manager_id)
+    return order_service.get_orders(db, limit, offset)
 
 
 @router.get("/{order_no}", response_model=OrderResponse)
 def get_order(
     order_no: str = Path(min_length=1, max_length=64),
-    db=Depends(get_db), manager=Depends(get_current_manager_only),
+    db=Depends(get_db),
 ):
-    order = order_service.get_order(db, order_no, manager_id=manager.manager_id)
+    order = order_service.get_order(db, order_no)
     if order is None:
         raise HTTPException(status_code=404, detail="주문을 찾을 수 없습니다.")
     return order

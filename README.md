@@ -98,6 +98,9 @@ ERD,DB 각 테이블의 컬럼 및 참조 관계 수정
 
 ## 남궁인성
 
+- manager는 등록자와 관계없이 proposal·order·receive·discard의 전체 목록과 상세를 조회할 수 있다.
+  등록 담당자 확인과 director의 품의 승인 권한은 기존 규칙을 유지한다.
+
 ```
 manager CR
 inspection_request CRU
@@ -130,6 +133,7 @@ proposal CRU
 order CR
 receive CR
 receipt CR
+discard CR
 FastAPI 구현 및 검증 완료
 ```
 
@@ -147,3 +151,5 @@ FastAPI 구현 및 검증 완료
 - receipt는 현재 결제완료 여부, 검수 요청과 접수 상품의 연결 관계, 누적 접수 수량 검증이 미구현 상태다.
   추후 백엔드 service에서 검증과 저장을 같은 트랜잭션으로 처리해야 한다.
   현재 검수 요청에 상품 연결 정보가 없어, 해당 관계를 확인할 근거 데이터가 필요하다.
+
+- discard는 현재 폐기할 상품을 등록하는 것만 할 수 있고 sell_product를 지우는 실질적 폐기는 진행하지 않고 있는 상태이다.

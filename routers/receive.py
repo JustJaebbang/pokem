@@ -19,17 +19,17 @@ def create_receive(request: ReceiveRequest, db=Depends(get_db), manager=Depends(
 @router.get("", response_model=list[ReceiveResponse])
 def get_receives(
     limit: int = Query(default=20, ge=1, le=100), offset: int = Query(default=0, ge=0),
-    db=Depends(get_db), manager=Depends(get_current_manager_only),
+    db=Depends(get_db),
 ):
-    return receive_service.get_receives(db, limit, offset, manager_id=manager.manager_id)
+    return receive_service.get_receives(db, limit, offset)
 
 
 @router.get("/{receive_no}", response_model=ReceiveResponse)
 def get_receive(
     receive_no: str = Path(min_length=1, max_length=64),
-    db=Depends(get_db), manager=Depends(get_current_manager_only),
+    db=Depends(get_db),
 ):
-    result = receive_service.get_receive(db, receive_no, manager_id=manager.manager_id)
+    result = receive_service.get_receive(db, receive_no)
     if result is None:
         raise HTTPException(status_code=404, detail="입고 내역을 찾을 수 없습니다.")
     return result
