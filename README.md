@@ -78,6 +78,8 @@ deposit_refund CR
 delivery CR
 director CR
 case CR
+delivery_company CR
+product_company CR
 FastAPI 구현 및 검증 완료
 
 - login 시도 시 auth를 통하여 user, manager에 대해서 테이블 데이터를 확인 후 일치하는 사용자의 role(역할)을 반환하도록 구현
