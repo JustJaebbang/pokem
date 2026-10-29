@@ -152,7 +152,7 @@ class AuthorizationTests(unittest.TestCase):
                     response = self.client.request(method, concrete)
                     self.assertEqual(response.status_code, 401, response.text)
                 count += 1
-        self.assertEqual(count, 24)
+        self.assertEqual(count, 25)
         self.lookup_user.assert_not_called()
 
     def test_product_reads_stay_public_and_manager_cannot_buy(self):

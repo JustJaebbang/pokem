@@ -16,3 +16,15 @@ class PurchaseItemResponse(BaseModel):
 # 요청의 사용자 ID는 생략 가능하며 서버가 로그인한 사용자로 확정합니다.
 class PurchaseItemRequest(PurchaseItemCreate):
     user_user_id: str | None = Field(default=None, min_length=1, max_length=20)
+
+
+class PurchaseItemConfirmResponse(BaseModel):
+    message: str
+    purchase_item_code: str
+    sell_product_code: str
+    seller_user_id: str
+    cybermoney_pay_code: str
+    cybermoney_give_code: str
+    cybermoney_give_price: int
+    post_item_complete_date: str
+    sell_product_sell_status: str
