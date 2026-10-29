@@ -10,6 +10,8 @@ class PurchaseItemResponse(BaseModel):
     purchase_item_code: str
     user_user_id: str
     purchase_item_date: str | None
+    purchase_item_status: str = "거래중"
+    purchase_item_confirmed_at: str | None = None
     sell_product_sell_product_code: str
 
 

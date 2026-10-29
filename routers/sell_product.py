@@ -50,3 +50,7 @@ def delete_sell_product_code(sell_product_code: str, db=Depends(get_db), current
     if deleted_sell_product is None:
         raise HTTPException(status_code=404, detail="해당 상품을 찾을 수 없습니다.")
     return deleted_sell_product
+
+@router.post("/{sell_product_code}/relist", response_model=SellProductResponse)
+def relist_sell_product(sell_product_code: str, db=Depends(get_db), current_user=Depends(get_current_user)):
+    return sell_product_service.relist_sell_product(db, sell_product_code, current_user.user_id)
