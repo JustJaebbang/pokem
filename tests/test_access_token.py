@@ -18,6 +18,9 @@ from services import auth_service
 
 class AccessTokenTests(unittest.TestCase):
     def setUp(self):
+        self.director_login = patch.object(auth_service.director_service, "login_director", side_effect=HTTPException(status_code=401))
+        self.director_login.start()
+        self.addCleanup(self.director_login.stop)
         self.settings = patch.dict(os.environ, {"JWT_SECRET_KEY": "test-signing-key-" * 4, "ACCESS_TOKEN_EXPIRE_MINUTES": "30"})
         self.settings.start()
         self.addCleanup(self.settings.stop)

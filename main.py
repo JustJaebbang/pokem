@@ -16,6 +16,7 @@ from routers.inspection_request import router as inspection_request_router
 from routers.pay import router as pay_router
 from routers.deposit_refund import router as deposit_refund_router
 from routers.delivery import router as delivery_router
+from routers.director import router as director_router
 
 app = FastAPI()
 
@@ -31,6 +32,7 @@ app.include_router(inspection_request_router)
 app.include_router(pay_router)
 app.include_router(deposit_refund_router)
 app.include_router(delivery_router)
+app.include_router(director_router)
 
 @app.get("/")
 def root():
