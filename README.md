@@ -68,19 +68,13 @@ user가 review 작성 시 아래 과정 확인
 
 ## 남궁인성
 
+```
 manager CR
 inspection_request CRU
 pay CRU
 deposit_refund CR
-
----
-
-delivery CR
-director CR
-case CR
-delivery_company CR
-product_company CR
 FastAPI 구현 및 검증 완료
+```
 
 - login 시도 시 auth를 통하여 user, manager에 대해서 테이블 데이터를 확인 후 일치하는 사용자의 role(역할)을 반환하도록 구현
 
@@ -94,4 +88,32 @@ FastAPI 구현 및 검증 완료
 
 - 검수 완료시 발생하면 deposit_refund가 생성
 
+---
+
+```
+delivery CR
+director CR
+case CR
+delivery_company CR
+product_company CR
+proposal CRU
+order CR
+receive CR
+receipt CR
+FastAPI 구현 및 검증 완료
+```
+
 - delivery는 pruchase_item 데이블을 통해 user_id와 sell_product_code를 가져온다.
+
+- manager가 director에게 proposal을 작성하면 director가 대기상태인 status를 승인 또는 반려로 바꾸고 NULL이었던 director_id를 update한다.
+
+- proposal이 승인되면 승인된 proposal에 대해서 manager가 order를 작성할 수 있다.
+
+- order가 생성되면 그에따라 receive도 발생하게 된다.
+
+- receipt_no는 pay_no + receipt_date(YYYYMMDD)로 자동 생성하며, receipt_amount는 접수 수량이다.
+  등록 매니저는 로그인 계정, user_id는 연결된 pay에서 가져온다.
+
+- receipt는 현재 결제완료 여부, 검수 요청과 접수 상품의 연결 관계, 누적 접수 수량 검증이 미구현 상태다.
+  추후 백엔드 service에서 검증과 저장을 같은 트랜잭션으로 처리해야 한다.
+  현재 검수 요청에 상품 연결 정보가 없어, 해당 관계를 확인할 근거 데이터가 필요하다.

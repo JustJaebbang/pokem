@@ -19,7 +19,8 @@
 director도 같은 로그인 API를 사용하며 응답과 JWT의 역할은 `director`입니다.
 여러 역할에서 같은 ID와 비밀번호가 인증되면 409로 거부합니다.
 
-director는 매니저 권한을 포함하며, director 등록·목록·단건 조회는 director만 가능합니다.
+director는 공통 매니저 관리 권한을 포함하며, director 등록·목록·단건 조회는 director만 가능합니다.
+주문(`/order`)과 입고(`/receive`)는 등록·조회 모두 매니저 전용으로 director는 접근할 수 없습니다.
 매니저는 director 계정을 관리할 수 없습니다. 일반 사용자 전용 작업은 기존처럼 사용자만 가능합니다.
 배송 등록·환불 등록·검수 확인처럼 `manager_manager_id`를 저장하는 작업에서
 director는 실제 담당 매니저 ID를 지정해야 합니다. 생략하면 422를 반환합니다.

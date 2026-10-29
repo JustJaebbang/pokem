@@ -48,6 +48,13 @@ def get_current_manager(current=Depends(get_current_account)) -> ManagerResponse
     return current.account
 
 
+def get_current_manager_only(current=Depends(get_current_account)) -> ManagerResponse:
+    # 주문·입고처럼 실제 매니저만 수행하는 업무에 사용한다.
+    if current.role != "manager":
+        raise HTTPException(status_code=403, detail="매니저 계정만 사용할 수 있습니다.")
+    return current.account
+
+
 def get_current_director(current=Depends(get_current_account)) -> DirectorResponse:
     if current.role != "director":
         raise HTTPException(status_code=403, detail="director 권한이 필요합니다.")
