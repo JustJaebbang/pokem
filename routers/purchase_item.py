@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from database import get_db
 from dependencies import get_current_account, get_current_user, ensure_self, ensure_account_access, resolve_user_id
-from schemas.purchase_item import PurchaseItemCreate, PurchaseItemRequest, PurchaseItemResponse
+from schemas.purchase_item import PurchaseItemCreate, PurchaseItemRequest, PurchaseItemResponse, PurchaseItemConfirmResponse
 from services import purchase_item_service
 
 router = APIRouter(prefix="/purchase_item", tags=["purchase_item"])
@@ -29,3 +29,8 @@ def get_purchase_item_code(purchase_item_code: str, db=Depends(get_db), current=
         raise HTTPException(status_code=404, detail="구매 정보를 찾을 수 없습니다.")
     ensure_account_access(current, purchase.user_user_id)
     return purchase
+
+
+@router.post("/{purchase_item_code}/confirm", response_model=PurchaseItemConfirmResponse)
+def confirm_purchase_item(purchase_item_code: str, db=Depends(get_db), current_user=Depends(get_current_user)):
+    return purchase_item_service.confirm_purchase_item(db, purchase_item_code, current_user.user_id)

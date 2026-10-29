@@ -51,7 +51,7 @@ def create_recharge(db, recharge: RechargeCreate) -> RechargeCreateResponse:
                 (recharge.recharge_price, recharge.user_user_id),
             )
             result = RechargeCreateResponse(
-                message="사이버머니 충전이 완료되었습니다.",
+                message="포켐머니 충전이 완료되었습니다.",
                 recharge_seq=recharge_seq,
                 user_user_id=recharge.user_user_id,
                 recharge_date=now,
