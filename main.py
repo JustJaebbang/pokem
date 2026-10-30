@@ -21,6 +21,19 @@ from routers.post_consign_item import router as post_consign_item_router
 from routers.manager import router as manager_router
 from routers.auth import router as auth_router
 from routers.cybermoney_pay import router as cybermoney_pay_router
+from routers.inspection_request import router as inspection_request_router
+from routers.pay import router as pay_router
+from routers.deposit_refund import router as deposit_refund_router
+from routers.delivery import router as delivery_router
+from routers.director import router as director_router
+from routers.case import router as case_router
+from routers.delivery_company import router as delivery_company_router
+from routers.product_company import router as product_company_router
+from routers.proposal import router as proposal_router
+from routers.order import router as order_router
+from routers.receive import router as receive_router
+from routers.receipt import router as receipt_router
+from routers.discard import router as discard_router
 
 app = FastAPI()
 
@@ -41,6 +54,19 @@ app.include_router(post_consign_item_router)
 app.include_router(manager_router)
 app.include_router(auth_router)
 app.include_router(cybermoney_pay_router)
+app.include_router(inspection_request_router)
+app.include_router(pay_router)
+app.include_router(deposit_refund_router)
+app.include_router(delivery_router)
+app.include_router(director_router)
+app.include_router(case_router)
+app.include_router(delivery_company_router)
+app.include_router(product_company_router)
+app.include_router(proposal_router)
+app.include_router(order_router)
+app.include_router(receive_router)
+app.include_router(receipt_router)
+app.include_router(discard_router)
 
 @app.get("/")
 def root():
@@ -50,6 +76,7 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         app, 
-        host="192.168.45.218", 
+        #host="192.168.45.218", // 재영이 ip
+        host="192.168.20.42",
         port=8000
     )
