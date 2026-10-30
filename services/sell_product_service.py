@@ -99,7 +99,8 @@ def create_sell_product(db, sp: SellProductCreate, user_id) -> SellProductRespon
                     sp.sell_product_contents,
                     sp.sell_product_sell_price,
                     sp.sell_product_grade,
-                    sp.sell_product_sell_status
+                    # sp.sell_product_sell_status
+                    '판매중'
                 ),
             )
 
