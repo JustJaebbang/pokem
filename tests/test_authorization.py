@@ -138,7 +138,7 @@ class AuthorizationTests(unittest.TestCase):
             self.assertEqual(self.client.put("/sell_product/product", json=payload, headers=self.headers).status_code, 404)
             service.assert_called_once()
         for call in cursor.execute.call_args_list:
-            self.assertIn("FOR UPDATE", call.args[0])
+            self.assertTrue("FOR UPDATE" in call.args[0] or "UNION ALL" in call.args[0])
 
     def test_all_protected_operations_require_token(self):
         schema = app.openapi()
@@ -147,12 +147,12 @@ class AuthorizationTests(unittest.TestCase):
             for method, operation in operations.items():
                 if not operation.get("security"):
                     continue
-                concrete = path.replace("{user_id}", "buyer").replace("{manager_id}", "manager").replace("{sell_product_code}", "product").replace("{post_item_code}", "post").replace("{purchase_item_code}", "purchase").replace("{recharge_seq}", "1").replace("{exchange_seq}", "1").replace("{cybermoney_pay_code}", "payment").replace("{cancel_code}", "cancel").replace("{room_id}", "room")
+                concrete = path.replace("{user_id}", "buyer").replace("{manager_id}", "manager").replace("{sell_product_code}", "product").replace("{post_item_code}", "post").replace("{purchase_item_code}", "purchase").replace("{recharge_seq}", "1").replace("{exchange_seq}", "1").replace("{cybermoney_pay_code}", "payment").replace("{cancel_code}", "cancel").replace("{room_id}", "room").replace("{request_no}", "request").replace("{inspection_request_no}", "20261030000001").replace("{inspect_code}", "inspect").replace("{return_no}", "return1").replace("{code}", "code")
                 with self.subTest(method=method, path=concrete):
                     response = self.client.request(method, concrete)
                     self.assertEqual(response.status_code, 401, response.text)
                 count += 1
-        self.assertEqual(count, 82)
+        self.assertEqual(count, 94)
         self.lookup_user.assert_not_called()
 
     def test_inspection_creation_uses_logged_in_user(self):

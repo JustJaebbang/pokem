@@ -29,7 +29,7 @@ def get_inspection_requests(db=Depends(get_db), current=Depends(get_current_acco
     return inspection_request_service.get_inspection_requests(db, user_id=user_id)
 
 
-# 양수인 요청 번호만 허용하며, 조회 결과가 없으면 404를 반환한다.
+# 14자리 숫자 요청 번호만 허용하며, 조회 결과가 없으면 404를 반환한다.
 @router.get("/{inspection_request_no}", response_model=InspectionRequestResponse)
 def get_inspection_request(
     inspection_request_no: str = Path(pattern=r"^[0-9]{14}$"), db=Depends(get_db), current=Depends(get_current_account)
