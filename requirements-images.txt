@@ -1,2 +1,2 @@
-Pillow>=10.4.0,<13
-python-multipart>=0.0.18,<1
+# Compatibility entry point: install the complete verified environment.
+-r requirements.txt

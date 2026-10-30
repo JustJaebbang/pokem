@@ -2,6 +2,21 @@
 
 card 검수 및 대리판매, 사용자간 중고거래 플랫폼
 
+## 처음 설치하기
+
+Python 3.14와 Flutter 3.47.2를 설치한 뒤 저장소 루트에서:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+Python 가상환경과 전체 서버 의존성을 설치하고 Flutter 잠금 파일 기준으로 패키지를 복원합니다.
+기존 `.env`는 유지하며, 없으면 예시 설정과 새 JWT 키로 생성합니다. DB 연결 정보는 각자 입력해야 합니다.
+서버만 설치할 때는 `-SkipFlutter`를 추가합니다.
+서버 의존성만 직접 설치하려면 `python -m pip install -r requirements.txt`를 사용합니다.
+[팀원 설치·실행 안내](docs/setup.md)에 환경 설정, DB 준비 사항, Git 공유 파일을 정리했습니다.
+
+
 ## 허재영
 
 ### 26.10.27~28
