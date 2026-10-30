@@ -1,21 +1,18 @@
 from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
 
 from dependencies import get_current_account
+from schemas.product_image import ProductImageResponse
 from services import product_image_service
 
 router = APIRouter(tags=["sell_product_image"])
 
 
-class ProductImageResponse(BaseModel):
-    sell_product_image: str
-
-
 @router.post("/sell_product/image", response_model=ProductImageResponse, status_code=201)
 def upload_product_image(file: UploadFile = File(...), current=Depends(get_current_account)):
     try:
-        return ProductImageResponse(sell_product_image=product_image_service.save_product_image(file.file))
+        url = product_image_service.save_product_image(file.file)
+        return ProductImageResponse(sell_product_image=url)
     finally:
         file.file.close()
 

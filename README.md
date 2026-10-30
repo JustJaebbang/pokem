@@ -116,7 +116,7 @@ ERD, DB, Table, Column 모두 수정 완료
 ```
 - 위 내용들의 FastAPI 구현 및 검증 완료
 
-### 26.10.29
+### 26.10.30
 
 - return R,PATCH
 ```
@@ -168,7 +168,9 @@ discard CR
 FastAPI 구현 및 검증 완료
 ```
 
-- delivery는 pruchase_item 데이블을 통해 user_id와 sell_product_code를 가져온다.
+- delivery는 purchase_item에서 user_id와 sell_product_code를 가져오거나 return에서 user_id와 inspect_code를 가져온다.
+  purchase_item_code와 return_no 중 하나만 지정하며, 같은 원본 건의 중복 배송은 허용하지 않는다.
+  return_no는 inspect_code + return_date(YYYYMMDD)로 구성한다.
 
 - manager가 director에게 proposal을 작성하면 director가 대기상태인 status를 승인 또는 반려로 바꾸고 NULL이었던 director_id를 update한다.
 
@@ -192,3 +194,10 @@ FastAPI 구현 및 검증 완료
 `GET /return`, `GET /return/{return_no}`, `PATCH /return/{return_no}/manager`를 제공합니다.
 return은 반환 물품·사용자·담당자만 관리하며 배송 일자·상태는 delivery에서 관리합니다.
 API 및 DB 변경 내용은 [반환 문서](docs/return.md)를 참고하세요.
+
+
+### 판매상품 이미지
+
+`POST /sell_product/image`에 로그인 토큰과 사진 한 장을 업로드하고,
+응답의 `sell_product_image`를 기존 상품 등록·수정 JSON에 넣습니다.
+이미지는 서버 로컬 폴더에 저장합니다. [설치 및 앱 연동 방법](docs/product_image.md)을 참고하세요.
