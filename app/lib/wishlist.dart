@@ -35,7 +35,8 @@ class WishlistPage extends StatelessWidget {
                 message: '상품을 불러오지 못했어요. 홈에서 새로고침해 주세요.');
           }
           final products = (snapshot.data ?? const <MarketProduct>[])
-              .where((product) => savedCodes.contains(product.code))
+              .where((product) =>
+                  savedCodes.contains(product.code) && product.status == '\ud310\ub9e4\uc911')
               .toList();
           if (products.isEmpty) {
             return const _WishlistEmpty(message: '관심상품이 비어 있어요.');

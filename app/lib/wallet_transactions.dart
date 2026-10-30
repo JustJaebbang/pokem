@@ -114,7 +114,7 @@ class _WalletTransactionPageState extends State<_WalletTransactionPage> {
     final amount = int.parse(_amountController.text.replaceAll(',', ''));
     final body = <String, dynamic>{
       _amountKey: amount,
-      _accountKey: _accountController.text.trim(),
+      _accountKey: _isRecharge ? '앱 내 충전' : _accountController.text.trim(),
     };
     if (_isRecharge) {
       body['user_user_id'] = widget.userId;
@@ -205,7 +205,7 @@ class _WalletTransactionPageState extends State<_WalletTransactionPage> {
         child: Form(
           key: _formKey,
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text(_isRecharge ? '충전할 금액과 입금자명을 입력하세요.' : '환전 금액과 받을 계좌 정보를 입력하세요.',
+            Text(_isRecharge ? '충전할 금액을 입력하세요.' : '환전 금액과 받을 계좌 정보를 입력하세요.',
                 style: const TextStyle(color: Color(0xFF747887))),
             const SizedBox(height: 14),
             TextFormField(
@@ -222,17 +222,19 @@ class _WalletTransactionPageState extends State<_WalletTransactionPage> {
                 return null;
               },
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _accountController,
-              maxLength: 45,
-              decoration: InputDecoration(
-                labelText: _isRecharge ? '입금자명' : '환전 계좌 정보',
-                hintText: _isRecharge ? '이름 또는 입금자명' : '은행명 / 계좌번호 / 예금주',
-                border: const OutlineInputBorder(),
+            if (!_isRecharge) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _accountController,
+                maxLength: 45,
+                decoration: const InputDecoration(
+                  labelText: '환전 계좌 정보',
+                  hintText: '은행명 / 계좌번호 / 예금주',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => (value ?? '').trim().isEmpty ? '필수 입력 항목입니다.' : null,
               ),
-              validator: (value) => (value ?? '').trim().isEmpty ? '필수 입력 항목입니다.' : null,
-            ),
+            ],
             if (_isRecharge) ...[
               const SizedBox(height: 4),
               const Text('현재 서버 기능은 요청 시 사이버머니 잔액과 내역을 즉시 반영합니다.',
@@ -273,8 +275,12 @@ class _WalletTransactionPageState extends State<_WalletTransactionPage> {
         ),
         title: Text('${_isRecharge ? '+' : '-'}${formatMarketPrice(amount)}원',
             style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text('${_formatDate(date)}\n$account', maxLines: 2, overflow: TextOverflow.ellipsis),
-        isThreeLine: true,
+        subtitle: Text(
+          _isRecharge ? _formatDate(date) : '${_formatDate(date)}\n$account',
+          maxLines: _isRecharge ? 1 : 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        isThreeLine: !_isRecharge,
         trailing: Text('#$seq', style: const TextStyle(color: Color(0xFF858B9A), fontSize: 11)),
       ),
     );

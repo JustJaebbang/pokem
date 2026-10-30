@@ -87,6 +87,18 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _refreshWishlistAndProducts() async {
+    await _reloadProducts();
+    await _loadWishlist();
+  }
+
+  Future<void> _onProductCreated() async {
+    await _reloadProducts();
+    if (!mounted) return;
+    setState(() => _selectedIndex = 0);
+    await _loadWishlist();
+  }
+
   String? get _userId =>
       widget.role == 'user' ? widget.account['user_id']?.toString() : null;
 
@@ -106,16 +118,45 @@ class _HomePageState extends State<HomePage> {
       if (decoded is! List) {
         throw const FormatException('관심 상품 응답 형식이 올바르지 않습니다.');
       }
+      final savedCodes = decoded
+          .whereType<Map>()
+          .where((row) {
+            final status = row['wishlist_status']?.toString();
+            return status == '\uad00\uc2ec' || status == '\uad00\uc2ec\uc911';
+          })
+          .map((row) => row['sell_product_sell_product_code']?.toString() ?? '')
+          .where((code) => code.isNotEmpty)
+          .toSet();
+      Set<String> saleCodes;
+      try {
+        saleCodes = (await _productsFuture)
+            .where((product) => product.status == '\ud310\ub9e4\uc911')
+            .map((product) => product.code)
+            .toSet();
+      } catch (_) {
+        // Keep server favorites if the catalog request failed; the catalog can retry.
+        saleCodes = savedCodes;
+      }
+      final staleCodes = savedCodes.difference(saleCodes);
+      if (staleCodes.isNotEmpty && saleCodes != savedCodes) {
+        await Future.wait(staleCodes.map((code) async {
+          try {
+            await http.delete(
+              Uri.parse(
+                  '$apiBaseUrl/wishlist/${Uri.encodeComponent(userId)}/${Uri.encodeComponent(code)}'),
+              headers: {'Authorization': 'Bearer ${widget.token}'},
+            );
+          } catch (_) {
+            // The item stays hidden by the active-catalog filter below.
+          }
+        }));
+      }
       if (!mounted) return;
       setState(() {
         _wishlistError = null;
         _wishlistCodes
           ..clear()
-          ..addAll(decoded.whereType<Map>().where((row) {
-            final status = row['wishlist_status']?.toString();
-            return status == '관심' || status == '관심중';
-          }).map((row) => row['sell_product_sell_product_code']?.toString() ?? '')
-              .where((code) => code.isNotEmpty));
+          ..addAll(savedCodes.intersection(saleCodes));
       });
     } catch (error) {
       if (!mounted) return;
@@ -189,6 +230,7 @@ class _HomePageState extends State<HomePage> {
           canTrade: widget.role == 'user',
           isWishlisted: _wishlistCodes.contains(product.code),
           onToggleWishlist: () => _toggleWishlist(product),
+          onReturnedFromPurchase: _refreshWishlistAndProducts,
         ),
       ),
     );
@@ -266,12 +308,12 @@ class _HomePageState extends State<HomePage> {
                 onToggleWishlist: _toggleWishlist,
                 onOpenProduct: _openProduct,
                 loadError: _wishlistError,
-                onRetry: _loadWishlist,
+                onRetry: _refreshWishlistAndProducts,
               )
             else
               const Center(child: Text('관심상품은 일반 회원 전용 기능입니다.')),
             if (widget.role == 'user')
-              PostItemPage(token: widget.token, onCreated: _reloadProducts)
+              PostItemPage(token: widget.token, onCreated: _onProductCreated)
             else
               const Center(child: Text('상품 등록은 일반 회원 전용 기능입니다.')),
             const ChatPage(),
@@ -284,10 +326,12 @@ class _HomePageState extends State<HomePage> {
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _selectedIndex,
-          onDestinationSelected: (index) => setState(() {
-            _selectedIndex = index;
-            if (index == 1 && widget.role == 'user') _loadWishlist();
-          }),
+          onDestinationSelected: (index) {
+            setState(() => _selectedIndex = index);
+            if (index == 1 && widget.role == 'user') {
+              _refreshWishlistAndProducts();
+            }
+          },
           destinations: List.generate(
             _labels.length,
             (index) => NavigationDestination(
@@ -330,7 +374,8 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(height: 5),
                           const Text('마음에 드는 카드를 발견해 보세요.',
                               style: TextStyle(color: Color(0xFF858B9A))),
-                          const SizedBox(height: 18),
+                          if (widget.role == 'user') ...[
+                            const SizedBox(height: 18),
                           InkWell(
                             onTap: () => Navigator.of(context).push<void>(
                                 MaterialPageRoute<void>(
@@ -370,6 +415,7 @@ class _HomePageState extends State<HomePage> {
                               ]),
                             ),
                           ),
+                          ],
                           const SizedBox(height: 23),
                           Text(_query.isEmpty ? '등록된 상품' : '검색 결과',
                               style: const TextStyle(

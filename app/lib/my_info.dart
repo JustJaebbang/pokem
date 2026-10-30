@@ -5,6 +5,9 @@ import 'wallet_transactions.dart';
 import 'user_account.dart';
 import 'purchase_item_history.dart';
 import 'review_page.dart';
+import 'pay_history.dart';
+import 'purchase_cancel.dart';
+import 'cybermoney_pay_cancel.dart';
 
 class MyInfoPage extends StatefulWidget {
   const MyInfoPage(
@@ -99,6 +102,20 @@ class _MyInfoPageState extends State<MyInfoPage> {
           ),
           const SizedBox(height: 9),
           _WalletMenuTile(
+            icon: Icons.cancel_outlined,
+            title: '구매 취소 및 환불',
+            subtitle: '취소 요청·판매자 처리 및 환급 상태 확인',
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute<void>(
+                builder: (_) => PurchaseCancelPage(
+                  token: token,
+                  userId: id,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 9),
+          _WalletMenuTile(
             icon: Icons.rate_review_outlined,
             title: '구매 리뷰',
             subtitle: '구매 확정 상품 리뷰 작성 및 내 리뷰 확인',
@@ -152,11 +169,12 @@ class _MyInfoPageState extends State<MyInfoPage> {
             ),
           ),
           const SizedBox(height: 9),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
+          Material(
+            color: Colors.white,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: const Color(0xFFEAECF2)),
+              side: const BorderSide(color: Color(0xFFEAECF2)),
             ),
             child: ListTile(
               leading: const CircleAvatar(
@@ -172,6 +190,28 @@ class _MyInfoPageState extends State<MyInfoPage> {
                 MaterialPageRoute<void>(
                   builder: (_) => CybermoneyPayPage(token: token),
                 ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 9),
+          _WalletMenuTile(
+            icon: Icons.currency_exchange_rounded,
+            title: '\uc0ac\uc774\ubc84\uba38\ub2c8 \uacb0\uc81c \ucde8\uc18c/\ud658\uae09',
+            subtitle: '\uad6c\ub9e4 \ucde8\uc18c \uc2b9\uc778 \ud6c4 \ud658\uae09 \ub0b4\uc5ed',
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute<void>(
+                builder: (_) => CybermoneyPayCancelPage(token: token),
+              ),
+            ),
+          ),
+          const SizedBox(height: 9),
+          _WalletMenuTile(
+            icon: Icons.payment_rounded,
+            title: '검수 결제 내역',
+            subtitle: '검수 신청 결제 상태와 금액 확인',
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute<void>(
+                builder: (_) => PayHistoryPage(token: token),
               ),
             ),
           ),
@@ -226,11 +266,12 @@ class _WalletMenuTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
+  Widget build(BuildContext context) => Material(
+        color: Colors.white,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: const Color(0xFFEAECF2)),
+          side: const BorderSide(color: Color(0xFFEAECF2)),
         ),
         child: ListTile(
           leading: CircleAvatar(

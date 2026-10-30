@@ -10,13 +10,15 @@ class ProductDetailPage extends StatefulWidget {
       required this.token,
       this.canTrade = true,
       required this.isWishlisted,
-      required this.onToggleWishlist});
+      required this.onToggleWishlist,
+      this.onReturnedFromPurchase});
 
   final MarketProduct product;
   final String token;
   final bool canTrade;
   final bool isWishlisted;
   final VoidCallback onToggleWishlist;
+  final Future<void> Function()? onReturnedFromPurchase;
 
   @override
   State<ProductDetailPage> createState() => _ProductDetailPageState();
@@ -118,11 +120,16 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       height: 50,
                       child: FilledButton.icon(
                         onPressed: isForSale
-                            ? () => Navigator.of(context).push<void>(
-                                MaterialPageRoute<void>(
+                            ? () async {
+                                await Navigator.of(context).push<void>(
+                                  MaterialPageRoute<void>(
                                     builder: (_) => PurchaseItemPage(
                                         token: widget.token,
-                                        product: widget.product)))
+                                        product: widget.product),
+                                  ),
+                                );
+                                await widget.onReturnedFromPurchase?.call();
+                              }
                             : null,
                         style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFF6658E8),

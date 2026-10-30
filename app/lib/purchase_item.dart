@@ -64,6 +64,25 @@ class _PurchaseItemPageState extends State<PurchaseItemPage> {
       } else {
         final message =
             data is Map<String, dynamic> ? data['detail']?.toString() : null;
+        if (response.statusCode == 409 &&
+            message?.contains('판매등록 정보') == true) {
+          await showDialog<void>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('구매할 수 없는 상품입니다'),
+              content: const Text(
+                '상품은 판매중으로 표시되지만 서버에서 연결된 판매 등록 기록을 확인하지 못했습니다. 판매 등록 정보가 확인될 때까지 구매할 수 없습니다. 상품 등록자나 운영자에게 해당 상품의 등록 기록을 확인해 달라고 요청해주세요.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('확인'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
         _showMessage(message ?? '구매 요청을 처리하지 못했습니다.');
       }
     } catch (_) {
