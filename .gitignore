@@ -431,3 +431,6 @@ tests/*
 !tests/test_return.py
 scripts
 # End of https://www.toptal.com/developers/gitignore/api/windows,flutter,python,dart,visualstudiocode,jetbrains
+# Uploaded product images
+/uploads/
+!tests/test_product_image.py

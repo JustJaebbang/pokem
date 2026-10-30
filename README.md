@@ -194,3 +194,10 @@ FastAPI 구현 및 검증 완료
 `GET /return`, `GET /return/{return_no}`, `PATCH /return/{return_no}/manager`를 제공합니다.
 return은 반환 물품·사용자·담당자만 관리하며 배송 일자·상태는 delivery에서 관리합니다.
 API 및 DB 변경 내용은 [반환 문서](docs/return.md)를 참고하세요.
+
+
+### 판매상품 이미지
+
+`POST /sell_product/image`에 로그인 토큰과 사진 한 장을 업로드하고,
+응답의 `sell_product_image`를 기존 상품 등록·수정 JSON에 넣습니다.
+이미지는 서버 로컬 폴더에 저장합니다. [설치 및 앱 연동 방법](docs/product_image.md)을 참고하세요.
