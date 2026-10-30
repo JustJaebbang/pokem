@@ -439,3 +439,6 @@ scripts
 
 !tests/test_purchase_price.py
 !tests/test_purchase_history.py
+!tests/test_sale_history.py
+!tests/test_inspect_privacy.py
+!tests/test_pay_filter.py

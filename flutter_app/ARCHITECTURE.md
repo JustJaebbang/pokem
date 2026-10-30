@@ -67,3 +67,30 @@ PurchaseConfirmVm은 구매 건별 최신 상태 조회·구매확정·중복 �
 View의 수령 확인 대화상자 이후 VM 명령을 호출하며 실제 지급 조건은 서버가 최종 검사합니다.
 결과 불확실 상태를 화면 재진입 때도 유지하고 인증 변경 시 초기화합니다.
 서버 구매 상태 구매확정의 거래완료 표시와 확정 가능 조건은 Purchase 모델에 정의합니다.
+
+## 판매내역 계층
+
+SaleRecord는 판매 유형·판매가·실제 결제 금액·일시를 정의합니다.
+SalesApiService → SalesRepository → SalesVm → SalesView 순서로 기존 계층 규칙을 따릅니다.
+서버의 sale_history는 일반판매·대리판매 소유 관계를 결합하고 인증된 사용자의 내역만 반환합니다.
+SalesVm은 조회·재시도·인증 만료 처리를 담당하며 View는 표시·화면 이동만 처리합니다.
+
+## 회원정보 계층
+
+UserProfile과 ProfileInput은 조회·수정 모델입니다.
+AuthApiService의 인증된 GET·PUT을 ProfileRepository가 사용하며 ProfileVm이 조회·검증·저장을 담당합니다.
+ProfileView는 폼·컨트롤러·저장 결과 안내와 화면 이동을 처리합니다.
+서버에서 수정 가능한 전화번호·이메일·주소만 전송합니다.
+
+## 검수신청 계층
+
+InspectionRequest는 신청번호·수량·신청일·담당자 모델입니다.
+InspectionApiService → InspectionRepository → InspectionHistoryVm/InspectionCreateVm → View로 연결합니다.
+생성 VM이 수량 검증·중복 제출·불확실 응답·401·인증 변경 시 응답 무시를 처리합니다.
+View는 폼·입력 컨트롤러·신청번호 표시·화면 이동만 담당합니다.
+
+InspectionResult는 상태·판정·사용자 선택 가능 조건을 정의합니다.
+InspectionResultsVm은 신청별 결과 조회, InspectionChoiceVm은 카드별 최신 상태 확인·선택·중복 차단·응답 유실 확인을 담당합니다.
+InspectionResultsView와 InspectionChoiceActions는 표시·확인 대화상자·명령 전달만 담당합니다.
+
+검수비 조회는 InspectionFee → InspectionFeeApiService → InspectionFeeRepository → InspectionFeeVm → InspectionFeeView로 분리합니다. 관리자 전용 결제 상태 변경 API는 사용자 앱에서 호출하지 않습니다.

@@ -1,5 +1,7 @@
+import 'package:pokem_app/view/inspection/inspection_history_view.dart';
+import 'package:pokem_app/view/profile/profile_view.dart';
+import 'package:pokem_app/view/mypage/mypage_menu.dart';
 import 'package:pokem_app/view/wallet/wallet_view.dart';
-import 'package:pokem_app/view/purchase/purchase_history_view.dart';
 import 'package:pokem_app/view/chat/chat_rooms_view.dart';
 import 'package:pokem_app/view/wishlist/wishlist_view.dart';
 import 'package:flutter/material.dart';
@@ -54,12 +56,25 @@ class HomeShell extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 if (index == 4) const WalletSummary(),
+                MypageMenu(
+                  onWishlist: () =>
+                      ref.read(homeShellVmProvider.notifier).select(1),
+                ),
                 ListTile(
-                  title: const Text('구매내역'),
+                  title: const Text('회원정보 수정'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const PurchaseHistoryView(),
+                      builder: (_) => const ProfileView(),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  title: const Text('검수신청 내역'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const InspectionHistoryView(),
                     ),
                   ),
                 ),

@@ -13,11 +13,12 @@ router = APIRouter(prefix="/pay", tags=["pay"])
 def get_pays(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    request_no: str | None = Query(default=None, pattern=r"^[0-9]{14}$"),
     db=Depends(get_db),
     current=Depends(get_current_account),
 ):
     user_id = current.account.user_id if current.role == "user" else None
-    return pay_service.get_pays(db, limit, offset, user_id=user_id)
+    return pay_service.get_pays(db, limit, offset, user_id=user_id, request_no=request_no)
 
 
 @router.get("/{pay_no}", response_model=PayResponse)

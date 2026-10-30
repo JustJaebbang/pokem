@@ -1,3 +1,10 @@
+import 'package:pokem_app/repository/inspection/inspection_fee_repository.dart';
+import 'package:pokem_app/service/inspection/inspection_fee_api_service.dart';
+import 'package:pokem_app/repository/inspection/inspection_repository.dart';
+import 'package:pokem_app/service/inspection/inspection_api_service.dart';
+import 'package:pokem_app/repository/profile/profile_repository.dart';
+import 'package:pokem_app/repository/sales/sales_repository.dart';
+import 'package:pokem_app/service/sales/sales_api_service.dart';
 import 'package:pokem_app/repository/wallet/wallet_repository.dart';
 import 'package:pokem_app/service/wallet/wallet_api_service.dart';
 import 'package:pokem_app/repository/purchase/purchase_repository.dart';
@@ -97,4 +104,32 @@ final walletRepositoryProvider = Provider<WalletRepository>((ref) {
   final client = http.Client();
   ref.onDispose(client.close);
   return WalletRepository(WalletApiService(client, baseUrl: ApiConfig.baseUrl));
+});
+
+final salesRepositoryProvider = Provider<SalesRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return SalesRepository(SalesApiService(client, baseUrl: ApiConfig.baseUrl));
+});
+
+final profileRepositoryProvider = Provider<ProfileRepository>(
+  (ref) => ProfileRepository(ref.watch(authApiServiceProvider)),
+);
+
+final inspectionRepositoryProvider = Provider<InspectionRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return InspectionRepository(
+    InspectionApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final inspectionFeeRepositoryProvider = Provider<InspectionFeeRepository>((
+  ref,
+) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return InspectionFeeRepository(
+    InspectionFeeApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
 });
