@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from pydantic import ValidationError
 from starlette.concurrency import run_in_threadpool
 
+from security import decode_access_token
 from schemas.chat import ChatCreate
 from services.chat_socket_backend import get_chat_socket_backend
 from services.chat_socket_manager import ChatPeer, chat_socket_manager
@@ -58,8 +59,8 @@ async def chat_websocket(websocket: WebSocket, room_id: str, backend=Depends(get
             except asyncio.TimeoutError:
                 claims = await run_in_threadpool(backend.authorize, room_id, token)
                 continue
-            # 각 전송 때도 만료 및 DB 계정을 다시 확인합니다.
-            claims = await run_in_threadpool(backend.authorize, room_id, token)
+            # 만료는 여기서, DB 계정과 참여 권한은 저장 트랜잭션에서 확인합니다.
+            claims = decode_access_token(token)
             try:
                 chat = ChatCreate.model_validate_json(text)
             except ValidationError as exc:

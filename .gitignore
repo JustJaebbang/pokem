@@ -434,3 +434,8 @@ scripts
 # Uploaded product images
 /uploads/
 !tests/test_product_image.py
+
+!tests/test_chat_performance.py
+
+!tests/test_purchase_price.py
+!tests/test_purchase_history.py

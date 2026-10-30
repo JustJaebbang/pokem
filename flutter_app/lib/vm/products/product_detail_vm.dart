@@ -10,19 +10,25 @@ class ProductDetailVm extends AsyncNotifier<ProductDetailState> {
   @override
   Future<ProductDetailState> build() {
     ref.watch(productRepositoryProvider);
-    ref.watch(loginVmProvider.select((value) => value.session?.account.role));
+    ref.watch(
+      loginVmProvider.select(
+        (value) => (value.session?.account.id, value.session?.account.role),
+      ),
+    );
     return _load();
   }
 
   Future<ProductDetailState> _load() async {
     final repository = ref.read(productRepositoryProvider);
-    final isUser =
-        ref.read(loginVmProvider).session?.account.role == AccountRole.user;
+    final account = ref.read(loginVmProvider).session?.account;
+    final isUser = account?.role == AccountRole.user;
     final product = await repository.getProduct(code);
+    final isOwnProduct = isUser && product.sellerId == account?.id;
     return ProductDetailState(
       product: product,
-      canChat: isUser,
-      canBuy: isUser && product.isForSale,
+      isOwnProduct: isOwnProduct,
+      canChat: isUser && !isOwnProduct,
+      canBuy: isUser && !isOwnProduct && product.isForSale,
     );
   }
 

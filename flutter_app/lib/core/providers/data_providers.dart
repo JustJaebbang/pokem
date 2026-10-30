@@ -1,3 +1,7 @@
+import 'package:pokem_app/repository/wallet/wallet_repository.dart';
+import 'package:pokem_app/service/wallet/wallet_api_service.dart';
+import 'package:pokem_app/repository/purchase/purchase_repository.dart';
+import 'package:pokem_app/service/purchase/purchase_api_service.dart';
 import 'package:pokem_app/service/chat/chat_api_service.dart';
 import 'package:pokem_app/service/chat/chat_socket_service.dart';
 import 'package:pokem_app/repository/chat/chat_repository.dart';
@@ -78,4 +82,19 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
     ChatApiService(client, baseUrl: ApiConfig.baseUrl),
     ChatSocketService(baseUrl: ApiConfig.baseUrl),
   );
+});
+
+final purchaseRepositoryProvider = Provider<PurchaseRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return PurchaseRepository(
+    PurchaseApiService(client, baseUrl: ApiConfig.baseUrl),
+    ref.watch(productRepositoryProvider),
+  );
+});
+
+final walletRepositoryProvider = Provider<WalletRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return WalletRepository(WalletApiService(client, baseUrl: ApiConfig.baseUrl));
 });

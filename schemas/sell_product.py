@@ -16,6 +16,7 @@ class SellProductCreate(BaseModel):
 
 
 class SellProductResponse(BaseModel):
+    seller_user_id: str | None = None
     sell_product_code: str
     sell_product_serial_code: str
     seq: int

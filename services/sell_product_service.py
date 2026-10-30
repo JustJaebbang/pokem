@@ -149,6 +149,10 @@ def get_sell_product_code(db, sell_product_code: str) -> SellProductResponse | N
             (sell_product_code),
         )
         row = cursor.fetchone()
+        if row is not None:
+            registrations = get_sale_registrations(cursor, sell_product_code)
+            # 일반판매와 대리판매 모두 실제 상품 소유자를 반환합니다.
+            row["seller_user_id"] = registrations[0].get("user_user_id") if len(registrations) == 1 else None
 
     return SellProductResponse(**row) if row else None
 

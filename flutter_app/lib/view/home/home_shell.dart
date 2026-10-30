@@ -1,3 +1,5 @@
+import 'package:pokem_app/view/wallet/wallet_view.dart';
+import 'package:pokem_app/view/purchase/purchase_history_view.dart';
 import 'package:pokem_app/view/chat/chat_rooms_view.dart';
 import 'package:pokem_app/view/wishlist/wishlist_view.dart';
 import 'package:flutter/material.dart';
@@ -51,9 +53,15 @@ class HomeShell extends ConsumerWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  '구매·판매 내역과 포켓머니는 다음 단계에서 연결합니다.',
-                  textAlign: TextAlign.center,
+                if (index == 4) const WalletSummary(),
+                ListTile(
+                  title: const Text('구매내역'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PurchaseHistoryView(),
+                    ),
+                  ),
                 ),
                 if (state.error != null)
                   Padding(

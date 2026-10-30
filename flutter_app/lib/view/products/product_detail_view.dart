@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/purchase/checkout_view.dart';
 import 'package:pokem_app/vm/chat/chat_start_vm.dart';
 import 'package:pokem_app/view/chat/chat_room_view.dart';
 import 'package:pokem_app/view/wishlist/widgets/wishlist_button.dart';
@@ -13,9 +14,6 @@ import 'package:pokem_app/view/products/widgets/product_image.dart';
 class ProductDetailView extends ConsumerWidget {
   const ProductDetailView({super.key, required this.code});
   final String code;
-  void _upcoming(BuildContext context, String feature) =>
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('$feature 기능은 다음 단계에서 연결합니다.')));
   Future<void> _openChat(BuildContext context, WidgetRef ref) async {
     final room = await ref.read(chatStartVmProvider.notifier).open(code);
     if (!context.mounted || room == null) return;
@@ -149,7 +147,8 @@ class ProductDetailView extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: result.asData == null
+      bottomNavigationBar:
+          result.asData == null || result.asData!.value.isOwnProduct
           ? null
           : SafeArea(
               child: Padding(
@@ -169,7 +168,11 @@ class ProductDetailView extends ConsumerWidget {
                     Expanded(
                       child: FilledButton(
                         onPressed: result.asData!.value.canBuy
-                            ? () => _upcoming(context, '구매·결제')
+                            ? () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => CheckoutView(code: code),
+                                ),
+                              )
                             : null,
                         child: const Text('구매하기'),
                       ),

@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 
-def get_connection():
-    return pymysql.connect(
+def get_connection_options():
+    return dict(
         host=os.getenv("DB_HOST", "localhost"),
         port=int(os.getenv("DB_PORT", "3306")),
         user=os.environ["DB_USER"],
@@ -20,6 +20,10 @@ def get_connection():
         autocommit=False,
         connect_timeout=5,
     )
+
+
+def get_connection():
+    return pymysql.connect(**get_connection_options())
 
 
 def get_db():
