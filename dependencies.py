@@ -49,6 +49,13 @@ def ensure_self(user: UserResponse, requested_id: str | None = None) -> str:
     return user.user_id
 
 
+
+def ensure_manager_self(manager: ManagerResponse, requested_id: str | None = None) -> str:
+    if requested_id is not None and requested_id != manager.manager_id:
+        raise HTTPException(status_code=403, detail="본인 계정만 처리할 수 있습니다.")
+    return manager.manager_id
+
+
 def ensure_account_access(current, user_id: str) -> None:
     if current.role != "manager":
         ensure_self(current.account, user_id)

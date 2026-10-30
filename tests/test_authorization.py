@@ -147,12 +147,12 @@ class AuthorizationTests(unittest.TestCase):
             for method, operation in operations.items():
                 if not operation.get("security"):
                     continue
-                concrete = path.replace("{user_id}", "buyer").replace("{manager_id}", "manager").replace("{sell_product_code}", "product").replace("{post_item_code}", "post").replace("{purchase_item_code}", "purchase").replace("{recharge_seq}", "1").replace("{exchange_seq}", "1").replace("{cybermoney_pay_code}", "payment").replace("{cancel_code}", "cancel").replace("{room_id}", "room").replace("{request_no}", "request").replace("{inspect_code}", "inspect").replace("{code}", "code")
+                concrete = path.replace("{user_id}", "buyer").replace("{manager_id}", "manager").replace("{sell_product_code}", "product").replace("{post_item_code}", "post").replace("{purchase_item_code}", "purchase").replace("{recharge_seq}", "1").replace("{exchange_seq}", "1").replace("{cybermoney_pay_code}", "payment").replace("{cancel_code}", "cancel").replace("{room_id}", "room").replace("{request_no}", "request").replace("{inspection_request_no}", "20261030000001").replace("{inspect_code}", "inspect").replace("{code}", "code")
                 with self.subTest(method=method, path=concrete):
                     response = self.client.request(method, concrete)
                     self.assertEqual(response.status_code, 401, response.text)
                 count += 1
-        self.assertEqual(count, 53)
+        self.assertEqual(count, 54)
         self.lookup_user.assert_not_called()
 
     def test_product_reads_stay_public_and_manager_cannot_buy(self):
