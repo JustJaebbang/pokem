@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 
-from schemas.purchase_item import PurchaseItemCreate, PurchaseItemResponse, PurchaseItemConfirmResponse
+from schemas.purchase_item import PurchaseItemCreate, PurchaseItemResponse, PurchaseItemDetailResponse, PurchaseItemConfirmResponse
 from services import cybermoney_pay_service
 
 
@@ -40,6 +40,9 @@ def create_purchase_item(db, purchase: PurchaseItemCreate) -> PurchaseItemRespon
                 raise HTTPException(status_code=404, detail="판매상품을 찾을 수 없습니다.")
             if product["sell_product_sell_status"] != "판매중":
                 raise HTTPException(status_code=409, detail="판매 중인 상품만 구매할 수 있습니다.")
+
+            if purchase.expected_price is not None and purchase.expected_price != product["sell_product_sell_price"]:
+                raise HTTPException(status_code=409, detail="상품 가격이 변경되었습니다. 결제 금액을 다시 확인해주세요.")
 
             posts = get_sale_registrations(cursor, purchase.sell_product_sell_product_code)
             if len(posts) != 1:
@@ -120,7 +123,20 @@ def create_purchase_item(db, purchase: PurchaseItemCreate) -> PurchaseItemRespon
     return result
 
 
-def get_purchase_item(db, user_id: str) -> list[PurchaseItemResponse]:
+_PURCHASE_DETAILS_SELECT = """
+    SELECT pi.*, sp.sell_product_title, sp.sell_product_image,
+        (
+            SELECT CASE WHEN COUNT(*) = 1 THEN MAX(cp.cybermoney_pay_price) END
+            FROM cybermoney_pay cp
+            WHERE cp.purchase_item_purchase_item_code = pi.purchase_item_code
+        ) AS cybermoney_pay_price
+    FROM purchase_item pi
+    LEFT JOIN sell_product sp
+        ON sp.sell_product_code = pi.sell_product_sell_product_code
+"""
+
+
+def get_purchase_item(db, user_id: str) -> list[PurchaseItemDetailResponse]:
     with db.cursor() as cursor:
         cursor.execute(
             """
@@ -133,30 +149,26 @@ def get_purchase_item(db, user_id: str) -> list[PurchaseItemResponse]:
         if cursor.fetchone() is None:
             raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
         cursor.execute(
-            """
-            SELECT *
-            FROM purchase_item
-            WHERE user_user_id = %s
-            ORDER BY purchase_item_date DESC, purchase_item_code DESC
+            _PURCHASE_DETAILS_SELECT + """
+            WHERE pi.user_user_id = %s
+            ORDER BY pi.purchase_item_date DESC, pi.purchase_item_code DESC
             """,
             (user_id,),
         )
         rows = cursor.fetchall()
-    return [PurchaseItemResponse(**row) for row in rows]
+    return [PurchaseItemDetailResponse(**row) for row in rows]
 
 
-def get_purchase_item_code(db, purchase_item_code: str) -> PurchaseItemResponse | None:
+def get_purchase_item_code(db, purchase_item_code: str) -> PurchaseItemDetailResponse | None:
     with db.cursor() as cursor:
         cursor.execute(
-            """
-            SELECT *
-            FROM purchase_item
-            WHERE purchase_item_code = %s
+            _PURCHASE_DETAILS_SELECT + """
+            WHERE pi.purchase_item_code = %s
             """,
             (purchase_item_code,),
         )
         row = cursor.fetchone()
-    return PurchaseItemResponse(**row) if row else None
+    return PurchaseItemDetailResponse(**row) if row else None
 
 
 # 구매확정의 모든 변경은 같은 연결로 수행하고 마지막에 한 번만 commit

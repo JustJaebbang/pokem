@@ -1,1 +1,2 @@
-uvicorn[standard]
+# Compatibility entry point: install the complete verified environment.
+-r requirements.txt

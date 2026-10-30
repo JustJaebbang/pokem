@@ -54,6 +54,11 @@ def create_user(db, user: UserCreate) -> UserResponse:
 
         db.commit()
         return get_user_id(db, user.user_id)
+    except IntegrityError as exc:
+        db.rollback()
+        if exc.args[0] == 1062:
+            raise HTTPException(status_code=409, detail="이미 사용 중인 아이디입니다.") from exc
+        raise
     except Exception:
         db.rollback()
         raise

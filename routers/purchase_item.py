@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from database import get_db
 from dependencies import get_current_account, get_current_user, ensure_self, ensure_account_access, resolve_user_id
-from schemas.purchase_item import PurchaseItemCreate, PurchaseItemRequest, PurchaseItemResponse, PurchaseItemConfirmResponse
+from schemas.purchase_item import PurchaseItemCreate, PurchaseItemRequest, PurchaseItemResponse, PurchaseItemDetailResponse, PurchaseItemConfirmResponse
 from services import purchase_item_service
 
 router = APIRouter(prefix="/purchase_item", tags=["purchase_item"])
@@ -16,13 +16,13 @@ def create_purchase_item(purchase: PurchaseItemRequest, db=Depends(get_db), curr
     return purchase_item_service.create_purchase_item(db, purchase)
 
 
-@router.get("", response_model=list[PurchaseItemResponse])
+@router.get("", response_model=list[PurchaseItemDetailResponse])
 def get_purchase_item(user_id: str | None = None, db=Depends(get_db), current=Depends(get_current_account)):
     user_id = resolve_user_id(current, user_id)
     return purchase_item_service.get_purchase_item(db, user_id)
 
 
-@router.get("/{purchase_item_code}", response_model=PurchaseItemResponse)
+@router.get("/{purchase_item_code}", response_model=PurchaseItemDetailResponse)
 def get_purchase_item_code(purchase_item_code: str, db=Depends(get_db), current=Depends(get_current_account)):
     purchase = purchase_item_service.get_purchase_item_code(db, purchase_item_code)
     if purchase is None:
