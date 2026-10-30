@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from fastapi import HTTPException
+from pymysql.err import IntegrityError
 
 from schemas.auth import LoginRequest
 from schemas.user import UserCreate, UserResponse
@@ -55,6 +56,21 @@ class PasswordSecurityTests(unittest.TestCase):
                 with self.assertRaises(HTTPException) as error:
                     user_service.login_user(db, LoginRequest(login_id="test-user", password="test-password"))
                 self.assertEqual(error.exception.status_code, 401)
+
+    def test_duplicate_signup_is_conflict_and_other_integrity_errors_propagate(self):
+        payload = UserCreate(**self.account, user_password="test-password")
+        for code in (1062, 1452):
+            with self.subTest(code=code):
+                db = MagicMock()
+                db.cursor.return_value.__enter__.return_value.execute.side_effect = IntegrityError(code, "test error")
+                expected = HTTPException if code == 1062 else IntegrityError
+                with patch.object(user_service, "hash_password", return_value="hashed"):
+                    with self.assertRaises(expected) as error:
+                        user_service.create_user(db, payload)
+                if code == 1062:
+                    self.assertEqual(error.exception.status_code, 409)
+                db.rollback.assert_called_once()
+                db.commit.assert_not_called()
 
     def test_signup_write_failure_rolls_back(self):
         payload = UserCreate(**self.account, user_password="test-password")
