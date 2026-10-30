@@ -2,6 +2,20 @@
 
 card 검수 및 대리판매, 사용자간 중고거래 플랫폼
 
+## 의존성 설치 및 실행
+
+프로젝트 루트의 PowerShell에서 실행합니다. Python 3.10 이상 또는 uv가 필요합니다.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
+.\.venv\Scripts\python.exe -m uvicorn main:app --reload
+```
+
+설치한 가상환경은 VS Code의 Python 인터프리터로 `.venv\Scripts\python.exe`를 선택합니다.
+실행 후 `http://127.0.0.1:8000/docs`에서 API를 확인할 수 있습니다.
+DB와 JWT 환경변수는 `.env.example`을 참고하여 `.env`에 별도로 설정합니다.
+테스트용 의존성까지 설치하려면 설치 명령 끝에 `-IncludeTests`를 추가합니다.
+
 ## 허재영
 
 ### 26.10.27~28
@@ -189,6 +203,11 @@ FastAPI 구현 및 검증 완료
 
 
 ### 검수 물품 반환
+
+- 대리판매 등록 시 만료일(등록 + 14일)과 매니저가 지정한 반환 배송업체를 저장합니다.
+  서버가 1분마다 만료된 미판매 물품을 확인해 반환·배송준비 건을 함께 생성합니다.
+  거래중·거래완료 물품은 제외하며, 만료 상품 구매와 중복 반환은 차단합니다.
+  기존 등록 건은 반환 배송업체를 지정해야 합니다. [대리판매 만료 반환](docs/consignment_expiry.md)
 
 검수완료 후 사용자가 반환을 선택하면 반환 건을 자동 접수합니다.
 `GET /return`, `GET /return/{return_no}`, `PATCH /return/{return_no}/manager`를 제공합니다.

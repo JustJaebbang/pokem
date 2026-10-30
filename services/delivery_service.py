@@ -21,7 +21,7 @@ DELIVERY_SELECT = """
 """
 
 
-def create_delivery(db, request: DeliveryCreate) -> DeliveryResponse:
+def create_delivery(db, request: DeliveryCreate, *, manage_transaction=True) -> DeliveryResponse:
     """구매의 사용자·상품 또는 반송의 사용자·검수 대상으로 배송을 등록한다."""
     # 테이블/컬럼 이름은 고정된 두 경로에서만 선택하고 입력값은 파라미터로 전달한다.
     if request.purchase_item_code is not None:
@@ -34,7 +34,8 @@ def create_delivery(db, request: DeliveryCreate) -> DeliveryResponse:
         target_column, target_name = "inspect_inspect_code", "검수"
     try:
         # 검증, 일별 순번 증가, 배송 저장을 하나의 트랜잭션으로 처리한다.
-        db.begin()
+        if manage_transaction:
+            db.begin()
         with db.cursor() as cursor:
             # 같은 원본 건을 잠그고 구매는 상품 코드, 반송은 검수 코드를 가져온다.
             cursor.execute(
@@ -106,18 +107,21 @@ def create_delivery(db, request: DeliveryCreate) -> DeliveryResponse:
                  delivery.delivery_company_delivery_company_code,
                  delivery.purchase_item_code, delivery.return_no),
             )
-        db.commit()
+        if manage_transaction:
+            db.commit()
         return delivery
     except IntegrityError as exc:
         # DB의 중복 키(1062), 외래 키(1452) 오류를 API 응답으로 변환한다.
-        db.rollback()
+        if manage_transaction:
+            db.rollback()
         if exc.args[0] == 1062:
             raise HTTPException(status_code=409, detail="이미 등록된 배송입니다.") from exc
         if exc.args[0] == 1452:
             raise HTTPException(status_code=400, detail="연결할 배송 정보를 확인해주세요.") from exc
         raise
     except Exception:
-        db.rollback()
+        if manage_transaction:
+            db.rollback()
         raise
 
 

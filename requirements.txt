@@ -1,0 +1,8 @@
+fastapi
+pydantic>=2,<3
+PyMySQL
+python-dotenv
+joblib
+tzdata
+-r requirements-security.txt
+-r requirements-chat.txt

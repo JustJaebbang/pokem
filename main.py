@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from fastapi import FastAPI, Request
+import asyncio
+from contextlib import asynccontextmanager
+from services.consignment_expiry_worker import expiry_worker
 from pydantic import BaseModel
 import joblib
 
@@ -36,7 +39,18 @@ from routers.receive import router as receive_router
 from routers.receipt import router as receipt_router
 from routers.discard import router as discard_router
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app):
+    stop = asyncio.Event()
+    task = asyncio.create_task(expiry_worker(stop))
+    try:
+        yield
+    finally:
+        stop.set()
+        await task
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(user_router)
 app.include_router(sell_product_router)

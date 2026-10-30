@@ -152,7 +152,7 @@ class AuthorizationTests(unittest.TestCase):
                     response = self.client.request(method, concrete)
                     self.assertEqual(response.status_code, 401, response.text)
                 count += 1
-        self.assertEqual(count, 94)
+        self.assertEqual(count, 95)
         self.lookup_user.assert_not_called()
 
     def test_inspection_creation_uses_logged_in_user(self):
