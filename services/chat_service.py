@@ -6,7 +6,7 @@ from schemas.chat import ChatCreate, ChatResponse
 from services.chat_room_service import require_room_participant
 
 
-def create_chat(db, room_id: str, chat: ChatCreate, user_id: str) -> ChatResponse:
+def create_chat(db, room_id: str, chat: ChatCreate, user_id: str, *, missing_user_status: int = 404) -> ChatResponse:
     try:
         db.begin()
         with db.cursor() as cursor:
@@ -24,7 +24,7 @@ def create_chat(db, room_id: str, chat: ChatCreate, user_id: str) -> ChatRespons
                 """, (user_id,),
             )
             if cursor.fetchone() is None:
-                raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+                raise HTTPException(status_code=missing_user_status, detail="사용자를 찾을 수 없습니다.")
             room = require_room_participant(cursor, room_id, user_id, lock=True)
             if room["chat_room_status"] != "대화중":
                 raise HTTPException(status_code=409, detail="종료된 채팅방에는 메시지를 보낼 수 없습니다.")
