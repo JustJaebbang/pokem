@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from database import get_db
-from dependencies import get_current_user, require_sell_product_owner
+from dependencies import get_current_user, get_current_account, require_sell_product_owner
 
 from schemas.sell_product import SellProductCreate, SellProductResponse, SellProductUpdate, SellProductDelete
 from services import sell_product_service
@@ -34,8 +34,8 @@ def get_sell_product_code(sell_product_code: str, db=Depends(get_db)):
 
 # sell_product_code로 해당 sell_product 정보 변경
 @router.put("/{sell_product_code}", response_model=SellProductResponse)
-def put_sell_product_code(sp: SellProductUpdate, sell_product_code: str, db=Depends(get_db), current_user=Depends(get_current_user)):
-    require_sell_product_owner(db, sell_product_code, current_user.user_id)
+def put_sell_product_code(sp: SellProductUpdate, sell_product_code: str, db=Depends(get_db), current=Depends(get_current_account)):
+    require_sell_product_owner(db, sell_product_code, current.account.user_id if current.role == "user" else current.account.manager_id, current.role)
     sell_product = sell_product_service.put_sell_product_code(db, sp, sell_product_code)
     if sell_product is None:
         raise HTTPException(status_code=404, detail="해당 상품을 찾을 수 없습니다.")
@@ -44,13 +44,13 @@ def put_sell_product_code(sp: SellProductUpdate, sell_product_code: str, db=Depe
 
 # sell_product_code로 해당 sell_product 가져오기
 @router.delete("/{sell_product_code}", response_model=SellProductDelete)
-def delete_sell_product_code(sell_product_code: str, db=Depends(get_db), current_user=Depends(get_current_user)):
-    require_sell_product_owner(db, sell_product_code, current_user.user_id)
+def delete_sell_product_code(sell_product_code: str, db=Depends(get_db), current=Depends(get_current_account)):
+    require_sell_product_owner(db, sell_product_code, current.account.user_id if current.role == "user" else current.account.manager_id, current.role, action="delete")
     deleted_sell_product = sell_product_service.delete_sell_product_code(db, sell_product_code)
     if deleted_sell_product is None:
         raise HTTPException(status_code=404, detail="해당 상품을 찾을 수 없습니다.")
     return deleted_sell_product
 
 @router.post("/{sell_product_code}/relist", response_model=SellProductResponse)
-def relist_sell_product(sell_product_code: str, db=Depends(get_db), current_user=Depends(get_current_user)):
-    return sell_product_service.relist_sell_product(db, sell_product_code, current_user.user_id)
+def relist_sell_product(sell_product_code: str, db=Depends(get_db), current=Depends(get_current_account)):
+    return sell_product_service.relist_sell_product(db, sell_product_code, current.account.user_id if current.role == "user" else current.account.manager_id, current.role)

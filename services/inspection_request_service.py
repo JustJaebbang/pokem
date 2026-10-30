@@ -121,6 +121,27 @@ def get_inspection_request(db, inspection_request_no: str) -> InspectionRequestR
     return InspectionRequestResponse(**row) if row else None
 
 
+# 갱신 코드의 기존 호출과 호환한다.
+def create_request(db, request, user_id):
+    payload = InspectionRequestCreate(
+        **{**request.model_dump(), "user_user_id": user_id}
+    )
+    return create_inspection_request(db, payload)
+
+
+def get_requests(db, current, request_no=None):
+    from dependencies import ensure_account_access
+
+    if request_no is None:
+        user_id = current.account.user_id if current.role == "user" else None
+        return get_inspection_requests(db, user_id=user_id)
+    result = get_inspection_request(db, request_no)
+    if result is None:
+        raise HTTPException(status_code=404, detail="해당 검수 요청을 찾을 수 없습니다.")
+    ensure_account_access(current, result.user_user_id)
+    return result
+
+
 def assign_inspection_request_manager(
     db, inspection_request_no: str, request: InspectionRequestManagerUpdate
 ) -> InspectionRequestResponse:

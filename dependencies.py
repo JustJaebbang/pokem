@@ -1,3 +1,4 @@
+from services.sale_registration_service import get_sale_registrations
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -67,6 +68,13 @@ def ensure_self(user: UserResponse, requested_id: str | None = None) -> str:
     return user.user_id
 
 
+
+def ensure_manager_self(manager: ManagerResponse, requested_id: str | None = None) -> str:
+    if requested_id is not None and requested_id != manager.manager_id:
+        raise HTTPException(status_code=403, detail="본인 계정만 처리할 수 있습니다.")
+    return manager.manager_id
+
+
 def ensure_account_access(current, user_id: str) -> None:
     if current.role not in ("manager", "director"):
         ensure_self(current.account, user_id)
@@ -92,7 +100,7 @@ def resolve_user_id(current, requested_id: str | None) -> str:
     return requested_id
 
 
-def require_sell_product_owner(db, sell_product_code: str, user_id: str) -> None:
+def require_sell_product_owner(db, sell_product_code: str, user_id: str, role: str = "user", action: str = "edit") -> None:
     # 검사와 서비스의 수정·삭제가 같은 연결/트랜잭션에서 수행되도록 잠급니다.
     with db.cursor() as cursor:
         cursor.execute(
@@ -106,15 +114,12 @@ def require_sell_product_owner(db, sell_product_code: str, user_id: str) -> None
         )
         if cursor.fetchone() is None:
             raise HTTPException(status_code=404, detail="판매상품을 찾을 수 없습니다.")
-        cursor.execute(
-            """
-            SELECT user_user_id
-            FROM post_item
-            WHERE sell_product_sell_product_code = %s
-            FOR UPDATE
-            """,
-            (sell_product_code,),
+        owners = get_sale_registrations(cursor, sell_product_code)
+        allowed = len(owners) == 1 and (
+            role == "manager" if owners[0].get("registration_type", "direct") == "consign"
+            else role == "user" and owners[0]["user_user_id"] == user_id
         )
-        owners = cursor.fetchall()
-        if len(owners) != 1 or owners[0]["user_user_id"] != user_id:
+        if not allowed:
             raise HTTPException(status_code=403, detail="본인이 등록한 상품만 변경할 수 있습니다.")
+        if owners[0].get("registration_type", "direct") == "consign" and action == "delete":
+            raise HTTPException(status_code=409, detail="대리판매 상품의 삭제는 별도 회수 절차가 필요합니다.")

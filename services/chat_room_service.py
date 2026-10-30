@@ -1,3 +1,4 @@
+from services.sale_registration_service import get_sale_registrations
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
@@ -27,14 +28,7 @@ def create_chat_room(db, product_code: str, inquirer_id: str) -> tuple[ChatRoomR
     try:
         db.begin()
         with db.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT user_user_id
-                FROM post_item
-                WHERE sell_product_sell_product_code = %s
-                """, (product_code,),
-            )
-            posts = cursor.fetchall()
+            posts = get_sale_registrations(cursor, product_code)
             if len(posts) != 1:
                 raise HTTPException(status_code=404, detail="상품의 판매등록 정보를 찾을 수 없습니다.")
             seller_id = posts[0]["user_user_id"]
@@ -64,15 +58,7 @@ def create_chat_room(db, product_code: str, inquirer_id: str) -> tuple[ChatRoomR
             product = cursor.fetchone()
             if product is None:
                 raise HTTPException(status_code=404, detail="판매상품을 찾을 수 없습니다.")
-            cursor.execute(
-                """
-                SELECT user_user_id
-                FROM post_item
-                WHERE sell_product_sell_product_code = %s
-                FOR UPDATE
-                """, (product_code,),
-            )
-            posts = cursor.fetchall()
+            posts = get_sale_registrations(cursor, product_code)
             if len(posts) != 1 or posts[0]["user_user_id"] != seller_id:
                 raise HTTPException(status_code=409, detail="판매등록 정보가 변경되었습니다.")
             cursor.execute(

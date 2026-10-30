@@ -1,8 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class InspectionRequestCreate(BaseModel):
-    inspection_request_amount: int = Field(gt=0)
+    model_config = ConfigDict(extra="forbid")
+    inspection_request_amount: int = Field(strict=True, gt=0, le=2147483647)
     user_user_id: str = Field(min_length=1)
 
 
@@ -14,8 +15,8 @@ class InspectionRequestManagerUpdate(BaseModel):
 
 class InspectionRequestResponse(BaseModel):
     inspection_request_no: str
-    inspection_request_date: str
-    inspection_request_amount: int
+    inspection_request_date: str | None
+    inspection_request_amount: int | None
     user_user_id: str
     manager_manager_id: str | None = None
 
@@ -26,3 +27,8 @@ class InspectionRequestCreateRequest(InspectionRequestCreate):
 
 class InspectionRequestManagerRequest(InspectionRequestManagerUpdate):
     manager_manager_id: str | None = Field(default=None, min_length=1, pattern=r"\S")
+
+
+# 갱신 코드의 기존 호출과 호환한다.
+RequestCreate = InspectionRequestCreateRequest
+RequestResponse = InspectionRequestResponse

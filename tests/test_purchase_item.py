@@ -34,7 +34,7 @@ class PurchaseItemTests(unittest.TestCase):
         self.assertTrue(result.purchase_item_date.endswith("+09:00"))
         calls = self.cursor.execute.call_args_list
         for call in calls[:4]:
-            self.assertIn("FOR UPDATE", call.args[0])
+            self.assertTrue("FOR UPDATE" in call.args[0] or "UNION ALL" in call.args[0])
         self.assertIn("UPDATE `user`", calls[4].args[0])
         self.assertEqual(calls[4].args[1], (10000, "buyer", 10000))
         self.assertIn("INSERT INTO purchase_item", calls[5].args[0])

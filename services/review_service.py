@@ -1,3 +1,4 @@
+from services.sale_registration_service import get_sale_registrations
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
@@ -66,16 +67,7 @@ def create_review(db, review: ReviewCreate, user_id: str) -> ReviewResponse:
                 raise HTTPException(status_code=409, detail="구매 정보가 변경되었습니다. 다시 확인해주세요.")
             if purchase["purchase_item_status"] != "구매확정" or not purchase["purchase_item_confirmed_at"]:
                 raise HTTPException(status_code=409, detail="구매확정된 구매 건에만 리뷰를 작성할 수 있습니다.")
-            cursor.execute(
-                """
-                SELECT post_item_code, user_user_id
-                FROM post_item
-                WHERE sell_product_sell_product_code = %s
-                FOR UPDATE
-                """,
-                (product_code,),
-            )
-            posts = cursor.fetchall()
+            posts = get_sale_registrations(cursor, product_code)
             if len(posts) != 1:
                 raise HTTPException(status_code=409, detail="구매확정이 완료된 거래에만 리뷰를 작성할 수 있습니다.")
             if posts[0]["user_user_id"] == user_id:
