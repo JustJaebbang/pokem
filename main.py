@@ -17,6 +17,7 @@ from routers.chat_room import router as chat_room_router
 from routers.chat_socket import router as chat_socket_router
 from routers.inspection_request import router as inspection_request_router
 from routers.inspect import router as inspect_router
+from routers.return_item import router as return_router
 from routers.post_consign_item import router as post_consign_item_router
 from routers.manager import router as manager_router
 from routers.auth import router as auth_router
@@ -50,6 +51,7 @@ app.include_router(chat_room_router)
 app.include_router(chat_socket_router)
 app.include_router(inspection_request_router)
 app.include_router(inspect_router)
+app.include_router(return_router)
 app.include_router(post_consign_item_router)
 app.include_router(manager_router)
 app.include_router(auth_router)

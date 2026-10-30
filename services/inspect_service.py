@@ -1,4 +1,5 @@
 from schemas.inspect import InspectResponse
+from services.return_service import ensure_return
 from services.inspection_common import _now, _require, _inspect_row
 
 
@@ -141,6 +142,8 @@ def choose_inspect(db, code, choice, user_id):
                 )
                 _require(c.rowcount == 1, "사용자 선택이 변경되었습니다.")
             result=InspectResponse(**_inspect_row(c, code))
+            if result.inspect_user_choice == "반환":
+                ensure_return(c, result.model_dump())
         db.commit()
     except Exception:
         db.rollback()
