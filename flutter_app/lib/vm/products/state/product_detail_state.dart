@@ -5,7 +5,9 @@ class ProductDetailState {
     required this.product,
     required this.canChat,
     required this.canBuy,
+    this.isOwnProduct = false,
   });
   final Product product;
   final bool canChat, canBuy;
+  final bool isOwnProduct;
 }

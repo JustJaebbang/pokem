@@ -24,4 +24,8 @@ class PurchaseRepository {
   Future<Purchase> buy(String code, int price, String token) =>
       _api.buy(code, price, token);
   Future<List<Purchase>> history(String token) => _api.history(token);
+  Future<Purchase> getPurchase(String code, String token) =>
+      _api.getPurchase(code, token);
+  Future<PurchaseConfirmReceipt> confirm(String code, String token) =>
+      _api.confirm(code, token);
 }

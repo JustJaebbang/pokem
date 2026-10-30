@@ -31,6 +31,12 @@ const product = Product(
 const purchase = Purchase(code: 'PI-1', productCode: 'P-1', status: '거래중');
 
 class FakePurchaseRepository implements PurchaseRepository {
+  @override
+  Future<Purchase> getPurchase(String code, String token) async =>
+      purchases.firstWhere((p) => p.code == code);
+  @override
+  Future<PurchaseConfirmReceipt> confirm(String code, String token) async =>
+      throw UnimplementedError();
   int balance = 20000;
   int calls = 0;
   Object? error;

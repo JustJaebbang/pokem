@@ -147,7 +147,8 @@ class ProductDetailView extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: result.asData == null
+      bottomNavigationBar:
+          result.asData == null || result.asData!.value.isOwnProduct
           ? null
           : SafeArea(
               child: Padding(

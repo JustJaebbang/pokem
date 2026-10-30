@@ -131,7 +131,7 @@ ERD, DB, Table, Column 모두 수정 완료
 ```
 - 위 내용들의 FastAPI 구현 및 검증 완료
 
-### 26.10.29
+### 26.10.30
 
 - return R,PATCH
 ```
@@ -140,6 +140,22 @@ ERD, DB, Table, Column 모두 수정 완료
 반환 목록 조회 → 사용자는 본인 반환 건만, 매니저는 전체 반환 건을 확인
 담당 매니저 배정 → 매니저가 본인을 담당자로 등록
 배송 처리 → delivery에서 반환 건을 연결해 배송 일자·상태를 관리
+```
+
+- frontend 기능, 화면 구현
+```
+login(JWT Token 기반), 
+Register, 
+home, 
+wishlist, 
+post_item, 
+chat, 
+recharge, 
+exchange, 
+purchase_item
+
+본인상품은 대화하기,구매하기 버튼이 나오지 않도록 수정
+구매확정 기능 추가
 ```
 
 ## 남궁인성

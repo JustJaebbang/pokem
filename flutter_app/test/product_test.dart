@@ -242,6 +242,33 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final own in [true, false]) {
+    testWidgets(
+      'detail ${own ? 'hides' : 'shows'} chat and buy actions by owner',
+      (tester) async {
+        final row = {
+          ...productJson(),
+          'seller_user_id': own ? 'tester' : 'seller',
+        };
+        await showHome(
+          tester,
+          repository(
+            (request) => auth.response(
+              request.url.path == '/sell_product' ? [row] : row,
+            ),
+          ),
+        );
+        await tester.ensureVisible(find.byKey(const ValueKey('product-P-1')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('product-P-1')));
+        await tester.pumpAndSettle();
+        expect(find.text('상품 상세'), findsOneWidget);
+        expect(find.text('채팅하기'), own ? findsNothing : findsOneWidget);
+        expect(find.text('구매하기'), own ? findsNothing : findsOneWidget);
+      },
+    );
+  }
+
   testWidgets('expiry on detail pops protected navigation back to login', (
     tester,
   ) async {

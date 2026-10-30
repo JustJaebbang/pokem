@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/purchase/widgets/purchase_confirm_action.dart';
 import 'package:pokem_app/core/formatters/money.dart';
 import 'package:pokem_app/core/formatters/purchase_time.dart';
 import 'package:pokem_app/view/products/widgets/product_image.dart';
@@ -94,7 +95,7 @@ class PurchaseHistoryView extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  item.status,
+                                  item.statusLabel,
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelMedium,
@@ -124,6 +125,7 @@ class PurchaseHistoryView extends ConsumerWidget {
                                   formatPurchaseTime(item.date),
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
+                                PurchaseConfirmAction(purchase: item),
                               ],
                             ),
                           ),

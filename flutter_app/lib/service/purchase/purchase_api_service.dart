@@ -94,4 +94,38 @@ class PurchaseApiService {
       throw const PurchaseException('결제 결과를 확인하지 못했습니다.', uncertain: true);
     }
   }
+
+  Future<Purchase> getPurchase(String code, String token) async {
+    try {
+      return Purchase.fromJson(
+        await _request('/purchase_item/${Uri.encodeComponent(code)}', token)
+            as Map<String, dynamic>,
+      );
+    } on TypeError {
+      throw const PurchaseException('구매 정보를 확인하지 못했습니다.');
+    }
+  }
+
+  Future<PurchaseConfirmReceipt> confirm(String code, String token) async {
+    try {
+      final json = await _request(
+        '/purchase_item/${Uri.encodeComponent(code)}/confirm',
+        token,
+        body: {},
+      ) as Map<String, dynamic>;
+      final confirmedAt = json['post_item_complete_date'] as String;
+      if (json['purchase_item_code'] != code ||
+          json['sell_product_sell_status'] != '거래완료' ||
+          DateTime.tryParse(confirmedAt) == null) {
+        throw const PurchaseException('구매확정 결과를 확인하지 못했습니다.', uncertain: true);
+      }
+      return PurchaseConfirmReceipt(
+        code: code,
+        productCode: json['sell_product_code'] as String,
+        confirmedAt: confirmedAt,
+      );
+    } on TypeError {
+      throw const PurchaseException('구매확정 결과를 확인하지 못했습니다.', uncertain: true);
+    }
+  }
 }
