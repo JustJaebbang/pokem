@@ -168,7 +168,9 @@ discard CR
 FastAPI 구현 및 검증 완료
 ```
 
-- delivery는 pruchase_item 데이블을 통해 user_id와 sell_product_code를 가져온다.
+- delivery는 purchase_item에서 user_id와 sell_product_code를 가져오거나 return에서 user_id와 inspect_code를 가져온다.
+  purchase_item_code와 return_no 중 하나만 지정하며, 같은 원본 건의 중복 배송은 허용하지 않는다.
+  return_no는 inspect_code + return_date(YYYYMMDD)로 구성한다.
 
 - manager가 director에게 proposal을 작성하면 director가 대기상태인 status를 승인 또는 반려로 바꾸고 NULL이었던 director_id를 update한다.
 
