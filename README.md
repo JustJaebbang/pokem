@@ -116,7 +116,7 @@ ERD, DB, Table, Column 모두 수정 완료
 ```
 - 위 내용들의 FastAPI 구현 및 검증 완료
 
-### 26.10.29
+### 26.10.30
 
 - return R,PATCH
 ```
