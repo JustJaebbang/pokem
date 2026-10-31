@@ -2,20 +2,19 @@
 
 card 검수 및 대리판매, 사용자간 중고거래 플랫폼
 
-## 처음 설치하기
+## 의존성 설치 및 실행
 
-Python 3.14와 Flutter 3.47.2를 설치한 뒤 저장소 루트에서:
+프로젝트 루트의 PowerShell에서 실행합니다. Python 3.10 이상 또는 uv가 필요합니다.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
+.\.venv\Scripts\python.exe -m uvicorn main:app --reload
 ```
 
-Python 가상환경과 전체 서버 의존성을 설치하고 Flutter 잠금 파일 기준으로 패키지를 복원합니다.
-기존 `.env`는 유지하며, 없으면 예시 설정과 새 JWT 키로 생성합니다. DB 연결 정보는 각자 입력해야 합니다.
-서버만 설치할 때는 `-SkipFlutter`를 추가합니다.
-서버 의존성만 직접 설치하려면 `python -m pip install -r requirements.txt`를 사용합니다.
-[팀원 설치·실행 안내](docs/setup.md)에 환경 설정, DB 준비 사항, Git 공유 파일을 정리했습니다.
-
+설치한 가상환경은 VS Code의 Python 인터프리터로 `.venv\Scripts\python.exe`를 선택합니다.
+실행 후 `http://127.0.0.1:8000/docs`에서 API를 확인할 수 있습니다.
+DB와 JWT 환경변수는 `.env.example`을 참고하여 `.env`에 별도로 설정합니다.
+테스트용 의존성까지 설치하려면 설치 명령 끝에 `-IncludeTests`를 추가합니다.
 
 ## 허재영
 
@@ -109,7 +108,9 @@ ERD,DB 각 테이블의 컬럼 및 참조 관계 수정
 문의자, 판매자 각각의 token과 같은 chat_room_id를 사용하면 연결 할 수 있다.
 이후 메시지 전송 시 동시에 발생
 ```
+
 - inspect CRU
+
 ```
 1. 사용자가 검수할 상품 개수를 입력해 검수신청
 2. 관리자가 도착한 상품을 확인하고 신청 건에 개별 검수 상품 등록
@@ -118,7 +119,9 @@ ERD,DB 각 테이블의 컬럼 및 참조 관계 수정
 5. 대리판매 선택 시 관리자가 판매상품과 대리판매등록을 하나의 트랜잭션으로 생성
 6. 구매자가 구매확정하면 실제 소유자인 검수신청자에게 판매대금 지급
 ```
+
 - post_consign_item CR
+
 ```
 ERD, DB, Table, Column 모두 수정 완료
 대리판매 등록은 다음을 하나의 트랜잭션으로 처리
@@ -129,33 +132,19 @@ ERD, DB, Table, Column 모두 수정 완료
 5. post_consign_item에 검수 코드·판매상품 코드·관리자 저장
 6. 모두 성공하면 커밋
 ```
+
 - 위 내용들의 FastAPI 구현 및 검증 완료
 
-### 26.10.30
+### 26.10.29
 
 - return R,PATCH
+
 ```
 검수 완료 → 사용자가 검수 결과를 확인
 사용자가 반환 선택 → 선택을 저장하면서 return에 해당 검수 물품의 반환 건을 자동 생성, 중복 생성은 방지
 반환 목록 조회 → 사용자는 본인 반환 건만, 매니저는 전체 반환 건을 확인
 담당 매니저 배정 → 매니저가 본인을 담당자로 등록
 배송 처리 → delivery에서 반환 건을 연결해 배송 일자·상태를 관리
-```
-
-- frontend 기능, 화면 구현
-```
-login(JWT Token 기반), 
-Register, 
-home, 
-wishlist, 
-post_item, 
-chat, 
-recharge, 
-exchange, 
-purchase_item
-
-본인상품은 대화하기,구매하기 버튼이 나오지 않도록 수정
-구매확정 기능 추가
 ```
 
 ## 남궁인성
@@ -218,6 +207,7 @@ FastAPI 구현 및 검증 완료
 
 - discard는 현재 폐기할 상품을 등록하는 것만 할 수 있고 sell_product를 지우는 실질적 폐기는 진행하지 않고 있는 상태이다.
 
+---
 
 ### 검수 물품 반환
 
@@ -230,10 +220,3 @@ FastAPI 구현 및 검증 완료
 `GET /return`, `GET /return/{return_no}`, `PATCH /return/{return_no}/manager`를 제공합니다.
 return은 반환 물품·사용자·담당자만 관리하며 배송 일자·상태는 delivery에서 관리합니다.
 API 및 DB 변경 내용은 [반환 문서](docs/return.md)를 참고하세요.
-
-
-### 판매상품 이미지
-
-`POST /sell_product/image`에 로그인 토큰과 사진 한 장을 업로드하고,
-응답의 `sell_product_image`를 기존 상품 등록·수정 JSON에 넣습니다.
-이미지는 서버 로컬 폴더에 저장합니다. [설치 및 앱 연동 방법](docs/product_image.md)을 참고하세요.
