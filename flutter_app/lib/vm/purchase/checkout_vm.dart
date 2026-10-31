@@ -142,6 +142,7 @@ class CheckoutVm extends Notifier<CheckoutState> {
     ref.invalidate(paymentHistoryVmProvider);
     ref.invalidate(paymentDetailVmProvider);
     ref.invalidate(productsVmProvider);
+    ref.invalidate(marketSearchVmProvider);
     ref.invalidate(productDetailVmProvider(code));
     ref.invalidate(wishlistVmProvider);
     ref.invalidate(purchaseHistoryVmProvider);

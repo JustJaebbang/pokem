@@ -140,6 +140,7 @@ void main() {
             MemoryWishlistRepository(),
           ),
           productRepositoryProvider.overrideWithValue(products),
+          productClassificationsProvider.overrideWith((ref) async => []),
         ],
         child: const PokemApp(),
       ),
@@ -160,6 +161,9 @@ void main() {
     var detailCalls = 0;
     final repo = repository((request) {
       if (request.url.path == '/sell_product') {
+        if (request.url.queryParameters['q'] != null) {
+          return auth.response([productJson()]);
+        }
         return auth.response([
           productJson(),
           productJson(code: 'P-2', title: '리자몽'),
@@ -179,6 +183,7 @@ void main() {
     await tester.tap(find.byTooltip('상품 검색'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '피카츄');
+    await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
     expect(find.text('리자몽'), findsNothing);
     await tester.tap(find.text('피카츄 카드'));

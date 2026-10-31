@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Literal
 
 from database import get_db
 from dependencies import get_current_user, get_current_account, require_sell_product_owner
@@ -16,11 +17,30 @@ def create_sell_product(sp: SellProductCreate, db=Depends(get_db), current_user=
 
 # 모든 sell_product 가져오기
 @router.get("", response_model=list[SellProductResponse])
-def get_sell_product(db=Depends(get_db)):
-    sell_products = sell_product_service.get_sell_product(db)
+def get_sell_product(
+    q: str | None = Query(default=None, max_length=200),
+    status: Literal['판매중','거래중','거래완료'] | None = None,
+    sort: Literal['newest','price_asc','price_desc'] | None = None,
+    limit: int | None = Query(default=None, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    codes: list[str] | None = Query(default=None, max_length=100),
+    category: str | None = Query(default=None, min_length=1, max_length=30),
+    brand: str | None = Query(default=None, min_length=1, max_length=50),
+    db=Depends(get_db),
+):
+    if codes is not None and any(not code or len(code)>80 for code in codes):
+        raise HTTPException(status_code=422, detail='상품 코드를 확인해주세요.')
+    if offset and limit is None:
+        raise HTTPException(status_code=422, detail='offset을 사용할 때 limit을 지정해주세요.')
+    sell_products = sell_product_service.get_sell_product(db, q=q, status=status, sort=sort, limit=limit, offset=offset, codes=codes, category=category, brand=brand)
     if sell_products is None:
         raise HTTPException(status_code=404, detail="판매 상품을 찾을 수 없습니다.")
     return sell_products
+
+
+@router.get("/filters", response_model=list[dict[str, str | None]])
+def get_product_filters(db=Depends(get_db)):
+    return sell_product_service.get_product_filters(db)
 
 
 # sell_product_code로 해당 sell_product 가져오기

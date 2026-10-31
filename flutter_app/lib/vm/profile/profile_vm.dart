@@ -1,3 +1,4 @@
+import 'package:pokem_app/vm/profile/public_profile_vm.dart';
 import 'package:flutter/services.dart';
 import 'package:pokem_app/model/products/product.dart';
 import 'package:pokem_app/vm/profile/profile_summary_vm.dart';
@@ -104,6 +105,7 @@ class ProfileVm extends Notifier<ProfileState> {
       if (!_current(session.token)) return false;
       state = ProfileState(profile: updated, loading: false);
       ref.invalidate(profileSummaryVmProvider);
+      ref.invalidate(publicProfileVmProvider(session.account.id));
       return true;
     } catch (e) {
       if (!_current(session.token)) return false;

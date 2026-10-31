@@ -288,4 +288,72 @@ void main() {
     expect(find.text('관심상품이 없습니다.'), findsOneWidget);
     expect(wishes.changes, 2);
   });
+  testWidgets(
+    'home and search hearts update immediately and restore after failure',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final wishes = MemoryWishlistRepository(allProducts: [card]);
+      final session = auth.repository(
+        auth.MemoryStorage(),
+        (_) => auth.response(auth.loginResponse()),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authRepositoryProvider.overrideWithValue(session),
+            wishlistRepositoryProvider.overrideWithValue(wishes),
+            productRepositoryProvider.overrideWithValue(
+              products.repository(
+                (request) => auth.response(
+                  request.url.path == '/sell_product'
+                      ? [products.productJson()]
+                      : products.productJson(),
+                ),
+              ),
+            ),
+          ],
+          child: const PokemApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(PokemApp)),
+      );
+      await container
+          .read(loginVmProvider.notifier)
+          .login('tester', 'pw', remember: false);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('product-P-1')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      wishes.changeGate = Completer<void>();
+      await tester.tap(find.byTooltip('관심 등록'));
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(container.read(wishlistVmProvider).isWished(card.code), isTrue);
+      expect(find.byTooltip('관심 해제'), findsOneWidget);
+      expect(find.byType(AppBar), findsOneWidget);
+      wishes.changeGate!.complete();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.search));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('관심 해제'), findsOneWidget);
+      wishes.changeGate = Completer<void>();
+      wishes.changeError = const ProductException('관심상품을 저장하지 못했습니다.');
+      await tester.tap(find.byTooltip('관심 해제'));
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(container.read(wishlistVmProvider).isWished(card.code), isFalse);
+      wishes.changeGate!.complete();
+      await tester.pumpAndSettle();
+      expect(container.read(wishlistVmProvider).isWished(card.code), isTrue);
+      expect(find.byTooltip('관심 해제'), findsOneWidget);
+      expect(find.text('관심상품을 저장하지 못했습니다.'), findsOneWidget);
+      expect(wishes.changes, 2);
+    },
+  );
 }

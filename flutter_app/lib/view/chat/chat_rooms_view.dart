@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/profile/widgets/profile_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/vm/auth/login_vm.dart';
@@ -43,21 +44,30 @@ class ChatRoomsView extends ConsumerWidget {
           for (final room in state.rooms)
             ListTile(
               key: ValueKey('room-${room.id}'),
-              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+              leading: ProfileAvatar(size: 48, url: room.displayOtherImage),
               title: Text(
+                room.displayOther(userId),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
                 room.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              subtitle: Text(room.otherId(userId)),
               trailing: room.isClosed
                   ? const Text('종료')
                   : const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ChatRoomView(roomId: room.id),
-                ),
-              ),
+              onTap: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ChatRoomView(roomId: room.id),
+                  ),
+                );
+                if (context.mounted) {
+                  ref.read(chatRoomsVmProvider.notifier).refresh();
+                }
+              },
             ),
           if (state.hasMore)
             Padding(

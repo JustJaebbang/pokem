@@ -187,6 +187,7 @@ class ProductEditVm extends Notifier<ProductEditState> {
       if (!_current(session.token)) return false;
       state = ProductEditState(product: product, loading: false, canEdit: true);
       ref.invalidate(productsVmProvider);
+      ref.invalidate(marketSearchVmProvider);
       ref.invalidate(productDetailVmProvider(code));
       ref.invalidate(salesVmProvider);
       ref.invalidate(wishlistVmProvider);

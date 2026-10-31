@@ -69,6 +69,7 @@ class PurchaseCancelVm extends Notifier<PurchaseCancelState> {
         ref.invalidate(paymentHistoryVmProvider);
         ref.invalidate(paymentDetailVmProvider);
         ref.invalidate(productsVmProvider);
+        ref.invalidate(marketSearchVmProvider);
         ref.invalidate(productDetailVmProvider(snapshot.purchase.productCode));
         ref.invalidate(wishlistVmProvider);
       }

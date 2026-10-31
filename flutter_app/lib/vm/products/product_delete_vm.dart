@@ -110,6 +110,7 @@ class ProductDeleteVm extends Notifier<ProductDeleteState> {
   void refresh() {
     ref.invalidate(salesVmProvider);
     ref.invalidate(productsVmProvider);
+    ref.invalidate(marketSearchVmProvider);
     ref.invalidate(productDetailVmProvider(code));
     ref.invalidate(wishlistVmProvider);
   }

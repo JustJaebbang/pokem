@@ -1,3 +1,5 @@
+import 'package:pokem_app/repository/profile/public_profile_repository.dart';
+import 'package:pokem_app/service/profile/public_profile_api_service.dart';
 import 'package:pokem_app/repository/notifications/notifications_repository.dart';
 import 'package:pokem_app/service/notifications/notifications_api_service.dart';
 import 'package:pokem_app/service/notifications/notification_read_storage.dart';
@@ -283,5 +285,15 @@ final notificationsRepositoryProvider = Provider<NotificationsRepository>((
     NotificationsApiService(client, baseUrl: ApiConfig.baseUrl),
     ref.watch(notificationReadStorageProvider),
     namespace: ApiConfig.baseUrl,
+  );
+});
+
+final publicProfileRepositoryProvider = Provider<PublicProfileRepository>((
+  ref,
+) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return PublicProfileRepository(
+    PublicProfileApiService(client, baseUrl: ApiConfig.baseUrl),
   );
 });

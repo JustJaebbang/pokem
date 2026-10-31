@@ -7,6 +7,21 @@ from fastapi import HTTPException
 from schemas.chat_room import ChatRoomResponse
 
 
+ROOM_DISPLAY_SELECT = """
+ SELECT r.*, other.user_nickname AS other_user_nickname,
+        other.user_profile_image AS other_user_profile_image,
+        (other.user_id IS NULL OR EXISTS(SELECT 1 FROM `quit` q WHERE q.user_user_id=other.user_id)) AS other_user_withdrawn
+ FROM chat_room r
+ LEFT JOIN `user` other ON other.user_id = CASE WHEN r.inquirer_user_id=%s THEN r.seller_user_id ELSE r.inquirer_user_id END
+"""
+
+def _display_row(row):
+    if row.get('other_user_withdrawn'):
+        row['other_user_nickname']='탈퇴한 사용자'
+        row['other_user_profile_image']=None
+    return row
+
+
 def require_room_participant(cursor, room_id: str, user_id: str, lock=False):
     query = """
         SELECT *
@@ -107,20 +122,20 @@ def create_chat_room(db, product_code: str, inquirer_id: str) -> tuple[ChatRoomR
 # limit은 가져오는 채팅방 개수, offset은 건너뛰는 채팅방 개수
 def get_chat_room(db, user_id: str, limit: int = 50, offset: int = 0):
     with db.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT *
-            FROM chat_room
-            WHERE inquirer_user_id = %s OR seller_user_id = %s
-            ORDER BY chat_room_date DESC, chat_room_id DESC
+        cursor.execute(ROOM_DISPLAY_SELECT + """
+            WHERE r.inquirer_user_id=%s OR r.seller_user_id=%s
+            ORDER BY r.chat_room_date DESC, r.chat_room_id DESC
             LIMIT %s OFFSET %s
-            """, (user_id, user_id, limit, offset),
-        )
-        rows = cursor.fetchall()
-    return [ChatRoomResponse(**row) for row in rows]
+        """, (user_id,user_id,user_id,limit,offset))
+        rows=cursor.fetchall()
+    return [ChatRoomResponse(**_display_row(row)) for row in rows]
 
 
 def get_chat_room_id(db, room_id: str, user_id: str):
     with db.cursor() as cursor:
-        room = require_room_participant(cursor, room_id, user_id)
-    return ChatRoomResponse(**room)
+        cursor.execute(ROOM_DISPLAY_SELECT + " WHERE r.chat_room_id=%s",(user_id,room_id))
+        row=cursor.fetchone()
+        if row is None: raise HTTPException(status_code=404,detail='채팅방을 찾을 수 없습니다.')
+        if user_id not in (row['inquirer_user_id'],row['seller_user_id']):
+            raise HTTPException(status_code=403,detail='채팅방 참여자만 접근할 수 있습니다.')
+    return ChatRoomResponse(**_display_row(row))

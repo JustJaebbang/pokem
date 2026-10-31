@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/home/product_filters.dart';
 import 'package:pokem_app/view/inspection/inspection_history_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,12 +9,14 @@ import 'package:pokem_app/model/products/product.dart';
 import 'package:pokem_app/vm/products/products_vm.dart';
 import 'package:pokem_app/view/products/product_detail_view.dart';
 import 'package:pokem_app/view/products/widgets/product_image.dart';
+import 'package:pokem_app/view/wishlist/widgets/wishlist_button.dart';
 
 class HomeView extends ConsumerWidget {
   const HomeView({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final items = ref.watch(productsVmProvider).visibleProducts;
+    final state = ref.watch(productsVmProvider);
+    final items = state.visibleProducts;
     final theme = Theme.of(context);
     return RefreshIndicator(
       onRefresh: () => ref.read(productsVmProvider.notifier).refresh(),
@@ -52,6 +55,8 @@ class HomeView extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  const ProductFilters(),
+                  const SizedBox(height: 20),
                   OutlinedButton.icon(
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
@@ -62,11 +67,34 @@ class HomeView extends ConsumerWidget {
                     label: const Text('검수신청'),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    '상품목록',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '상품목록',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      DropdownButton<ProductSort>(
+                        value: state.sort,
+                        items: [
+                          for (final sort in ProductSort.values)
+                            DropdownMenuItem(
+                              value: sort,
+                              child: Text(sort.label),
+                            ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            ref
+                                .read(productsVmProvider.notifier)
+                                .changeSort(value);
+                          }
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -147,7 +175,24 @@ class HomeView extends ConsumerWidget {
                                         CrossAxisAlignment.stretch,
                                     children: [
                                       Expanded(
-                                        child: ProductImage(url: p.image),
+                                        child: Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            ProductImage(url: p.image),
+                                            Positioned(
+                                              top: 4,
+                                              right: 4,
+                                              child: Material(
+                                                color:
+                                                    theme.colorScheme.surface,
+                                                shape: const CircleBorder(),
+                                                child: WishlistButton(
+                                                  product: p,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                       Padding(
                                         padding: const EdgeInsets.all(10),
@@ -193,6 +238,25 @@ class HomeView extends ConsumerWidget {
                     ),
                   ],
           ),
+          if (state.hasMore || state.pageError != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    if (state.pageError != null) Text(state.pageError!),
+                    OutlinedButton(
+                      onPressed: state.loadingMore
+                          ? null
+                          : () => ref
+                                .read(productsVmProvider.notifier)
+                                .loadMore(),
+                      child: Text(state.loadingMore ? '불러오는 중' : '더 보기'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

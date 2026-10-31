@@ -14,3 +14,7 @@ class ChatRoomResponse(BaseModel):
     sell_product_sell_product_code: str
     inquirer_user_id: str
     seller_user_id: str
+
+    other_user_nickname: str | None = None
+    other_user_profile_image: str | None = None
+    other_user_withdrawn: bool = False

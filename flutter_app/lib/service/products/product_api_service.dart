@@ -1,3 +1,5 @@
+import 'package:pokem_app/model/products/product_browse.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -38,14 +40,47 @@ class ProductApiService {
     }
   }
 
-  Future<List<Product>> getProducts() async {
+  Future<List<Product>> getProducts({
+    String? query,
+    String? status,
+    String? category,
+    String? brand,
+    ProductSort? sort,
+    int? limit,
+    int offset = 0,
+    List<String>? codes,
+  }) async {
     try {
-      final json = await _get('/sell_product') as List<dynamic>;
+      final params = <String, dynamic>{
+        if (query?.trim().isNotEmpty == true) 'q': query!.trim(),
+        'status': ?status,
+        'category': ?category,
+        'brand': ?brand,
+        if (sort != null) 'sort': sort.value,
+        if (limit != null) 'limit': '$limit',
+        if (limit != null || offset != 0) 'offset': '$offset',
+        'codes': ?codes,
+      };
+      final path = params.isEmpty
+          ? '/sell_product'
+          : Uri(path: '/sell_product', queryParameters: params).toString();
+      final json = await _get(path) as List<dynamic>;
       return json
           .map((row) => Product.fromJson(row as Map<String, dynamic>))
           .toList();
     } on TypeError {
       throw const ProductException('상품 응답 형식을 확인해주세요.');
+    }
+  }
+
+  Future<List<ProductClassification>> getFilters() async {
+    try {
+      final rows = await _get('/sell_product/filters') as List<dynamic>;
+      return rows
+          .map((r) => ProductClassification.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } on TypeError {
+      throw const ProductException('상품 분류를 불러오지 못했습니다.');
     }
   }
 

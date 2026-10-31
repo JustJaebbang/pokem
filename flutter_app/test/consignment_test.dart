@@ -1,3 +1,4 @@
+import 'package:pokem_app/model/products/product_browse.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,6 +34,8 @@ Map<String, dynamic> record({
 };
 
 class Products implements ProductRepository {
+  @override
+  Future<List<ProductClassification>> getFilters() async => [];
   Product value = edit.product(type: 'consign');
   Object? error;
   int reads = 0;
@@ -44,7 +47,16 @@ class Products implements ProductRepository {
   }
 
   @override
-  Future<List<Product>> getProducts() async => [value];
+  Future<List<Product>> getProducts({
+    String? query,
+    String? status,
+    String? category,
+    String? brand,
+    ProductSort? sort,
+    int? limit,
+    int offset = 0,
+    List<String>? codes,
+  }) async => [value];
 }
 
 ConsignmentRepository repo(Map<String, dynamic> item, Products products) =>

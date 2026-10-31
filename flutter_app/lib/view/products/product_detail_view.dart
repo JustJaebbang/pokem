@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/profile/widgets/public_profile_header.dart';
 import 'package:pokem_app/view/review/seller_reviews_view.dart';
 import 'package:pokem_app/view/review/product_reviews_view.dart';
 import 'package:pokem_app/view/purchase/checkout_view.dart';
@@ -139,6 +140,17 @@ class ProductDetailView extends ConsumerWidget {
                       ),
                       child: const Text('거래 후기 보기'),
                     ),
+                    if (detail.product.sellerId?.isNotEmpty == true)
+                      PublicProfileHeader(
+                        userId: detail.product.sellerId!,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => SellerReviewsView(
+                              sellerId: detail.product.sellerId!,
+                            ),
+                          ),
+                        ),
+                      ),
                     if (detail.product.sellerId?.isNotEmpty == true)
                       TextButton(
                         onPressed: () => Navigator.of(context).push(
