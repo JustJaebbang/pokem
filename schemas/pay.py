@@ -4,15 +4,14 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 class PayCreate(BaseModel):
     # 서버 내부 생성용. 사용자·매니저 ID는 검수 요청에서 조회한다.
     inspection_request_inspection_request_no: str = Field(pattern=r"^[0-9]{14}$")
-    pay_price: int = Field(ge=0, le=2147483647, strict=True)
+    model_config = ConfigDict(extra="forbid")
 
 
 class PayUpdate(BaseModel):
-    # 번호·생성 일시·외래키는 변경하지 않고 상태와 금액만 부분 수정한다.
+    # 금액은 수량으로 자동 계산하므로 상태만 수정한다.
     model_config = ConfigDict(extra="forbid")
 
     pay_status: str | None = Field(default=None, min_length=1, max_length=45, pattern=r"\S")
-    pay_price: int | None = Field(default=None, ge=0, le=2147483647, strict=True)
 
     @model_validator(mode="after")
     def validate_changes(self):
@@ -31,3 +30,8 @@ class PayResponse(BaseModel):
     user_user_id: str
     manager_manager_id: str
     inspection_request_inspection_request_no: str
+
+
+class PayCompleteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_price: int = Field(ge=0, le=2147483647, strict=True)

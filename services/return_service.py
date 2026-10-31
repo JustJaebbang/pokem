@@ -26,11 +26,19 @@ def ensure_return(c, inspect):
     )
 
 
-def get_returns(db, user_id=None, limit=20, offset=0):
-    where = " WHERE user_user_id = %s" if user_id is not None else ""
-    params = (user_id, limit, offset) if user_id is not None else (limit, offset)
+def get_returns(db, user_id=None, limit=20, offset=0, inspect_code=None):
+    conditions = []
+    params = []
+    if user_id is not None:
+        conditions.append("user_user_id = %s")
+        params.append(user_id)
+    if inspect_code is not None:
+        conditions.append("inspect_inspect_code = %s")
+        params.append(inspect_code)
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+    params.extend((limit, offset))
     with db.cursor() as c:
-        c.execute(RETURN_SELECT + where + " ORDER BY (SELECT i.inspect_user_choice_at FROM inspect i WHERE i.inspect_code = `return`.inspect_inspect_code) DESC, return_no DESC LIMIT %s OFFSET %s", params)
+        c.execute(RETURN_SELECT + where + " ORDER BY (SELECT i.inspect_user_choice_at FROM inspect i WHERE i.inspect_code = `return`.inspect_inspect_code) DESC, return_no DESC LIMIT %s OFFSET %s", tuple(params))
         return [ReturnResponse(**row) for row in c.fetchall()]
 
 

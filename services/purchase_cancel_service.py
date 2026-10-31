@@ -229,7 +229,7 @@ def process_purchase_cancel(db, cancel_code, actor_id, action, reason=None):
                     UPDATE sell_product
                     SET sell_product_sell_status = %s
                     WHERE sell_product_code = %s AND sell_product_sell_status = %s
-                    """, ("거래취소", product["sell_product_code"], "거래중"),
+                    """, ("판매중", product["sell_product_code"], "거래중"),
                 )
                 _require(cursor.rowcount == 1, "상품 상태가 변경되었습니다.")
             cursor.execute(
@@ -265,7 +265,7 @@ def process_purchase_cancel(db, cancel_code, actor_id, action, reason=None):
     return result
 
 
-def get_purchase_cancel(db, current, cancel_code=None):
+def get_purchase_cancel(db, current, cancel_code=None, purchase_code=None):
     with db.cursor() as cursor:
         query = """
             SELECT pc.*, po.user_user_id AS seller_user_id
@@ -287,6 +287,9 @@ def get_purchase_cancel(db, current, cancel_code=None):
         if cancel_code is not None:
             query += "\n AND pc.purchase_cancel_code = %s"
             params.append(cancel_code)
+        if purchase_code is not None:
+            query += "\n AND pc.purchase_item_purchase_item_code = %s"
+            params.append(purchase_code)
         if current.role != "manager":
             query += "\n AND (pc.user_user_id = %s OR po.user_user_id = %s)"
             params.extend([current.account.user_id, current.account.user_id])

@@ -122,9 +122,33 @@ def create_review(db, review: ReviewCreate, user_id: str) -> ReviewResponse:
     return result
 
 
-def get_review(db, sell_product_code: str | None = None) -> list[ReviewResponse]:
+def get_review(db, sell_product_code: str | None = None, seller_user_id: str | None = None) -> list[ReviewResponse]:
     with db.cursor() as cursor:
-        if sell_product_code is None:
+        if seller_user_id is not None:
+            # EXISTS로 일반판매·대리판매 중복 관계가 있어도 후기가 중복되지 않게 한다.
+            query = """
+                SELECT r.* FROM review r
+                WHERE (
+                    EXISTS (
+                        SELECT 1 FROM post_item p
+                        WHERE p.sell_product_sell_product_code = r.sell_product_sell_product_code
+                          AND p.user_user_id = %s
+                    ) OR EXISTS (
+                        SELECT 1 FROM post_consign_item pci
+                        JOIN inspect i ON i.inspect_code = pci.inspect_inspect_code
+                        JOIN inspection_request ir ON ir.inspection_request_no = i.inspect_requested_no
+                        WHERE pci.sell_product_sell_product_code = r.sell_product_sell_product_code
+                          AND ir.user_user_id = %s
+                    )
+                )
+            """
+            params = [seller_user_id, seller_user_id]
+            if sell_product_code is not None:
+                query += " AND r.sell_product_sell_product_code = %s"
+                params.append(sell_product_code)
+            query += " ORDER BY r.review_date DESC, r.review_code DESC"
+            cursor.execute(query, tuple(params))
+        elif sell_product_code is None:
             cursor.execute(
                 """
                 SELECT *

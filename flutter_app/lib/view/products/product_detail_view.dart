@@ -1,3 +1,5 @@
+import 'package:pokem_app/view/review/seller_reviews_view.dart';
+import 'package:pokem_app/view/review/product_reviews_view.dart';
 import 'package:pokem_app/view/purchase/checkout_view.dart';
 import 'package:pokem_app/vm/chat/chat_start_vm.dart';
 import 'package:pokem_app/view/chat/chat_room_view.dart';
@@ -129,6 +131,25 @@ class ProductDetailView extends ConsumerWidget {
                       '상품번호 · ${detail.product.code}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => ProductReviewsView(productCode: code),
+                        ),
+                      ),
+                      child: const Text('거래 후기 보기'),
+                    ),
+                    if (detail.product.sellerId?.isNotEmpty == true)
+                      TextButton(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => SellerReviewsView(
+                              sellerId: detail.product.sellerId!,
+                            ),
+                          ),
+                        ),
+                        child: const Text('판매자 후기 보기'),
+                      ),
                     const Divider(height: 40),
                     Text(
                       '상품 설명',

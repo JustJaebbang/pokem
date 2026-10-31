@@ -9,6 +9,7 @@ class Product {
     required this.grade,
     required this.status,
     this.sellerId,
+    this.saleType,
   });
   final String code;
   final String serialCode;
@@ -18,7 +19,7 @@ class Product {
   final int price;
   final String grade;
   final String status;
-  final String? sellerId;
+  final String? sellerId, saleType;
   bool get isForSale => status == '판매중';
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
@@ -31,6 +32,7 @@ class Product {
     grade: json['sell_product_grade'] as String,
     status: json['sell_product_sell_status'] as String,
     sellerId: json['seller_user_id'] as String?,
+    saleType: json['sale_type'] as String?,
   );
 }
 

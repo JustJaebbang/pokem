@@ -18,10 +18,24 @@ class AuthApiService {
   Future<Map<String, dynamic>> me(String token) =>
       _request('/auth/me', token: token);
 
+  Future<Map<String, dynamic>> profile(String id, String token) =>
+      _request('/user/${Uri.encodeComponent(id)}', token: token);
+  Future<Map<String, dynamic>> updateProfile(
+    String id,
+    Map<String, String> data,
+    String token,
+  ) => _request(
+    '/user/${Uri.encodeComponent(id)}',
+    token: token,
+    body: data,
+    put: true,
+  );
+
   Future<Map<String, dynamic>> _request(
     String path, {
     Map<String, String>? body,
     String? token,
+    bool put = false,
   }) async {
     try {
       final uri = Uri.parse('$_baseUrl$path');
@@ -36,6 +50,8 @@ class AuthApiService {
       final response =
           await (body == null
                   ? _client.get(uri, headers: headers)
+                  : put
+                  ? _client.put(uri, headers: headers, body: jsonEncode(body))
                   : _client.post(uri, headers: headers, body: jsonEncode(body)))
               .timeout(const Duration(seconds: 15));
       if (response.statusCode >= 200 && response.statusCode < 300) {

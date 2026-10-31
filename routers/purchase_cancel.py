@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from database import get_db
 from dependencies import get_current_account, get_current_user
@@ -14,8 +14,8 @@ def create_purchase_cancel(request: PurchaseCancelCreate, db=Depends(get_db), us
 
 
 @router.get("", response_model=list[PurchaseCancelResponse])
-def get_purchase_cancel(db=Depends(get_db), current=Depends(get_current_account)):
-    return purchase_cancel_service.get_purchase_cancel(db, current)
+def get_purchase_cancel(purchase_code: str | None = Query(default=None, min_length=1, max_length=45), db=Depends(get_db), current=Depends(get_current_account)):
+    return purchase_cancel_service.get_purchase_cancel(db, current, purchase_code=purchase_code)
 
 
 @router.get("/{cancel_code}", response_model=PurchaseCancelResponse)

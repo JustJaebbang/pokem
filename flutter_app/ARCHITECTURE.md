@@ -67,3 +67,61 @@ PurchaseConfirmVm은 구매 건별 최신 상태 조회·구매확정·중복 �
 View의 수령 확인 대화상자 이후 VM 명령을 호출하며 실제 지급 조건은 서버가 최종 검사합니다.
 결과 불확실 상태를 화면 재진입 때도 유지하고 인증 변경 시 초기화합니다.
 서버 구매 상태 구매확정의 거래완료 표시와 확정 가능 조건은 Purchase 모델에 정의합니다.
+
+## 판매내역 계층
+
+SaleRecord는 판매 유형·판매가·실제 결제 금액·일시를 정의합니다.
+SalesApiService → SalesRepository → SalesVm → SalesView 순서로 기존 계층 규칙을 따릅니다.
+서버의 sale_history는 일반판매·대리판매 소유 관계를 결합하고 인증된 사용자의 내역만 반환합니다.
+SalesVm은 조회·재시도·인증 만료 처리를 담당하며 View는 표시·화면 이동만 처리합니다.
+
+## 회원정보 계층
+
+UserProfile과 ProfileInput은 조회·수정 모델입니다.
+AuthApiService의 인증된 GET·PUT을 ProfileRepository가 사용하며 ProfileVm이 조회·검증·저장을 담당합니다.
+ProfileView는 폼·컨트롤러·저장 결과 안내와 화면 이동을 처리합니다.
+서버에서 수정 가능한 전화번호·이메일·주소만 전송합니다.
+
+## 검수신청 계층
+
+InspectionRequest는 신청번호·수량·신청일·담당자 모델입니다.
+InspectionApiService → InspectionRepository → InspectionHistoryVm/InspectionCreateVm → View로 연결합니다.
+생성 VM이 수량 검증·중복 제출·불확실 응답·401·인증 변경 시 응답 무시를 처리합니다.
+View는 폼·입력 컨트롤러·신청번호 표시·화면 이동만 담당합니다.
+
+InspectionResult는 상태·판정·사용자 선택 가능 조건을 정의합니다.
+InspectionResultsVm은 신청별 결과 조회, InspectionChoiceVm은 카드별 최신 상태 확인·선택·중복 차단·응답 유실 확인을 담당합니다.
+InspectionResultsView와 InspectionChoiceActions는 표시·확인 대화상자·명령 전달만 담당합니다.
+
+검수비 조회는 InspectionFee → InspectionFeeApiService → InspectionFeeRepository → InspectionFeeVm → InspectionFeeView로 분리합니다. 관리자 전용 결제 상태 변경 API는 사용자 앱에서 호출하지 않습니다.
+
+InspectionFeePaymentVm은 사용자 버튼으로 결제완료 상태를 기록하고 중복 제출·결과 불확실 상태·재조회·인증 변경을 처리합니다. 금액은 서버가 검사하며 외부 입금 확인이나 포켐머니 차감은 하지 않습니다.
+
+DepositRefund 모델과 InspectionFeeApiService/Repository를 통해 결제별 환급 기록을 조회합니다. DepositRefundVm이 페이징·인증·오류를 처리하고 DepositRefundView는 기록 표시와 명령만 담당합니다.
+
+ReturnItem → ReturnApiService → ReturnRepository → ReturnVm → ReturnView로 반환내역을 조회합니다. ReturnVm은 본인 인증·필터·페이지 상태·재시도를 관리하고 View는 반환 접수와 담당자 배정 정보만 표시합니다. 배송 처리와 분리합니다.
+
+PurchaseCancellation과 PurchaseCancelSnapshot은 취소 정보·신청 가능 조건을 정의합니다. PurchaseCancelRepository가 구매·취소 정보를 결합하며 PurchaseCancelVm이 신청·철회·검증·응답 유실 확인을 담당합니다. View는 입력·확인 대화상자·표시만 처리합니다.
+
+판매자 취소 요청은 SellerCancelRepository가 판매자 ID로 내역을 구분하고 SellerCancelVm이 목록 조회를 담당합니다. SellerCancelDecisionVm은 최신 상태·권한 확인·승인/거절·중복 방지·응답 유실 확인을 처리합니다. 확인 대화상자와 선택적 사유 입력은 SellerCancelView에 둡니다.
+
+## 후기 계층
+
+ReviewRecord와 ReviewSnapshot은 후기·최신 구매·작성 가능 조건을 정의합니다.
+ReviewApiService와 기존 PurchaseApiService를 ReviewRepository가 결합해 구매별 후기를 식별합니다.
+ReviewVm이 별점·내용 검증·작성·결과 확인·인증 변경을, ProductReviewsVm이 공개 상품 후기 조회를 담당합니다.
+ReviewView는 폼·별점 입력·컨트롤러, ReviewCard와 ProductReviewsView는 후기 표시를 담당합니다.
+
+판매자 후기는 ReviewApiService/ReviewRepository의 판매자별 조회를 SellerReviewsVm이 사용합니다. SellerReviewSummary가 건수와 평균을 계산하고 SellerReviewsView는 결과만 표시합니다. 일반판매·대리판매 소유자 관계 필터링은 서버 서비스가 담당합니다.
+
+## 상품 수정 계층
+
+ProductEditInput은 폼 입력, ProductEditDraft는 검증 후 수정 요청을 정의합니다.
+ProductEditApiService → ProductEditRepository → ProductEditVm → ProductEditView로 연결합니다.
+VM이 소유자·판매 유형·상태·가격 검증과 수정 후 갱신을 담당하고 View는 입력·표시·화면 이동만 처리합니다.
+내 상품 관리 목록은 SalesView의 관리 모드로 기존 SalesVm 조회를 재사용합니다.
+
+상품 수정 사진 교체는 ProductEditVm이 기존 ProductPhotoPicker와 ProductPublishRepository.uploadPhoto를 조합합니다. 선택 사진·업로드 주소·선택 진행·오류는 ProductEditState가 보관하고 ProductEditView는 미리보기와 입력 명령만 처리합니다. 저장 재시도 시 업로드 주소를 재사용합니다.
+
+
+- 취소 승인: SellerCancelDecisionVm에서 승인 결과를 반영하고 상품 상세·홈·관심상품·판매내역을 갱신합니다. 서버의 승인 트랜잭션에서 환불과 상품 판매중 복구를 함께 처리합니다.

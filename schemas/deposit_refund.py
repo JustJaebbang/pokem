@@ -5,7 +5,6 @@ class DepositRefundCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     pay_pay_no: str = Field(min_length=1, max_length=64)
-    deposit_refund_price: int = Field(gt=0, le=2147483647, strict=True)
     # 환급 처리자는 결제를 담당했던 매니저와 다를 수 있으므로 따로 입력받는다.
     manager_manager_id: str = Field(min_length=1, max_length=45, pattern=r"\S")
 

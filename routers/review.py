@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from database import get_db
 from dependencies import get_current_user
@@ -14,8 +14,8 @@ def create_review(review: ReviewCreate, db=Depends(get_db), current_user=Depends
 
 
 @router.get("", response_model=list[ReviewResponse])
-def get_review(sell_product_code: str | None = None, db=Depends(get_db)):
-    return review_service.get_review(db, sell_product_code)
+def get_review(sell_product_code: str | None = None, seller_user_id: str | None = Query(default=None, min_length=1, max_length=20, pattern=r"\S"), db=Depends(get_db)):
+    return review_service.get_review(db, sell_product_code, seller_user_id=seller_user_id)
 
 
 @router.get("/{review_code}", response_model=ReviewResponse)

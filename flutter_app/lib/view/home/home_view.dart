@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/inspection/inspection_history_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -62,8 +63,10 @@ class HomeView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('검수 신청은 다음 단계에서 연결합니다.')),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const InspectionHistoryView(),
+                      ),
                     ),
                     icon: const Icon(Icons.fact_check_outlined),
                     label: const Text('검수신청'),

@@ -19,7 +19,7 @@ class InspectChoice(BaseModel):
     inspect_user_choice: Literal["반환", "대리판매"]
 
 
-class InspectResponse(BaseModel):
+class InspectUserResponse(BaseModel):
     inspect_code: str
     inspect_serial_code: str
     seq: int
@@ -27,8 +27,11 @@ class InspectResponse(BaseModel):
     inspect_status: str
     inspect_date: str | None
     inspect_grade: str | None
-    inspect_grade_reason: str | None
     inspect_user_choice: str | None
     inspect_user_choice_at: str | None
     manager_manager_id: str | None
     user_user_id: str
+
+
+class InspectResponse(InspectUserResponse):
+    inspect_grade_reason: str | None

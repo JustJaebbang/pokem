@@ -1,16 +1,16 @@
+from inspection_pricing import MAX_INSPECTION_AMOUNT
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class InspectionRequestCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    inspection_request_amount: int = Field(strict=True, gt=0, le=2147483647)
+    inspection_request_amount: int = Field(strict=True, gt=0, le=MAX_INSPECTION_AMOUNT)
     user_user_id: str = Field(min_length=1)
 
 
 class InspectionRequestManagerUpdate(BaseModel):
     manager_manager_id: str = Field(min_length=1, pattern=r"\S")
-    # 매니저가 확정한 총 결제 금액. DB INT 범위 안의 원 단위 정수만 받는다.
-    pay_price: int = Field(ge=0, le=2147483647, strict=True)
+    model_config = ConfigDict(extra="forbid")
 
 
 class InspectionRequestResponse(BaseModel):

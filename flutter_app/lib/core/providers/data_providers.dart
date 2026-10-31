@@ -1,7 +1,22 @@
+import 'package:pokem_app/repository/products/product_edit_repository.dart';
+import 'package:pokem_app/service/products/product_edit_api_service.dart';
+import 'package:pokem_app/repository/review/review_repository.dart';
+import 'package:pokem_app/service/review/review_api_service.dart';
+import 'package:pokem_app/repository/purchase/seller_cancel_repository.dart';
+import 'package:pokem_app/repository/purchase/purchase_cancel_repository.dart';
+import 'package:pokem_app/service/purchase/purchase_api_service.dart';
+import 'package:pokem_app/repository/inspection/return_repository.dart';
+import 'package:pokem_app/service/inspection/return_api_service.dart';
+import 'package:pokem_app/repository/inspection/inspection_fee_repository.dart';
+import 'package:pokem_app/service/inspection/inspection_fee_api_service.dart';
+import 'package:pokem_app/repository/inspection/inspection_repository.dart';
+import 'package:pokem_app/service/inspection/inspection_api_service.dart';
+import 'package:pokem_app/repository/profile/profile_repository.dart';
+import 'package:pokem_app/repository/sales/sales_repository.dart';
+import 'package:pokem_app/service/sales/sales_api_service.dart';
 import 'package:pokem_app/repository/wallet/wallet_repository.dart';
 import 'package:pokem_app/service/wallet/wallet_api_service.dart';
 import 'package:pokem_app/repository/purchase/purchase_repository.dart';
-import 'package:pokem_app/service/purchase/purchase_api_service.dart';
 import 'package:pokem_app/service/chat/chat_api_service.dart';
 import 'package:pokem_app/service/chat/chat_socket_service.dart';
 import 'package:pokem_app/repository/chat/chat_repository.dart';
@@ -107,4 +122,74 @@ final walletRepositoryProvider = Provider<WalletRepository>((ref) {
   final client = http.Client();
   ref.onDispose(client.close);
   return WalletRepository(WalletApiService(client, baseUrl: ApiConfig.baseUrl));
+});
+
+final salesRepositoryProvider = Provider<SalesRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return SalesRepository(SalesApiService(client, baseUrl: ApiConfig.baseUrl));
+});
+
+final profileRepositoryProvider = Provider<ProfileRepository>(
+  (ref) => ProfileRepository(ref.watch(authApiServiceProvider)),
+);
+
+final inspectionRepositoryProvider = Provider<InspectionRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return InspectionRepository(
+    InspectionApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final inspectionFeeRepositoryProvider = Provider<InspectionFeeRepository>((
+  ref,
+) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return InspectionFeeRepository(
+    InspectionFeeApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final returnRepositoryProvider = Provider<ReturnRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return ReturnRepository(ReturnApiService(client, baseUrl: ApiConfig.baseUrl));
+});
+
+final purchaseCancelRepositoryProvider = Provider<PurchaseCancelRepository>((
+  ref,
+) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return PurchaseCancelRepository(
+    PurchaseApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final sellerCancelRepositoryProvider = Provider<SellerCancelRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return SellerCancelRepository(
+    PurchaseApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return ReviewRepository(
+    ReviewApiService(client, baseUrl: ApiConfig.baseUrl),
+    PurchaseApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final productEditRepositoryProvider = Provider<ProductEditRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return ProductEditRepository(
+    ProductEditApiService(client, baseUrl: ApiConfig.baseUrl),
+    ref.watch(productRepositoryProvider),
+  );
 });

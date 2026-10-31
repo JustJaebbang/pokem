@@ -153,6 +153,7 @@ def get_sell_product_code(db, sell_product_code: str) -> SellProductResponse | N
             registrations = get_sale_registrations(cursor, sell_product_code)
             # 일반판매와 대리판매 모두 실제 상품 소유자를 반환합니다.
             row["seller_user_id"] = registrations[0].get("user_user_id") if len(registrations) == 1 else None
+            row["sale_type"] = registrations[0].get("registration_type", "direct") if len(registrations) == 1 else None
 
     return SellProductResponse(**row) if row else None
 
@@ -161,6 +162,14 @@ def get_sell_product_code(db, sell_product_code: str) -> SellProductResponse | N
 def put_sell_product_code(db, sp: SellProductUpdate, sell_product_code: str) -> SellProductResponse | None:
     try:
         with db.cursor() as cursor:
+            cursor.execute("SELECT sell_product_sell_status FROM sell_product WHERE sell_product_code = %s FOR UPDATE",
+                           (sell_product_code,))
+            current = cursor.fetchone()
+            if current is None:
+                db.rollback()
+                return None
+            if current["sell_product_sell_status"] != "판매중":
+                raise HTTPException(status_code=409, detail="판매중인 상품만 수정할 수 있습니다.")
             cursor.execute(
                 """
                 UPDATE sell_product
