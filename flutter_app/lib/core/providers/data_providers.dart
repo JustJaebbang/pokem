@@ -23,6 +23,8 @@ import 'package:pokem_app/repository/chat/chat_repository.dart';
 import 'package:pokem_app/service/wishlist/wishlist_api_service.dart';
 import 'package:pokem_app/repository/wishlist/wishlist_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pokem_app/repository/manager/manager_repository.dart';
+import 'package:pokem_app/service/manager/manager_api_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:pokem_app/core/config/api_config.dart';
 import 'package:pokem_app/service/auth/auth_api_service.dart';
@@ -33,6 +35,14 @@ import 'package:pokem_app/repository/products/product_repository.dart';
 import 'package:pokem_app/service/products/product_photo_picker.dart';
 import 'package:pokem_app/service/products/product_publish_api_service.dart';
 import 'package:pokem_app/repository/products/product_publish_repository.dart';
+
+final managerRepositoryProvider = Provider<ManagerRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return ManagerRepository(
+    ManagerApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
 
 final authApiServiceProvider = Provider<AuthApiService>((ref) {
   final client = http.Client();
