@@ -102,3 +102,12 @@ class DepositRefundTests(unittest.TestCase):
         self.cursor.fetchall.side_effect=None;self.cursor.fetchall.return_value=[]
         self.assertEqual(self.client.get('/deposit_refund?limit=5&offset=10').json(),[])
         self.assertEqual(self.cursor.execute.call_args.args[1],(5,10))
+
+    def test_pay_filter_keeps_owner_restriction(self):
+        from services.deposit_refund_service import get_deposit_refunds
+        self.cursor.fetchall.side_effect = None
+        self.cursor.fetchall.return_value = []
+        get_deposit_refunds(self.db, user_id='owner', pay_no='pay1')
+        sql, params = self.cursor.execute.call_args.args
+        self.assertIn('user_user_id = %s AND pay_pay_no = %s', sql)
+        self.assertEqual(params, ('owner', 'pay1', 20, 0))

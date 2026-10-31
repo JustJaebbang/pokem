@@ -11,9 +11,10 @@ router = APIRouter(prefix="/return", tags=["return"])
 @router.get("", response_model=list[ReturnResponse])
 def get_returns(limit: int = Query(default=20, ge=1, le=100),
                 offset: int = Query(default=0, ge=0),
+                inspect_code: str | None = Query(default=None, min_length=1, max_length=80),
                 db=Depends(get_db), current=Depends(get_current_account)):
     user_id = current.account.user_id if current.role == "user" else None
-    return return_service.get_returns(db, user_id=user_id, limit=limit, offset=offset)
+    return return_service.get_returns(db, user_id=user_id, limit=limit, offset=offset, inspect_code=inspect_code)
 
 
 @router.get("/{return_no}", response_model=ReturnResponse)

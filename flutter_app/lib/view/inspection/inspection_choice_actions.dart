@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/inspection/return_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/model/inspection/inspection_result.dart';
@@ -12,13 +13,27 @@ class InspectionChoiceActions extends ConsumerWidget {
     final vm = ref.read(inspectionChoiceVmProvider(item.code).notifier);
     final result = state.result ?? item;
     if (result.hasChoice) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 16),
-        child: Text(
-          result.choice == '반환'
-              ? '반환을 선택했습니다. 반환 접수 후 배송은 담당자가 진행합니다.'
-              : '대리판매를 선택했습니다. 판매상품 등록은 담당자가 진행합니다.',
-        ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Text(
+              result.choice == '반환'
+                  ? '반환을 선택했습니다. 반환 접수 후 배송은 담당자가 진행합니다.'
+                  : '대리판매를 선택했습니다. 판매상품 등록은 담당자가 진행합니다.',
+            ),
+          ),
+          if (result.choice == '반환')
+            TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ReturnView(inspectCode: result.code),
+                ),
+              ),
+              child: const Text('반환내역 보기'),
+            ),
+        ],
       );
     }
     return Column(

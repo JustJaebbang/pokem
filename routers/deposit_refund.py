@@ -19,11 +19,12 @@ def create_deposit_refund(request: DepositRefundRequest, db=Depends(get_db), man
 def get_deposit_refunds(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    pay_no: str | None = Query(default=None, min_length=1, max_length=64),
     db=Depends(get_db),
     current=Depends(get_current_account),
 ):
     user_id = current.account.user_id if current.role == "user" else None
-    return deposit_refund_service.get_deposit_refunds(db, limit, offset, user_id=user_id)
+    return deposit_refund_service.get_deposit_refunds(db, limit, offset, user_id=user_id, pay_no=pay_no)
 
 
 @router.get("/{deposit_refund_no}", response_model=DepositRefundResponse)

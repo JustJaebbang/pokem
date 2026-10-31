@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/inspection/deposit_refund_view.dart';
 import 'package:pokem_app/vm/inspection/inspection_fee_payment_vm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -65,6 +66,18 @@ class InspectionFeeView extends ConsumerWidget {
               SelectableText('결제번호 ${fee.number}'),
               const SizedBox(height: 8),
               Text('등록일 ${fee.date}'),
+              TextButton(
+                onPressed: payment.busy
+                    ? null
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              DepositRefundView(payNumber: fee.number),
+                        ),
+                      ),
+                child: const Text('보증금 환급내역'),
+              ),
+
               if (payment.error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 16),

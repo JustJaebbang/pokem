@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/inspection/return_view.dart';
 import 'package:pokem_app/view/inspection/inspection_history_view.dart';
 import 'package:pokem_app/view/profile/profile_view.dart';
 import 'package:pokem_app/view/mypage/mypage_menu.dart';
@@ -76,6 +77,13 @@ class HomeShell extends ConsumerWidget {
                     MaterialPageRoute<void>(
                       builder: (_) => const InspectionHistoryView(),
                     ),
+                  ),
+                ),
+                ListTile(
+                  title: const Text('반환내역'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const ReturnView()),
                   ),
                 ),
                 if (state.error != null)

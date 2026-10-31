@@ -1,3 +1,10 @@
+import 'package:pokem_app/repository/review/review_repository.dart';
+import 'package:pokem_app/service/review/review_api_service.dart';
+import 'package:pokem_app/repository/purchase/seller_cancel_repository.dart';
+import 'package:pokem_app/repository/purchase/purchase_cancel_repository.dart';
+import 'package:pokem_app/service/purchase/purchase_api_service.dart';
+import 'package:pokem_app/repository/inspection/return_repository.dart';
+import 'package:pokem_app/service/inspection/return_api_service.dart';
 import 'package:pokem_app/repository/inspection/inspection_fee_repository.dart';
 import 'package:pokem_app/service/inspection/inspection_fee_api_service.dart';
 import 'package:pokem_app/repository/inspection/inspection_repository.dart';
@@ -8,7 +15,6 @@ import 'package:pokem_app/service/sales/sales_api_service.dart';
 import 'package:pokem_app/repository/wallet/wallet_repository.dart';
 import 'package:pokem_app/service/wallet/wallet_api_service.dart';
 import 'package:pokem_app/repository/purchase/purchase_repository.dart';
-import 'package:pokem_app/service/purchase/purchase_api_service.dart';
 import 'package:pokem_app/service/chat/chat_api_service.dart';
 import 'package:pokem_app/service/chat/chat_socket_service.dart';
 import 'package:pokem_app/repository/chat/chat_repository.dart';
@@ -131,5 +137,38 @@ final inspectionFeeRepositoryProvider = Provider<InspectionFeeRepository>((
   ref.onDispose(client.close);
   return InspectionFeeRepository(
     InspectionFeeApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final returnRepositoryProvider = Provider<ReturnRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return ReturnRepository(ReturnApiService(client, baseUrl: ApiConfig.baseUrl));
+});
+
+final purchaseCancelRepositoryProvider = Provider<PurchaseCancelRepository>((
+  ref,
+) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return PurchaseCancelRepository(
+    PurchaseApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final sellerCancelRepositoryProvider = Provider<SellerCancelRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return SellerCancelRepository(
+    PurchaseApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return ReviewRepository(
+    ReviewApiService(client, baseUrl: ApiConfig.baseUrl),
+    PurchaseApiService(client, baseUrl: ApiConfig.baseUrl),
   );
 });
