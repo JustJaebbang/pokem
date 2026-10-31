@@ -16,7 +16,18 @@ class WishlistRepository {
     if (codes.isEmpty) {
       return WishlistSnapshot(codes: codes, products: const []);
     }
-    final all = await _products.getProducts();
+    final all = <Product>[];
+    final requested = codes.toList();
+    for (var index = 0; index < requested.length; index += 100) {
+      all.addAll(
+        await _products.getProducts(
+          codes: requested.sublist(
+            index,
+            index + 100 > requested.length ? requested.length : index + 100,
+          ),
+        ),
+      );
+    }
     final byCode = {for (final p in all) p.code: p};
     return WishlistSnapshot(
       codes: codes,

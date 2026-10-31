@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/model/products/product.dart';
 import 'package:pokem_app/vm/products/products_vm.dart';
@@ -6,9 +8,23 @@ import 'package:pokem_app/vm/wishlist/wishlist_vm.dart';
 class ProductSearchVm extends Notifier<String> {
   ProductSearchVm(this.wishlistOnly);
   final bool wishlistOnly;
+  Timer? _timer;
   @override
-  String build() => '';
-  void search(String query) => state = query;
+  String build() {
+    ref.onDispose(() => _timer?.cancel());
+    return '';
+  }
+
+  void search(String query) {
+    _timer?.cancel();
+    if (wishlistOnly || query.trim().isEmpty) {
+      state = query;
+      return;
+    }
+    _timer = Timer(const Duration(milliseconds: 300), () {
+      if (ref.mounted) state = query;
+    });
+  }
 }
 
 final productSearchQueryProvider = NotifierProvider.autoDispose
@@ -35,10 +51,20 @@ final productSearchResultsProvider = Provider.autoDispose
         }
         return AsyncData(wishlist.products.where(matches).toList());
       }
+      final sort = ref.watch(productSearchSortProvider);
       return ref
-          .watch(productsVmProvider)
+          .watch(marketSearchVmProvider((query: query, sort: sort)))
           .products
-          .whenData(
-            (items) => items.where((p) => p.isForSale && matches(p)).toList(),
-          );
+          .whenData((items) => items.where((item) => item.isForSale).toList());
     });
+
+class ProductSearchSortVm extends Notifier<ProductSort> {
+  @override
+  ProductSort build() => ProductSort.newest;
+  void select(ProductSort value) => state = value;
+}
+
+final productSearchSortProvider =
+    NotifierProvider.autoDispose<ProductSearchSortVm, ProductSort>(
+      ProductSearchSortVm.new,
+    );

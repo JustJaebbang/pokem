@@ -1,3 +1,5 @@
+import 'package:pokem_app/view/profile/widgets/public_profile_header.dart';
+import 'package:pokem_app/vm/profile/public_profile_vm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/model/review/review_record.dart';
@@ -18,7 +20,10 @@ class SellerReviewsView extends ConsumerWidget {
           IconButton(
             onPressed: result.isLoading
                 ? null
-                : () => ref.read(provider.notifier).refresh(),
+                : () {
+                    ref.read(provider.notifier).refresh();
+                    ref.invalidate(publicProfileVmProvider(sellerId));
+                  },
             icon: const Icon(Icons.refresh),
             tooltip: '새로고침',
           ),
@@ -44,6 +49,7 @@ class SellerReviewsView extends ConsumerWidget {
         data: (summary) => RefreshIndicator(
           onRefresh: () async {
             ref.read(provider.notifier).refresh();
+            ref.invalidate(publicProfileVmProvider(sellerId));
             try {
               await ref.read(provider.future);
             } catch (_) {}
@@ -52,10 +58,7 @@ class SellerReviewsView extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(20),
             children: [
-              Text(
-                '판매자 $sellerId',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              PublicProfileHeader(userId: sellerId),
               const SizedBox(height: 16),
               Text('후기 ${summary.count}개'),
               const SizedBox(height: 8),

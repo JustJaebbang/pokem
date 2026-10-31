@@ -97,6 +97,7 @@ class PurchaseConfirmVm extends Notifier<PurchaseConfirmState> {
     ref.invalidate(purchaseHistoryVmProvider);
     ref.invalidate(productDetailVmProvider(productCode));
     ref.invalidate(productsVmProvider);
+    ref.invalidate(marketSearchVmProvider);
     ref.invalidate(wishlistVmProvider);
     ref.invalidate(walletVmProvider);
     ref.invalidate(notificationsVmProvider);

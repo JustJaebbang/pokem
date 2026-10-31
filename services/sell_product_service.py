@@ -125,16 +125,58 @@ def create_sell_product(db, sp: SellProductCreate, user_id) -> SellProductRespon
 
 
 # 전체 sell_product 정보 가져오기
-def get_sell_product(db) -> list[SellProductResponse] | None:
+def get_sell_product(db, *, q=None, status=None, sort=None, limit=None, offset=0, codes=None, category=None, brand=None) -> list[SellProductResponse]:
+    query = (q or '').strip()
+    if category is None and brand is None and not query and status is None and sort is None and limit is None and not offset and codes is None:
+        with db.cursor() as cursor:
+            cursor.execute("SELECT * FROM sell_product")
+            rows=cursor.fetchall()
+        return [SellProductResponse(**row) for row in rows]
+    if category is None and brand is None and codes is not None and not query and status is None and sort is None and limit is None and not offset:
+        if not codes: return []
+        with db.cursor() as cursor:
+            cursor.execute('SELECT * FROM sell_product WHERE sell_product_code IN ('+','.join(['%s']*len(codes))+')',tuple(codes))
+            rows=cursor.fetchall()
+        return [SellProductResponse(**row) for row in rows]
+    if sort not in (None,'newest','price_asc','price_desc'):
+        raise HTTPException(status_code=422,detail='정렬 조건을 확인해주세요.')
+    sql = """
+        SELECT sp.* FROM sell_product sp
+        LEFT JOIN (
+          SELECT product_code, MAX(REPLACE(SUBSTRING(registered_at,1,19),'T',' ')) AS posted_at FROM (
+            SELECT sell_product_sell_product_code AS product_code, post_item_post_date AS registered_at FROM post_item
+            UNION ALL
+            SELECT sell_product_sell_product_code, post_consign_item_date FROM post_consign_item
+          ) registrations GROUP BY product_code
+        ) dates ON dates.product_code=sp.sell_product_code
+    """
+    conditions=[]
+    params=[]
+    if category is not None or brand is not None:
+        filters = ['ci.cardinfo_serial_code=sp.sell_product_serial_code']
+        for column, value in [('cardinfo_category', category), ('cardinfo_brand', brand)]:
+            if value is not None:
+                filters.append('ci.' + column + '=%s')
+                params.append(value)
+        conditions.append('EXISTS (SELECT 1 FROM cardinfo ci WHERE ' + ' AND '.join(filters) + ')')
+    if status is not None:
+        conditions.append('sp.sell_product_sell_status=%s')
+        params.append(status)
+    if query:
+        literal=query.replace('!','!!').replace('%','!%').replace('_','!_')
+        conditions.append("(LOWER(COALESCE(sp.sell_product_title,'')) LIKE LOWER(%s) ESCAPE '!' OR LOWER(COALESCE(sp.sell_product_contents,'')) LIKE LOWER(%s) ESCAPE '!' OR LOWER(COALESCE(sp.sell_product_serial_code,'')) LIKE LOWER(%s) ESCAPE '!')")
+        params.extend(['%'+literal+'%']*3)
+    if codes is not None:
+        if not codes: return []
+        conditions.append('sp.sell_product_code IN ('+','.join(['%s']*len(codes))+')')
+        params.extend(codes)
+    if conditions: sql+=' WHERE '+' AND '.join(conditions)
+    order={'price_asc':'sp.sell_product_sell_price ASC,','price_desc':'sp.sell_product_sell_price DESC,'}.get(sort,'')
+    sql+=' ORDER BY '+order+' dates.posted_at DESC, sp.sell_product_code DESC'
+    if limit is not None:
+        sql+=' LIMIT %s OFFSET %s';params.extend([limit,offset])
     with db.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT *
-            FROM sell_product
-            """,
-        )
-        rows = cursor.fetchall()
-
+        cursor.execute(sql,tuple(params));rows=cursor.fetchall()
     return [SellProductResponse(**row) for row in rows]
 
 
@@ -328,3 +370,10 @@ def relist_sell_product(db, product_code: str, seller_id: str, role: str = "user
         db.rollback()
         raise
     return result
+
+
+def get_product_filters(db):
+    with db.cursor() as cursor:
+        cursor.execute("""SELECT DISTINCT cardinfo_category AS category, cardinfo_brand AS brand
+            FROM cardinfo ORDER BY cardinfo_category, cardinfo_brand""")
+        return cursor.fetchall()

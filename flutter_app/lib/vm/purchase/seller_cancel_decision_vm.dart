@@ -117,6 +117,7 @@ class SellerCancelDecisionVm extends Notifier<SellerCancelDecisionState> {
     ref.invalidate(notificationsVmProvider);
     ref.invalidate(salesVmProvider);
     ref.invalidate(productsVmProvider);
+    ref.invalidate(marketSearchVmProvider);
     ref.invalidate(productDetailVmProvider);
     ref.invalidate(wishlistVmProvider);
     ref.invalidate(walletVmProvider);

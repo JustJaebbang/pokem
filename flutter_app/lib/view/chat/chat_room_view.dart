@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/profile/widgets/profile_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/vm/chat/chat_room_vm.dart';
@@ -29,19 +30,29 @@ class _ChatRoomViewState extends ConsumerState<ChatRoomView> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Text(
-              state.room?.name ?? '채팅',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (state.room != null)
-              Text(
-                state.room!.otherId(state.userId),
-                style: theme.textTheme.bodySmall,
+            ProfileAvatar(size: 36, url: state.room?.displayOtherImage),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    state.room?.displayOther(state.userId) ?? '채팅',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (state.room != null)
+                    Text(
+                      state.room!.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                ],
               ),
+            ),
           ],
         ),
       ),

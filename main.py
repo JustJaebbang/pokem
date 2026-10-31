@@ -10,6 +10,7 @@ import joblib
 from routers.wallet_ledger import router as wallet_ledger_router
 from routers.pending_actions import router as pending_actions_router
 from routers.notification import router as notification_router
+from routers.public_profile import router as public_profile_router
 from routers.user import router as user_router
 from routers.sell_product import router as sell_product_router
 from routers.product_image import router as product_image_router
@@ -57,6 +58,7 @@ async def lifespan(app):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(user_router)
+app.include_router(public_profile_router)
 app.include_router(notification_router)
 app.include_router(pending_actions_router)
 app.include_router(wallet_ledger_router)

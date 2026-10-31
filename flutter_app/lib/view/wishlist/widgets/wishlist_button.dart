@@ -17,7 +17,15 @@ class WishlistButton extends ConsumerWidget {
       key: ValueKey('wishlist-${product.code}'),
       tooltip: wished ? '관심 해제' : '관심 등록',
       onPressed: enabled
-          ? () => ref.read(wishlistVmProvider.notifier).toggle(product)
+          ? () async {
+              await ref.read(wishlistVmProvider.notifier).toggle(product);
+              if (!context.mounted) return;
+              final error = ref.read(wishlistVmProvider).error;
+              if (error != null) {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(error)));
+              }
+            }
           : null,
       icon: AnimatedSwitcher(
         duration: const Duration(milliseconds: 120),

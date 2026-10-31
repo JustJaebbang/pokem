@@ -152,6 +152,7 @@ class ProductCreateVm extends Notifier<ProductCreateState> {
         created: product,
       );
       ref.invalidate(productsVmProvider);
+      ref.invalidate(marketSearchVmProvider);
       return product;
     } catch (error) {
       if (!ref.mounted) return null;

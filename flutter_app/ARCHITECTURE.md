@@ -144,7 +144,11 @@ VM이 소유자·판매 유형·상태·가격 검증과 수정 후 갱신을 �
 
 - 처리 대기: PendingActionsCard → PendingActionsVm → PendingActionsRepository → PendingActionsApiService → GET /mypage/pending-actions. 마이페이지 탭에서만 구독하며 인증 변경 시 초기화하고 검수비 결제·검수 의사 선택·판매자 취소 결정 VM이 건수 캐시를 갱신합니다.
 
-- 검색: ProductSearchView → ProductSearchVm/검색 결과 Provider → 기존 ProductsVm 또는 WishlistVm. 검색어 상태는 Riverpod에서 관리하고 관심상품 검색은 판매 상태 필터를 적용하지 않습니다.
+- 검색: ProductSearchView → ProductSearchVm(입력 모으기)/ProductSearchSortVm → 검색어·정렬별 marketSearchVmProvider(ProductsVm) → ProductRepository → ProductApiService. 관심상품 검색은 WishlistVm에서 현재 관심상품만 검색하며 판매 상태 필터를 적용하지 않습니다.
 - 알림: NotificationBell/NotificationsView → NotificationsVm → NotificationsRepository → NotificationsApiService/NotificationReadStorage. 서버는 업무 기록을 사용자별로 조회하고 클라이언트는 기기·환경·계정별 읽음 상태만 보관합니다. 읽음 저장 실패는 낙관 상태를 되돌리고 업무 처리 VM에서 알림 캐시를 갱신합니다.
 
 - 프로필 이미지: ProfileView → ProfileVm → 기존 ProductPhotoPicker/ProductPublishRepository 및 ProfileRepository. 편집 상태는 사진 미리보기·선택 중·업로드 URL 캐시·기본 이미지 복원을 관리합니다. ProfileSummaryVm은 마이페이지에서만 회원정보를 읽고 저장 완료 시 갱신합니다. 공통 ProfileAvatar는 URL/선택 이미지와 기본 아이콘 표시만 담당합니다.
+
+- 공개 프로필: PublicProfileHeader → PublicProfileVm → PublicProfileRepository → PublicProfileApiService. 공개용 응답을 별도로 제한하고 요청 ID 일치를 검증합니다. 채팅은 기존 ChatRoom 모델에 상대 표시용 필드를 추가하며 참가자 권한 확인 후 마스킹된 DTO만 반환합니다. 메시지 저장·WebSocket 경로의 조회는 늘리지 않습니다.
+
+- 상품 페이지 조회: 홈 ProductsVm과 검색 family가 동일 로직을 사용하며 세대 번호로 이전 요청 응답을 무시합니다. 각 상태는 다음 offset·추가 조회 중·추가 조회 오류를 보관하고, DB는 검색과 상태 필터링 및 정렬 후 LIMIT/OFFSET을 적용합니다. WishlistRepository는 codes 묶음 조회로 전체 상품 다운로드를 피합니다.

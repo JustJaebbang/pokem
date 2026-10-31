@@ -90,6 +90,8 @@ void main() {
         ),
         notificationsRepositoryProvider.overrideWithValue(repository),
         productsVmProvider.overrideWith(SearchProductsVm.new),
+        marketSearchVmProvider((query: '', sort: ProductSort.newest))
+            .overrideWith(SearchProductsVm.new),
         wishlistRepositoryProvider.overrideWithValue(
           MemoryWishlistRepository(
             allProducts: cards,
