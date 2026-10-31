@@ -33,6 +33,19 @@
 구매 응답은 `return_no`와 `inspect_inspect_code`가 NULL이고,
 반송 응답은 `purchase_item_code`와 `sell_product_sell_product_code`가 NULL입니다.
 
+## 배송 상태 변경
+
+매니저는 `PATCH /delivery/{delivery_no}/status`로 배송 상태를 변경합니다.
+
+```json
+{"delivery_status": "배송중"}
+```
+
+허용된 순서는 `배송준비 → 배송중 → 배송완료`입니다.
+같은 상태를 다시 요청하면 현재 배송을 그대로 반환하고,
+상태를 건너뛰거나 역행하면 409를 반환합니다.
+없는 배송번호는 404, 허용되지 않은 상태 값은 422를 반환합니다.
+
 기존 구매 기반 DB에는 `sql/delivery_return.sql`을 먼저 적용합니다.
 구매·반송 기록 생성과 배송 등록은 별도 API 호출입니다.
 
