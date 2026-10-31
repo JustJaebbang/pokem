@@ -125,3 +125,11 @@ VM이 소유자·판매 유형·상태·가격 검증과 수정 후 갱신을 �
 
 
 - 취소 승인: SellerCancelDecisionVm에서 승인 결과를 반영하고 상품 상세·홈·관심상품·판매내역을 갱신합니다. 서버의 승인 트랜잭션에서 환불과 상품 판매중 복구를 함께 처리합니다.
+
+- 배송 조회: DeliveryView → DeliveryVm → DeliveryRepository → DeliveryApiService. 구매번호/반환번호를 family 키로 사용하며 사용자 변경 시 다시 조회합니다. 저장소에서 전체 페이지를 순서대로 검색하고 상세 응답의 원본 번호와 소유자를 검증합니다. 배송 처리 로직은 서버에 유지합니다.
+
+- 대리판매 상세: ConsignmentView → ConsignmentVm → ConsignmentRepository → ConsignmentApiService/ProductRepository. 검수번호 또는 등록번호를 family 키로 사용하며, 저장소에서 등록 소유자·원본 연결·상품 소유자와 대리판매 유형을 확인합니다. 상품 조회 실패는 등록 정보와 별도로 표시합니다.
+
+- 회원탈퇴: QuitView → QuitVm → QuitRepository → QuitApiService. 확인·중복 방지·불명확한 결과는 VM에서 관리합니다. 세션별 VM 상태를 유지하며 계정 변경 시 초기화하고, 서버의 성공 응답 확인 후 LoginVm에서 세션을 정리합니다.
+
+- 회원탈퇴 서버 판정: user 행과 거래 관계를 보존하고 quit의 user_user_id 존재 여부로 활성 계정을 판단합니다. 공통 JWT 인증과 별도 WebSocket 인증·메시지 저장 경로에 동일한 탈퇴 판정을 적용합니다.

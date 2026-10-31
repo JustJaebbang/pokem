@@ -77,6 +77,25 @@ class LoginVm extends Notifier<LoginState> {
     }
   }
 
+  Future<void> finishWithdrawal({required bool confirmed}) async {
+    _expiryTimer?.cancel();
+    ref.read(authRepositoryProvider).forgetSession();
+    try {
+      await ref.read(authRepositoryProvider).logout();
+      if (ref.mounted) {
+        state = LoginState(
+          error: confirmed ? null : '계정을 확인할 수 없습니다. 다시 로그인해주세요.',
+        );
+      }
+    } catch (_) {
+      if (ref.mounted) {
+        state = const LoginState(
+          error: '로그인 정보를 삭제하지 못했습니다. 앱 설정에서 저장 정보를 확인해주세요.',
+        );
+      }
+    }
+  }
+
   void _scheduleExpiry(AuthSession? session) {
     _expiryTimer?.cancel();
     if (session == null) return;

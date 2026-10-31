@@ -103,6 +103,10 @@ class AuthRepository {
     }
   }
 
+  void forgetSession() {
+    _session = null;
+  }
+
   Future<void> logout() async {
     await _storage.clear();
     _session = null;

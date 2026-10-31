@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/consignment/consignment_view.dart';
 import 'package:pokem_app/view/inspection/return_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +25,17 @@ class InspectionChoiceActions extends ConsumerWidget {
                   : '대리판매를 선택했습니다. 판매상품 등록은 담당자가 진행합니다.',
             ),
           ),
+          if (result.choice == '대리판매')
+            TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ConsignmentView(
+                    source: (code: null, inspectCode: result.code),
+                  ),
+                ),
+              ),
+              child: const Text('대리판매 진행 보기'),
+            ),
           if (result.choice == '반환')
             TextButton(
               onPressed: () => Navigator.of(context).push(

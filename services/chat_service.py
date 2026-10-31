@@ -20,6 +20,7 @@ def create_chat(db, room_id: str, chat: ChatCreate, user_id: str, *, missing_use
                 SELECT user_id
                 FROM `user`
                 WHERE user_id = %s
+                  AND NOT EXISTS (SELECT 1 FROM `quit` q WHERE q.user_user_id = `user`.user_id)
                 FOR UPDATE
                 """, (user_id,),
             )

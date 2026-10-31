@@ -448,3 +448,7 @@ scripts
 !tests/test_product_edit.py
 
 !tests/test_purchase_cancel_approval.py
+
+!tests/test_user_quit.py
+
+!tests/test_quit_auth.py

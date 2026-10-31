@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/profile/quit_view.dart';
 import 'package:pokem_app/view/inspection/return_view.dart';
 import 'package:pokem_app/view/inspection/inspection_history_view.dart';
 import 'package:pokem_app/view/profile/profile_view.dart';
@@ -84,6 +85,13 @@ class HomeShell extends ConsumerWidget {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(builder: (_) => const ReturnView()),
+                  ),
+                ),
+                ListTile(
+                  title: const Text('회원탈퇴'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const QuitView()),
                   ),
                 ),
                 if (state.error != null)

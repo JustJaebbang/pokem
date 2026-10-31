@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/delivery/delivery_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/model/inspection/inspection_request.dart';
@@ -73,6 +74,19 @@ class ReturnView extends ConsumerWidget {
                         SelectableText('반환번호 ${item.number}'),
                         const SizedBox(height: 8),
                         SelectableText('검수번호 ${item.inspectCode}'),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => DeliveryView(
+                                source: (
+                                  purchaseCode: null,
+                                  returnNo: item.number,
+                                ),
+                              ),
+                            ),
+                          ),
+                          child: const Text('배송 조회'),
+                        ),
                       ],
                     ),
                   ),
