@@ -6,4 +6,6 @@ class InspectionFeeRepository {
   final InspectionFeeApiService _api;
   Future<InspectionFee?> getFee(String number, String token) =>
       _api.getFee(number, token);
+  Future<InspectionFee> complete(InspectionFee fee, String token) =>
+      _api.complete(fee, token);
 }

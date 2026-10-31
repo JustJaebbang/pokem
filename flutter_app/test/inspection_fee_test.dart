@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:pokem_app/model/inspection/inspection_fee.dart';
+import 'package:pokem_app/vm/inspection/inspection_fee_payment_vm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -61,46 +65,106 @@ void main() {
       );
     }
   });
-  testWidgets(
-    'fee screen shows server amount and no unsupported payment action',
-    (tester) async {
-      final c = (await tester.runAsync(() async {
-        final session = auth.repository(
-          auth.MemoryStorage(),
-          (_) => auth.response(auth.loginResponse()),
-        );
-        final repo = InspectionFeeRepository(
-          InspectionFeeApiService(
-            MockClient((_) async => auth.response([fee()])),
-            baseUrl: 'http://test.local',
-          ),
-        );
-        final c = ProviderContainer(
-          overrides: [
-            authRepositoryProvider.overrideWithValue(session),
-            inspectionFeeRepositoryProvider.overrideWithValue(repo),
-          ],
-        );
-        c.read(loginVmProvider);
-        await Future<void>.delayed(Duration.zero);
-        await c
-            .read(loginVmProvider.notifier)
-            .login('tester', 'pw', remember: false);
-        return c;
-      }))!;
-      addTearDown(c.dispose);
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: c,
-          child: const MaterialApp(
-            home: InspectionFeeView(number: '20261030000001'),
-          ),
+  test(
+    'ambiguous completion blocks repeat POST and reconciles from query',
+    () async {
+      var posts = 0;
+      var paid = false;
+      final session = auth.repository(
+        auth.MemoryStorage(),
+        (_) => auth.response(auth.loginResponse()),
+      );
+      final repo = InspectionFeeRepository(
+        InspectionFeeApiService(
+          MockClient((r) async {
+            if (r.method == 'POST') {
+              posts++;
+              return auth.response({}, 500);
+            }
+            return auth.response([
+              {...fee(), if (paid) 'pay_status': '결제완료'},
+            ]);
+          }),
+          baseUrl: 'http://test.local',
         ),
       );
-      await tester.pumpAndSettle();
-      expect(find.text('15,000원'), findsOneWidget);
-      expect(find.text('결제대기'), findsOneWidget);
-      expect(find.byType(FilledButton), findsNothing);
+      final c = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(session),
+          inspectionFeeRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      addTearDown(c.dispose);
+      c.read(loginVmProvider);
+      await Future<void>.delayed(Duration.zero);
+      await c
+          .read(loginVmProvider.notifier)
+          .login('tester', 'pw', remember: false);
+      final provider = inspectionFeePaymentVmProvider('20261030000001');
+      final vm = c.read(provider.notifier);
+      final current = InspectionFee.fromJson(fee());
+      await vm.complete(current);
+      await vm.complete(current);
+      expect(posts, 1);
+      expect(c.read(provider).uncertain, isTrue);
+      paid = true;
+      await vm.checkResult();
+      expect(c.read(provider).completed, isTrue);
+      expect(posts, 1);
     },
   );
+  testWidgets('fee button records completion and hides itself', (tester) async {
+    var paid = false;
+    final c = (await tester.runAsync(() async {
+      final session = auth.repository(
+        auth.MemoryStorage(),
+        (_) => auth.response(auth.loginResponse()),
+      );
+      final repo = InspectionFeeRepository(
+        InspectionFeeApiService(
+          MockClient((r) async {
+            if (r.method == 'POST') {
+              expect(r.url.path, '/pay/PAY1/complete');
+              expect(jsonDecode(r.body), {'expected_price': 15000});
+              paid = true;
+              return auth.response({...fee(), 'pay_status': '결제완료'});
+            }
+            return auth.response([
+              {...fee(), if (paid) 'pay_status': '결제완료'},
+            ]);
+          }),
+          baseUrl: 'http://test.local',
+        ),
+      );
+      final c = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(session),
+          inspectionFeeRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      c.read(loginVmProvider);
+      await Future<void>.delayed(Duration.zero);
+      await c
+          .read(loginVmProvider.notifier)
+          .login('tester', 'pw', remember: false);
+      return c;
+    }))!;
+    addTearDown(c.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: c,
+        child: const MaterialApp(
+          home: InspectionFeeView(number: '20261030000001'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('15,000원'), findsOneWidget);
+    expect(find.text('결제대기'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, '15,000원 결제하기'));
+    await tester.pumpAndSettle();
+    expect(paid, isTrue);
+    expect(find.text('결제완료'), findsOneWidget);
+    expect(find.byType(FilledButton), findsNothing);
+  });
 }

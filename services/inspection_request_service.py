@@ -184,7 +184,6 @@ def assign_inspection_request_manager(
             db,
             PayCreate(
                 inspection_request_inspection_request_no=inspection_request_no,
-                pay_price=request.pay_price,
             ),
         )
         result = get_inspection_request(db, inspection_request_no)

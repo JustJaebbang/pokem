@@ -18,9 +18,12 @@ class InspectionCreateVm extends Notifier<InspectionCreateState> {
     if (!RegExp(r'^\d+$').hasMatch(text) || amount == null || amount < 1) {
       return '검수할 카드 수량을 입력해주세요.';
     }
-    if (amount > 2147483647) return '신청 가능한 수량을 초과했습니다.';
+    if (amount > 214748) return '신청 가능한 수량을 초과했습니다.';
     return null;
   }
+
+  int? estimatedPrice(String text) =>
+      validateAmount(text) == null ? int.parse(text) * 10000 : null;
 
   Future<void> submit(String text) async {
     if (state.locked) return;

@@ -107,7 +107,7 @@ void main() {
         ..pending = Completer<InspectionRequest>();
       final c = await start(repo);
       final vm = c.read(inspectionCreateVmProvider.notifier);
-      for (final count in ['', '0', '-1', '1.5', '2147483648']) {
+      for (final count in ['', '0', '-1', '1.5', '214749', '2147483648']) {
         await vm.submit(count);
       }
       expect(repo.creates, 0);
@@ -199,6 +199,8 @@ void main() {
     await tester.tap(find.text('신청하기'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), '2');
+    await tester.pumpAndSettle();
+    expect(find.text('총 검수비 20,000원'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, '신청하기'));
     await tester.pumpAndSettle();
     expect(find.text('검수신청이 접수되었습니다.'), findsOneWidget);

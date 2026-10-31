@@ -442,3 +442,4 @@ scripts
 !tests/test_sale_history.py
 !tests/test_inspect_privacy.py
 !tests/test_pay_filter.py
+!tests/test_pay_complete.py

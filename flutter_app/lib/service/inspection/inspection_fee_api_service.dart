@@ -52,4 +52,54 @@ class InspectionFeeApiService {
       throw const InspectionException('검수비 응답을 확인하지 못했습니다.');
     }
   }
+
+  Future<InspectionFee> complete(InspectionFee fee, String token) async {
+    try {
+      final uri = Uri.parse(
+        '$_baseUrl/pay/${Uri.encodeComponent(fee.number)}/complete',
+      );
+      final response = await _client
+          .post(
+            uri,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode({'expected_price': fee.price}),
+          )
+          .timeout(const Duration(seconds: 20));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        String? detail;
+        try {
+          final json = jsonDecode(utf8.decode(response.bodyBytes));
+          if (json is Map && json['detail'] is String) {
+            detail = json['detail'] as String;
+          }
+        } catch (_) {}
+        throw InspectionException(
+          detail ?? '결제 결과를 확인하지 못했습니다.',
+          status: response.statusCode,
+          uncertain: response.statusCode >= 500,
+        );
+      }
+      final result = InspectionFee.fromJson(
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+      );
+      if (result.number != fee.number ||
+          result.requestNumber != fee.requestNumber ||
+          result.status != '결제완료') {
+        throw const InspectionException('결제 결과를 확인하지 못했습니다.', uncertain: true);
+      }
+      return result;
+    } on TimeoutException {
+      throw const InspectionException('결제 결과를 확인하지 못했습니다.', uncertain: true);
+    } on http.ClientException {
+      throw const InspectionException('결제 결과를 확인하지 못했습니다.', uncertain: true);
+    } on FormatException {
+      throw const InspectionException('결제 결과를 확인하지 못했습니다.', uncertain: true);
+    } on TypeError {
+      throw const InspectionException('결제 결과를 확인하지 못했습니다.', uncertain: true);
+    }
+  }
 }

@@ -41,15 +41,15 @@ class PayApiTests(unittest.TestCase):
     def test_patch_changes_only_supplied_field_even_when_value_unchanged(self):
         self.cursor.fetchone.side_effect = [{"pay_no": self.pay["pay_no"]}, self.pay]
         self.cursor.rowcount = 0
-        response = self.client.patch("/pay/" + self.pay["pay_no"], json={"pay_price": 15000})
+        response = self.client.patch("/pay/" + self.pay["pay_no"], json={"pay_status": "결제대기"})
         self.assertEqual(response.status_code, 200)
         update = self.cursor.execute.call_args_list[1]
-        self.assertIn("SET pay_price = %s WHERE", update.args[0])
-        self.assertEqual(update.args[1], (15000, self.pay["pay_no"]))
+        self.assertIn("SET pay_status = %s WHERE", update.args[0])
+        self.assertEqual(update.args[1], ("결제대기", self.pay["pay_no"]))
         self.db.commit.assert_called_once()
 
     def test_invalid_changes_are_rejected_before_accessing_db(self):
-        for body in ({}, {"pay_price": None}, {"pay_price": -1},
+        for body in ({}, {"pay_price": None}, {"pay_price": -1}, {"pay_price": 10000},
                      {"user_user_id": "another"}, {"pay_status": " "}):
             with self.subTest(body=body):
                 self.assertEqual(self.client.patch("/pay/123", json=body).status_code, 422)
@@ -57,7 +57,7 @@ class PayApiTests(unittest.TestCase):
 
     def test_missing_update_rolls_back(self):
         self.cursor.fetchone.return_value = None
-        self.assertEqual(self.client.patch("/pay/missing", json={"pay_price": 1}).status_code, 404)
+        self.assertEqual(self.client.patch("/pay/missing", json={"pay_status": "결제완료"}).status_code, 404)
         self.db.rollback.assert_called_once()
         self.db.commit.assert_not_called()
 
@@ -65,7 +65,7 @@ class PayApiTests(unittest.TestCase):
         self.cursor.fetchone.return_value = {"pay_no": self.pay["pay_no"]}
         self.cursor.execute.side_effect = [None, RuntimeError("failure")]
         with self.assertRaises(RuntimeError):
-            self.client.patch("/pay/123", json={"pay_price": 1})
+            self.client.patch("/pay/123", json={"pay_status": "결제완료"})
         self.db.rollback.assert_called_once()
         self.db.commit.assert_not_called()
 

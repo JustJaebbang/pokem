@@ -1,3 +1,4 @@
+import 'package:pokem_app/vm/inspection/inspection_fee_payment_vm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/core/formatters/money.dart';
@@ -11,12 +12,14 @@ class InspectionFeeView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = inspectionFeeVmProvider(number);
     final result = ref.watch(provider);
+    final payment = ref.watch(inspectionFeePaymentVmProvider(number));
+    final vm = ref.read(inspectionFeePaymentVmProvider(number).notifier);
     return Scaffold(
       appBar: AppBar(
         title: const Text('검수비'),
         actions: [
           IconButton(
-            onPressed: result.isLoading
+            onPressed: result.isLoading || payment.busy
                 ? null
                 : () => ref.read(provider.notifier).refresh(),
             icon: const Icon(Icons.refresh),
@@ -49,7 +52,10 @@ class InspectionFeeView extends ConsumerWidget {
             if (fee == null)
               const Text('아직 검수비가 등록되지 않았습니다. 담당자가 신청을 확인한 뒤 금액이 등록됩니다.')
             else ...[
-              Text(fee.status, style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                payment.completed ? '결제완료' : fee.status,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 16),
               Text(
                 fee.price == null ? '금액 확인 불가' : formatWon(fee.price!),
@@ -59,9 +65,32 @@ class InspectionFeeView extends ConsumerWidget {
               SelectableText('결제번호 ${fee.number}'),
               const SizedBox(height: 8),
               Text('등록일 ${fee.date}'),
-              if (fee.status == '결제대기') ...[
+              if (payment.error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(
+                    payment.error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+              if (!payment.completed && fee.status != '결제완료') ...[
                 const SizedBox(height: 24),
-                const Text('결제 상태는 담당자 확인 후 반영됩니다.'),
+                if (payment.uncertain)
+                  OutlinedButton(
+                    onPressed: payment.busy ? null : vm.checkResult,
+                    child: Text(payment.busy ? '확인 중' : '처리 상태 확인'),
+                  )
+                else if (fee.status == '결제대기' &&
+                    fee.price != null &&
+                    fee.price! >= 0)
+                  FilledButton(
+                    onPressed: payment.busy ? null : () => vm.complete(fee),
+                    child: Text(
+                      payment.busy ? '처리 중' : '${formatWon(fee.price!)} 결제하기',
+                    ),
+                  ),
               ],
             ],
           ],

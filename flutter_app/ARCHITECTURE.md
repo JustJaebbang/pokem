@@ -94,3 +94,5 @@ InspectionResultsVm은 신청별 결과 조회, InspectionChoiceVm은 카드별 
 InspectionResultsView와 InspectionChoiceActions는 표시·확인 대화상자·명령 전달만 담당합니다.
 
 검수비 조회는 InspectionFee → InspectionFeeApiService → InspectionFeeRepository → InspectionFeeVm → InspectionFeeView로 분리합니다. 관리자 전용 결제 상태 변경 API는 사용자 앱에서 호출하지 않습니다.
+
+InspectionFeePaymentVm은 사용자 버튼으로 결제완료 상태를 기록하고 중복 제출·결과 불확실 상태·재조회·인증 변경을 처리합니다. 금액은 서버가 검사하며 외부 입금 확인이나 포켐머니 차감은 하지 않습니다.

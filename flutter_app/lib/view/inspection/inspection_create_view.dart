@@ -1,3 +1,4 @@
+import 'package:pokem_app/core/formatters/money.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,6 +63,8 @@ class _InspectionCreateViewState extends ConsumerState<InspectionCreateView> {
                 ),
                 const SizedBox(height: 12),
                 const Text('검수를 맡길 카드의 수량을 입력해주세요.'),
+                const SizedBox(height: 8),
+                const Text('검수비는 카드 1장당 10,000원입니다.'),
                 const SizedBox(height: 24),
                 TextFormField(
                   controller: _amount,
@@ -76,6 +79,20 @@ class _InspectionCreateViewState extends ConsumerState<InspectionCreateView> {
                     LengthLimitingTextInputFormatter(10),
                   ],
                   validator: vm.validateAmount,
+                ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _amount,
+                  builder: (_, value, _) {
+                    final price = vm.estimatedPrice(value.text);
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Text(
+                        price == null
+                            ? '수량을 입력하면 총 검수비가 표시됩니다.'
+                            : '총 검수비 ${formatWon(price)}',
+                      ),
+                    );
+                  },
                 ),
                 if (state.error != null)
                   Padding(
