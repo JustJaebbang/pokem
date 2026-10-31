@@ -4,7 +4,14 @@ import 'package:pokem_app/model/manager/manager_dashboard.dart';
 import 'package:pokem_app/model/auth/auth_session.dart';
 import 'package:pokem_app/vm/auth/login_vm.dart';
 
-enum ManagerSection { requests, inspections, consignments }
+enum ManagerSection {
+  dashboard,
+  requests,
+  inspections,
+  consignments,
+  proposals,
+  procurement,
+}
 
 class ManagerDashboardState {
   const ManagerDashboardState({
@@ -13,7 +20,7 @@ class ManagerDashboardState {
     this.submitting = false,
     this.error,
     this.notice,
-    this.section = ManagerSection.requests,
+    this.section = ManagerSection.dashboard,
     this.query = '',
     this.status,
     this.selectedId,
@@ -129,6 +136,42 @@ class ManagerDashboardVm extends Notifier<ManagerDashboardState> {
     );
   }
 
+  Future<bool> createInspectionResult(
+    String requestNumber,
+    String serialCode,
+    String grade,
+    String reason,
+  ) {
+    if (serialCode.trim().isEmpty ||
+        serialCode.trim().length > 50 ||
+        grade.trim().isEmpty ||
+        grade.trim().length > 20 ||
+        reason.trim().isEmpty ||
+        reason.trim().length > 200) {
+      state = state.copyWith(
+        error: '일련코드(1~50자), 등급(1~20자), 판정 사유(1~200자)를 입력해주세요.',
+      );
+      return Future.value(false);
+    }
+    return _mutate(
+      (token) => ref
+          .read(managerRepositoryProvider)
+          .createInspection(
+            token,
+            requestNumber,
+            serialCode.trim(),
+            grade: grade.trim(),
+            reason: reason.trim(),
+          ),
+    );
+  }
+
+  Future<bool> approveInspectionRequest(String requestNumber) => _mutate(
+    (token) => ref
+        .read(managerRepositoryProvider)
+        .approveInspectionRequest(token, requestNumber),
+  );
+
   Future<bool> startInspection(String code) => _mutate(
     (token) => ref.read(managerRepositoryProvider).startInspection(token, code),
   );
@@ -144,6 +187,111 @@ class ManagerDashboardVm extends Notifier<ManagerDashboardState> {
       (token) => ref
           .read(managerRepositoryProvider)
           .completeInspection(token, code, grade.trim(), reason.trim()),
+    );
+  }
+
+  Future<bool> createConsignment({
+    required String inspectionCode,
+    required String title,
+    required String image,
+    required String contents,
+    required String price,
+    required String returnCompanyCode,
+  }) {
+    final amount = int.tryParse(price.trim());
+    if (title.trim().isEmpty ||
+        title.trim().length > 100 ||
+        image.trim().isEmpty ||
+        contents.trim().isEmpty ||
+        contents.trim().length > 500 ||
+        amount == null ||
+        amount <= 0 ||
+        returnCompanyCode.isEmpty) {
+      state = state.copyWith(error: '상품명·이미지·설명·판매가·반환 배송업체를 확인해주세요.');
+      return Future.value(false);
+    }
+    return _mutate(
+      (token) => ref.read(managerRepositoryProvider).createConsignment(token, {
+        'inspect_inspect_code': inspectionCode,
+        'sell_product_title': title.trim(),
+        'sell_product_image': image.trim(),
+        'sell_product_contents': contents.trim(),
+        'sell_product_sell_price': amount,
+        'return_delivery_company_code': returnCompanyCode,
+      }),
+    );
+  }
+
+  Future<bool> createProposal({
+    required String name,
+    required String contents,
+    required String caseCode,
+  }) {
+    if (name.trim().isEmpty ||
+        name.trim().length > 100 ||
+        contents.trim().isEmpty ||
+        contents.trim().length > 500 ||
+        caseCode.isEmpty) {
+      state = state.copyWith(error: '품의명·내용·케이스를 확인해주세요.');
+      return Future.value(false);
+    }
+    return _mutate(
+      (token) => ref.read(managerRepositoryProvider).createProposal(token, {
+        'proposal_name': name.trim(),
+        'proposal_contents': contents.trim(),
+        'case_case_code': caseCode,
+      }),
+    );
+  }
+
+  Future<bool> createOrder({
+    required String proposalNumber,
+    required String price,
+    required String amount,
+    required String companyCode,
+  }) {
+    final parsedPrice = int.tryParse(price.trim());
+    final parsedAmount = int.tryParse(amount.trim());
+    if (proposalNumber.isEmpty ||
+        companyCode.isEmpty ||
+        parsedPrice == null ||
+        parsedPrice < 0 ||
+        parsedAmount == null ||
+        parsedAmount <= 0) {
+      state = state.copyWith(error: '승인된 품의·제조업체·발주 금액·수량을 확인해주세요.');
+      return Future.value(false);
+    }
+    return _mutate(
+      (token) => ref.read(managerRepositoryProvider).createOrder(token, {
+        'proposal_proposal_no': proposalNumber,
+        'order_price': parsedPrice,
+        'order_amount': parsedAmount,
+        'product_company_product_company_code': companyCode,
+      }),
+    );
+  }
+
+  Future<bool> createReceive({
+    required String orderNumber,
+    required String price,
+    required String amount,
+  }) {
+    final parsedPrice = int.tryParse(price.trim());
+    final parsedAmount = int.tryParse(amount.trim());
+    if (orderNumber.isEmpty ||
+        parsedPrice == null ||
+        parsedPrice < 0 ||
+        parsedAmount == null ||
+        parsedAmount <= 0) {
+      state = state.copyWith(error: '발주·수주 금액·수량을 확인해주세요.');
+      return Future.value(false);
+    }
+    return _mutate(
+      (token) => ref.read(managerRepositoryProvider).createReceive(token, {
+        'order_order_no': orderNumber,
+        'receive_price': parsedPrice,
+        'receive_amount': parsedAmount,
+      }),
     );
   }
 

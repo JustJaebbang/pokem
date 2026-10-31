@@ -128,6 +128,73 @@ void main() {
     );
   });
 
+  test('inspection result creation sends grade and reason together', () async {
+    late Map<String, dynamic> body;
+    final api = ManagerApiService(
+      MockClient((request) async {
+        body = jsonDecode(request.body) as Map<String, dynamic>;
+        return fixtures.response({});
+      }),
+      baseUrl: 'http://test.local',
+    );
+
+    await api.createInspection(
+      'token',
+      '20261030000001',
+      'CARD-001',
+      grade: 'A',
+      reason: '표면 상태 양호',
+    );
+
+    expect(body['inspect_requested_no'], '20261030000001');
+    expect(body['inspect_serial_code'], 'CARD-001');
+    expect(body['inspect_grade'], 'A');
+    expect(body['inspect_grade_reason'], '표면 상태 양호');
+  });
+
+  test('manager business actions use the matching API contracts', () async {
+    final calls = <String>[];
+    final api = ManagerApiService(
+      MockClient((request) async {
+        calls.add('${request.method} ${request.url.path} ${request.body}');
+        return fixtures.response({});
+      }),
+      baseUrl: 'http://test.local',
+    );
+
+    await api.approveInspectionRequest('token', '20261030000001');
+    await api.createProposal('token', {
+      'proposal_name': '재고 확보',
+      'proposal_contents': '케이스 발주',
+      'case_case_code': 'CASE1',
+    });
+    await api.createOrder('token', {
+      'proposal_proposal_no': 'P1',
+      'order_price': 10000,
+      'order_amount': 2,
+      'product_company_product_company_code': 'COMPANY1',
+    });
+    await api.createReceive('token', {
+      'order_order_no': 'O1',
+      'receive_price': 10000,
+      'receive_amount': 2,
+    });
+    await api.createConsignment('token', {
+      'inspect_inspect_code': 'INS1',
+      'sell_product_title': '카드',
+    });
+
+    expect(
+      calls[0],
+      startsWith('PATCH /inspection_request/20261030000001/manager'),
+    );
+    expect(calls[1], contains('POST /proposal'));
+    expect(calls[2], contains('POST /order'));
+    expect(calls[3], contains('POST /receive'));
+    expect(calls[4], contains('POST /post_consign_item'));
+    expect(calls[2], contains('"order_amount":2'));
+  });
+
   for (final size in [
     const Size(1280, 800),
     const Size(1024, 768),
@@ -163,12 +230,15 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('운영 대시보드'), findsOneWidget);
+      expect(find.text('통합 대시보드'), findsOneWidget);
+      await tester.tap(find.text('검수신청 접수'));
+      await tester.pumpAndSettle();
+      expect(find.text('검수신청 작성'), findsOneWidget);
       await tester.tap(find.text('20261030000001'));
       await tester.pumpAndSettle();
-      expect(find.text('검수 신청 상세'), findsOneWidget);
+      expect(find.text('검수신청 상세'), findsOneWidget);
       await tester.scrollUntilVisible(
-        find.text('검수 상품 등록'),
+        find.text('신청 승인·담당 배정'),
         150,
         scrollable: find
             .descendant(
@@ -177,7 +247,7 @@ void main() {
             )
             .first,
       );
-      expect(find.text('검수 상품 등록'), findsOneWidget);
+      expect(find.text('신청 승인·담당 배정'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

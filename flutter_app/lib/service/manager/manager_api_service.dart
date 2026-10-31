@@ -14,7 +14,7 @@ class ManagerApiService {
     String token,
     String path, {
     Map<String, dynamic>? body,
-    bool post = false,
+    String method = 'GET',
   }) async {
     try {
       final uri = Uri.parse('$_baseUrl$path');
@@ -26,15 +26,12 @@ class ManagerApiService {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       };
-      final response =
-          await (post
-                  ? _client.post(
-                      uri,
-                      headers: headers,
-                      body: body == null ? null : jsonEncode(body),
-                    )
-                  : _client.get(uri, headers: headers))
-              .timeout(const Duration(seconds: 15));
+      final encodedBody = body == null ? null : jsonEncode(body);
+      final response = await switch (method) {
+        'POST' => _client.post(uri, headers: headers, body: encodedBody),
+        'PATCH' => _client.patch(uri, headers: headers, body: encodedBody),
+        _ => _client.get(uri, headers: headers),
+      }.timeout(const Duration(seconds: 15));
       if (response.statusCode < 200 || response.statusCode >= 300) {
         String message = switch (response.statusCode) {
           401 => '인증이 만료되었습니다. 다시 로그인해주세요.',
@@ -73,15 +70,19 @@ class ManagerApiService {
   Future<void> createInspection(
     String token,
     String requestNumber,
-    String serialCode,
-  ) async {
+    String serialCode, {
+    String? grade,
+    String? reason,
+  }) async {
     await _request(
       token,
       '/inspect',
-      post: true,
+      method: 'POST',
       body: {
         'inspect_requested_no': requestNumber,
         'inspect_serial_code': serialCode,
+        'inspect_grade': ?grade,
+        'inspect_grade_reason': ?reason,
       },
     );
   }
@@ -90,7 +91,7 @@ class ManagerApiService {
     await _request(
       token,
       '/inspect/${Uri.encodeComponent(code)}/start',
-      post: true,
+      method: 'POST',
     );
   }
 
@@ -103,8 +104,28 @@ class ManagerApiService {
     await _request(
       token,
       '/inspect/${Uri.encodeComponent(code)}/complete',
-      post: true,
+      method: 'POST',
       body: {'inspect_grade': grade, 'inspect_grade_reason': reason},
     );
   }
+
+  Future<void> approveInspectionRequest(String token, String requestNumber) =>
+      _request(
+        token,
+        '/inspection_request/${Uri.encodeComponent(requestNumber)}/manager',
+        method: 'PATCH',
+        body: const {},
+      );
+
+  Future<void> createConsignment(String token, Map<String, dynamic> body) =>
+      _request(token, '/post_consign_item', method: 'POST', body: body);
+
+  Future<void> createProposal(String token, Map<String, dynamic> body) =>
+      _request(token, '/proposal', method: 'POST', body: body);
+
+  Future<void> createOrder(String token, Map<String, dynamic> body) =>
+      _request(token, '/order', method: 'POST', body: body);
+
+  Future<void> createReceive(String token, Map<String, dynamic> body) =>
+      _request(token, '/receive', method: 'POST', body: body);
 }
