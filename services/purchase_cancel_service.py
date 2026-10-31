@@ -229,7 +229,7 @@ def process_purchase_cancel(db, cancel_code, actor_id, action, reason=None):
                     UPDATE sell_product
                     SET sell_product_sell_status = %s
                     WHERE sell_product_code = %s AND sell_product_sell_status = %s
-                    """, ("거래취소", product["sell_product_code"], "거래중"),
+                    """, ("판매중", product["sell_product_code"], "거래중"),
                 )
                 _require(cursor.rowcount == 1, "상품 상태가 변경되었습니다.")
             cursor.execute(

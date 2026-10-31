@@ -113,3 +113,15 @@ ReviewVm이 별점·내용 검증·작성·결과 확인·인증 변경을, Prod
 ReviewView는 폼·별점 입력·컨트롤러, ReviewCard와 ProductReviewsView는 후기 표시를 담당합니다.
 
 판매자 후기는 ReviewApiService/ReviewRepository의 판매자별 조회를 SellerReviewsVm이 사용합니다. SellerReviewSummary가 건수와 평균을 계산하고 SellerReviewsView는 결과만 표시합니다. 일반판매·대리판매 소유자 관계 필터링은 서버 서비스가 담당합니다.
+
+## 상품 수정 계층
+
+ProductEditInput은 폼 입력, ProductEditDraft는 검증 후 수정 요청을 정의합니다.
+ProductEditApiService → ProductEditRepository → ProductEditVm → ProductEditView로 연결합니다.
+VM이 소유자·판매 유형·상태·가격 검증과 수정 후 갱신을 담당하고 View는 입력·표시·화면 이동만 처리합니다.
+내 상품 관리 목록은 SalesView의 관리 모드로 기존 SalesVm 조회를 재사용합니다.
+
+상품 수정 사진 교체는 ProductEditVm이 기존 ProductPhotoPicker와 ProductPublishRepository.uploadPhoto를 조합합니다. 선택 사진·업로드 주소·선택 진행·오류는 ProductEditState가 보관하고 ProductEditView는 미리보기와 입력 명령만 처리합니다. 저장 재시도 시 업로드 주소를 재사용합니다.
+
+
+- 취소 승인: SellerCancelDecisionVm에서 승인 결과를 반영하고 상품 상세·홈·관심상품·판매내역을 갱신합니다. 서버의 승인 트랜잭션에서 환불과 상품 판매중 복구를 함께 처리합니다.

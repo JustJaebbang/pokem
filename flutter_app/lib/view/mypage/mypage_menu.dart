@@ -63,13 +63,13 @@ class MypageMenu extends ConsumerWidget {
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const SellerCancelView(),
+                      builder: (_) => const SalesView(manage: true),
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(80),
                   ),
-                  child: const Text('취소 요청'),
+                  child: const Text('내 상품 관리'),
                 ),
               ),
             ],
@@ -101,6 +101,14 @@ class MypageMenu extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        if (mode == MypageMode.selling)
+          ListTile(
+            title: const Text('취소 요청'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SellerCancelView()),
+            ),
           ),
       ],
     );

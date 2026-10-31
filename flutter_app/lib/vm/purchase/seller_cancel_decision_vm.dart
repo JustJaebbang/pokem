@@ -1,3 +1,4 @@
+import 'package:pokem_app/vm/products/product_detail_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/core/providers/data_providers.dart';
 import 'package:pokem_app/model/purchase/purchase.dart';
@@ -108,6 +109,7 @@ class SellerCancelDecisionVm extends Notifier<SellerCancelDecisionState> {
     ref.invalidate(sellerCancelVmProvider);
     ref.invalidate(salesVmProvider);
     ref.invalidate(productsVmProvider);
+    ref.invalidate(productDetailVmProvider);
     ref.invalidate(wishlistVmProvider);
     ref.invalidate(walletVmProvider);
   }

@@ -1,3 +1,5 @@
+import 'package:pokem_app/repository/products/product_edit_repository.dart';
+import 'package:pokem_app/service/products/product_edit_api_service.dart';
 import 'package:pokem_app/repository/review/review_repository.dart';
 import 'package:pokem_app/service/review/review_api_service.dart';
 import 'package:pokem_app/repository/purchase/seller_cancel_repository.dart';
@@ -170,5 +172,14 @@ final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
   return ReviewRepository(
     ReviewApiService(client, baseUrl: ApiConfig.baseUrl),
     PurchaseApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final productEditRepositoryProvider = Provider<ProductEditRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return ProductEditRepository(
+    ProductEditApiService(client, baseUrl: ApiConfig.baseUrl),
+    ref.watch(productRepositoryProvider),
   );
 });

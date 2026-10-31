@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/products/product_edit_view.dart';
 import 'package:pokem_app/core/formatters/money.dart';
 import 'package:pokem_app/core/formatters/purchase_time.dart';
 import 'package:pokem_app/view/products/widgets/product_image.dart';
@@ -8,13 +9,14 @@ import 'package:pokem_app/vm/sales/sales_vm.dart';
 import 'package:pokem_app/view/products/product_detail_view.dart';
 
 class SalesView extends ConsumerWidget {
-  const SalesView({super.key});
+  const SalesView({super.key, this.manage = false});
+  final bool manage;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final result = ref.watch(salesVmProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('판매내역'),
+        title: Text(manage ? '내 상품 관리' : '판매내역'),
         actions: [
           IconButton(
             onPressed: result.isLoading
@@ -125,6 +127,21 @@ class SalesView extends ConsumerWidget {
                                       : '일시 확인 불가',
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
+                                if (manage &&
+                                    item.type == 'direct' &&
+                                    item.status == '판매중')
+                                  OutlinedButton(
+                                    onPressed: () => Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => ProductEditView(
+                                          code: item.productCode,
+                                        ),
+                                      ),
+                                    ),
+                                    child: const Text('수정'),
+                                  ),
+                                if (manage && item.type == 'consign')
+                                  const Text('담당자가 관리하는 상품입니다.'),
                               ],
                             ),
                           ),
