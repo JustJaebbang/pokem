@@ -1,3 +1,9 @@
+import 'package:pokem_app/repository/profile/quit_repository.dart';
+import 'package:pokem_app/service/profile/quit_api_service.dart';
+import 'package:pokem_app/repository/consignment/consignment_repository.dart';
+import 'package:pokem_app/service/consignment/consignment_api_service.dart';
+import 'package:pokem_app/repository/delivery/delivery_repository.dart';
+import 'package:pokem_app/service/delivery/delivery_api_service.dart';
 import 'package:pokem_app/repository/products/product_edit_repository.dart';
 import 'package:pokem_app/service/products/product_edit_api_service.dart';
 import 'package:pokem_app/repository/review/review_repository.dart';
@@ -192,4 +198,27 @@ final productEditRepositoryProvider = Provider<ProductEditRepository>((ref) {
     ProductEditApiService(client, baseUrl: ApiConfig.baseUrl),
     ref.watch(productRepositoryProvider),
   );
+});
+
+final deliveryRepositoryProvider = Provider<DeliveryRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return DeliveryRepository(
+    DeliveryApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final consignmentRepositoryProvider = Provider<ConsignmentRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return ConsignmentRepository(
+    ConsignmentApiService(client, baseUrl: ApiConfig.baseUrl),
+    ref.watch(productRepositoryProvider),
+  );
+});
+
+final quitRepositoryProvider = Provider<QuitRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return QuitRepository(QuitApiService(client, baseUrl: ApiConfig.baseUrl));
 });

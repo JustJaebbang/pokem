@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/consignment/consignment_view.dart';
 import 'package:pokem_app/view/products/product_edit_view.dart';
 import 'package:pokem_app/core/formatters/money.dart';
 import 'package:pokem_app/core/formatters/purchase_time.dart';
@@ -139,6 +140,20 @@ class SalesView extends ConsumerWidget {
                                       ),
                                     ),
                                     child: const Text('수정'),
+                                  ),
+                                if (item.type == 'consign')
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => ConsignmentView(
+                                          source: (
+                                            code: item.code,
+                                            inspectCode: null,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    child: const Text('대리판매 상세'),
                                   ),
                                 if (manage && item.type == 'consign')
                                   const Text('담당자가 관리하는 상품입니다.'),

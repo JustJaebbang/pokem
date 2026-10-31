@@ -32,7 +32,7 @@ def get_current_account(
         account = director_service.get_director_id(db, claims["sub"])
         if account is not None:
             return DirectorLoginResponse(account=account)
-    # 유효한 토큰이라도 DB에서 삭제된 계정은 인증하지 않습니다.
+    # 유효한 토큰이라도 삭제되었거나 quit 기록이 있는 사용자 계정은 인증하지 않습니다.
     raise HTTPException(status_code=401, detail="유효한 계정을 찾을 수 없습니다.", headers={"WWW-Authenticate": "Bearer"})
 
 

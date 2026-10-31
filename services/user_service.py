@@ -19,6 +19,7 @@ def login_user(db, login: LoginRequest) -> UserLoginResponse:
                    user_phone, user_email, user_address, user_money
             FROM `user`
             WHERE user_id = %s
+              AND NOT EXISTS (SELECT 1 FROM `quit` q WHERE q.user_user_id = `user`.user_id)
             """,
             (login.login_id,),
         )
@@ -89,8 +90,9 @@ def get_user_id(db, user_id: str) -> UserResponse | None:
                 user_phone, user_email, user_address, user_money
             FROM user
             WHERE user_id = %s
+              AND NOT EXISTS (SELECT 1 FROM `quit` q WHERE q.user_user_id = user.user_id)
             """,
-            (user_id),
+            (user_id,),
         )
         row = cursor.fetchone()
 
@@ -126,23 +128,33 @@ def put_user_id(db, user: UserUpdate, user_id: str) -> UserResponse | None:
     return get_user_id(db, user_id)
 
 
-# 탈퇴 기록 저장과 사용자 삭제는 같은 트랜잭션으로 처리.
-# 사용자를 삭제하면 자동으로 quit(탈퇴) 테이블에 생성되도록.
+# user 및 거래 이력은 보존하고 quit 기록으로 탈퇴 여부를 판단한다.
 def delete_user_id(db, quit: UserQuitRequest, user_id: str) -> UserQuitResponse | None:
     try:
         db.begin()
         with db.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT user_id 
+                SELECT user_id, user_money 
                 FROM `user` 
                 WHERE user_id = %s FOR UPDATE
                 """,
-                (user_id),
+                (user_id,),
             )
-            if cursor.fetchone() is None:
+            account = cursor.fetchone()
+            if account is None:
                 db.rollback()
                 return None
+
+            if account["user_money"] != 0:
+                raise HTTPException(status_code=409, detail="포켐머니 잔액을 정리한 후 탈퇴해주세요.")
+
+            cursor.execute(
+                "SELECT user_user_id FROM `quit` WHERE user_user_id = %s FOR UPDATE",
+                (user_id,),
+            )
+            if cursor.fetchone() is not None:
+                raise HTTPException(status_code=409, detail="이미 탈퇴한 계정입니다.")
 
             quit_date = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec="seconds")
             result = UserQuitResponse(
@@ -158,22 +170,9 @@ def delete_user_id(db, quit: UserQuitRequest, user_id: str) -> UserQuitResponse 
                 """,
                 (user_id, quit_date, quit.quit_reason),
             )
-            cursor.execute(
-                """
-                DELETE
-                FROM `user`
-                WHERE user_id = %s
-                """,
-                (user_id,),
-            )
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        if exc.args[0] == 1451:
-            raise HTTPException(
-                status_code=409,
-                detail="연결된 기록이 있어 탈퇴할 수 없습니다. 외래 키 설정과 관련 기록을 확인해주세요.",
-            ) from exc
         if exc.args[0] == 1062:
             raise HTTPException(
                 status_code=409,

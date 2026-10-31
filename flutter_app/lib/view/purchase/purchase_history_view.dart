@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/delivery/delivery_view.dart';
 import 'package:pokem_app/view/review/review_view.dart';
 import 'package:pokem_app/view/purchase/purchase_cancel_view.dart';
 import 'package:pokem_app/view/purchase/widgets/purchase_confirm_action.dart';
@@ -126,6 +127,19 @@ class PurchaseHistoryView extends ConsumerWidget {
                                 Text(
                                   formatPurchaseTime(item.date),
                                   style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => DeliveryView(
+                                        source: (
+                                          purchaseCode: item.code,
+                                          returnNo: null,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Text('배송 조회'),
                                 ),
                                 PurchaseConfirmAction(purchase: item),
                                 if (item.isConfirmed)

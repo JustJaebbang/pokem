@@ -28,6 +28,7 @@ class ChatSocketBackend:
                 FROM `user` u
                 LEFT JOIN chat_room r ON r.chat_room_id = %s
                 WHERE u.user_id = %s
+                  AND NOT EXISTS (SELECT 1 FROM `quit` q WHERE q.user_user_id = u.user_id)
                 """, (room_id, claims["sub"]),
             )
             row = cursor.fetchone()
