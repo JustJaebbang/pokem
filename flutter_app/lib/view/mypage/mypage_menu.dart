@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/purchase/seller_cancel_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/view/purchase/purchase_history_view.dart';
@@ -44,14 +45,34 @@ class MypageMenu extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         if (mode == MypageMode.selling)
-          OutlinedButton(
-            onPressed: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute<void>(builder: (_) => const SalesView())),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(80),
-            ),
-            child: const Text('판매내역'),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const SalesView()),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(80),
+                  ),
+                  child: const Text('판매내역'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const SellerCancelView(),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(80),
+                  ),
+                  child: const Text('취소 요청'),
+                ),
+              ),
+            ],
           )
         else
           Row(

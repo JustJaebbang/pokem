@@ -186,6 +186,15 @@ class ReturnTests(unittest.TestCase):
         older = return_service.get_returns(self.db, user_id='owner', limit=1, offset=1)
         self.assertEqual(older[0].inspect_inspect_code, 'INS_1')
 
+    def test_inspect_filter_preserves_owner_scope(self):
+        self.created()
+        response = self.client.get('/return?inspect_code=INS_1')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(self.client.get('/return?inspect_code=missing').json(), [])
+        self.current = SimpleNamespace(role='user', account=SimpleNamespace(user_id='other'))
+        self.assertEqual(self.client.get('/return?inspect_code=INS_1').json(), [])
+
     def test_authentication_required(self):
         self.app.dependency_overrides.pop(get_current_account)
         self.assertEqual(self.client.get('/return').status_code, 401)

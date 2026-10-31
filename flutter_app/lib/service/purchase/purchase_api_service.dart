@@ -1,3 +1,5 @@
+import 'package:pokem_app/model/purchase/purchase_cancellation.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -126,6 +128,129 @@ class PurchaseApiService {
       );
     } on TypeError {
       throw const PurchaseException('구매확정 결과를 확인하지 못했습니다.', uncertain: true);
+    }
+  }
+
+  Future<PurchaseCancellation?> cancellation(String code, String token) async {
+    try {
+      final rows = (await _request(
+        '/purchase_cancel?purchase_code=${Uri.encodeComponent(code)}',
+        token,
+      ) as List<dynamic>);
+      if (rows.isEmpty) return null;
+      if (rows.length != 1) throw const PurchaseException('취소 요청이 중복되어 있습니다.');
+      final item = PurchaseCancellation.fromJson(
+        rows.single as Map<String, dynamic>,
+      );
+      if (item.purchaseCode != code) {
+        throw const PurchaseException('구매번호와 취소 요청이 일치하지 않습니다.');
+      }
+      return item;
+    } on TypeError {
+      throw const PurchaseException('취소내역을 확인하지 못했습니다.');
+    }
+  }
+
+  Future<PurchaseCancellation> requestCancellation(
+    String code,
+    String reason,
+    String token,
+  ) async {
+    try {
+      final item = PurchaseCancellation.fromJson(
+        await _request(
+          '/purchase_cancel',
+          token,
+          body: {
+            'purchase_item_purchase_item_code': code,
+            'purchase_cancel_reason': reason,
+          },
+        ) as Map<String, dynamic>,
+      );
+      if (item.purchaseCode != code || item.status != '요청중') {
+        throw const PurchaseException('취소 신청 결과를 확인하지 못했습니다.', uncertain: true);
+      }
+      return item;
+    } on TypeError {
+      throw const PurchaseException('취소 신청 결과를 확인하지 못했습니다.', uncertain: true);
+    }
+  }
+
+  Future<PurchaseCancellation> withdrawCancellation(
+    PurchaseCancellation current,
+    String token,
+  ) async {
+    try {
+      final item = PurchaseCancellation.fromJson(
+        await _request(
+          '/purchase_cancel/${Uri.encodeComponent(current.code)}/withdraw',
+          token,
+          body: {},
+        ) as Map<String, dynamic>,
+      );
+      if (item.code != current.code ||
+          item.purchaseCode != current.purchaseCode ||
+          item.status != '철회') {
+        throw const PurchaseException('철회 결과를 확인하지 못했습니다.', uncertain: true);
+      }
+      return item;
+    } on TypeError {
+      throw const PurchaseException('철회 결과를 확인하지 못했습니다.', uncertain: true);
+    }
+  }
+
+  Future<List<PurchaseCancellation>> cancellations(String token) async {
+    try {
+      return (await _request('/purchase_cancel', token) as List<dynamic>)
+          .map(
+            (row) => PurchaseCancellation.fromJson(row as Map<String, dynamic>),
+          )
+          .toList();
+    } on TypeError {
+      throw const PurchaseException('취소 요청 내역을 확인하지 못했습니다.');
+    }
+  }
+
+  Future<PurchaseCancellation> getCancellation(
+    String code,
+    String token,
+  ) async {
+    try {
+      final item = PurchaseCancellation.fromJson(
+        await _request('/purchase_cancel/${Uri.encodeComponent(code)}', token)
+            as Map<String, dynamic>,
+      );
+      if (item.code != code) {
+        throw const PurchaseException('취소 요청 번호가 일치하지 않습니다.');
+      }
+      return item;
+    } on TypeError {
+      throw const PurchaseException('취소 요청을 확인하지 못했습니다.');
+    }
+  }
+
+  Future<PurchaseCancellation> decideCancellation(
+    PurchaseCancellation current,
+    CancelDecision decision,
+    String reason,
+    String token,
+  ) async {
+    try {
+      final item = PurchaseCancellation.fromJson(
+        await _request(
+          '/purchase_cancel/${Uri.encodeComponent(current.code)}/${decision.path}',
+          token,
+          body: {if (reason.isNotEmpty) 'response_reason': reason},
+        ) as Map<String, dynamic>,
+      );
+      if (item.code != current.code ||
+          item.purchaseCode != current.purchaseCode ||
+          item.status != decision.label) {
+        throw const PurchaseException('취소 처리 결과를 확인하지 못했습니다.', uncertain: true);
+      }
+      return item;
+    } on TypeError {
+      throw const PurchaseException('취소 처리 결과를 확인하지 못했습니다.', uncertain: true);
     }
   }
 }

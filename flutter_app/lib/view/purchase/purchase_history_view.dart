@@ -1,3 +1,5 @@
+import 'package:pokem_app/view/review/review_view.dart';
+import 'package:pokem_app/view/purchase/purchase_cancel_view.dart';
 import 'package:pokem_app/view/purchase/widgets/purchase_confirm_action.dart';
 import 'package:pokem_app/core/formatters/money.dart';
 import 'package:pokem_app/core/formatters/purchase_time.dart';
@@ -126,6 +128,26 @@ class PurchaseHistoryView extends ConsumerWidget {
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
                                 PurchaseConfirmAction(purchase: item),
+                                if (item.isConfirmed)
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) =>
+                                            ReviewView(code: item.code),
+                                      ),
+                                    ),
+                                    child: const Text('후기 작성·보기'),
+                                  ),
+
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) =>
+                                          PurchaseCancelView(code: item.code),
+                                    ),
+                                  ),
+                                  child: const Text('구매취소·처리내역'),
+                                ),
                               ],
                             ),
                           ),

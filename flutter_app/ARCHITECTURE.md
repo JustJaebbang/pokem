@@ -96,3 +96,20 @@ InspectionResultsView와 InspectionChoiceActions는 표시·확인 대화상자�
 검수비 조회는 InspectionFee → InspectionFeeApiService → InspectionFeeRepository → InspectionFeeVm → InspectionFeeView로 분리합니다. 관리자 전용 결제 상태 변경 API는 사용자 앱에서 호출하지 않습니다.
 
 InspectionFeePaymentVm은 사용자 버튼으로 결제완료 상태를 기록하고 중복 제출·결과 불확실 상태·재조회·인증 변경을 처리합니다. 금액은 서버가 검사하며 외부 입금 확인이나 포켐머니 차감은 하지 않습니다.
+
+DepositRefund 모델과 InspectionFeeApiService/Repository를 통해 결제별 환급 기록을 조회합니다. DepositRefundVm이 페이징·인증·오류를 처리하고 DepositRefundView는 기록 표시와 명령만 담당합니다.
+
+ReturnItem → ReturnApiService → ReturnRepository → ReturnVm → ReturnView로 반환내역을 조회합니다. ReturnVm은 본인 인증·필터·페이지 상태·재시도를 관리하고 View는 반환 접수와 담당자 배정 정보만 표시합니다. 배송 처리와 분리합니다.
+
+PurchaseCancellation과 PurchaseCancelSnapshot은 취소 정보·신청 가능 조건을 정의합니다. PurchaseCancelRepository가 구매·취소 정보를 결합하며 PurchaseCancelVm이 신청·철회·검증·응답 유실 확인을 담당합니다. View는 입력·확인 대화상자·표시만 처리합니다.
+
+판매자 취소 요청은 SellerCancelRepository가 판매자 ID로 내역을 구분하고 SellerCancelVm이 목록 조회를 담당합니다. SellerCancelDecisionVm은 최신 상태·권한 확인·승인/거절·중복 방지·응답 유실 확인을 처리합니다. 확인 대화상자와 선택적 사유 입력은 SellerCancelView에 둡니다.
+
+## 후기 계층
+
+ReviewRecord와 ReviewSnapshot은 후기·최신 구매·작성 가능 조건을 정의합니다.
+ReviewApiService와 기존 PurchaseApiService를 ReviewRepository가 결합해 구매별 후기를 식별합니다.
+ReviewVm이 별점·내용 검증·작성·결과 확인·인증 변경을, ProductReviewsVm이 공개 상품 후기 조회를 담당합니다.
+ReviewView는 폼·별점 입력·컨트롤러, ReviewCard와 ProductReviewsView는 후기 표시를 담당합니다.
+
+판매자 후기는 ReviewApiService/ReviewRepository의 판매자별 조회를 SellerReviewsVm이 사용합니다. SellerReviewSummary가 건수와 평균을 계산하고 SellerReviewsView는 결과만 표시합니다. 일반판매·대리판매 소유자 관계 필터링은 서버 서비스가 담당합니다.
