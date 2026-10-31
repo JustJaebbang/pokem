@@ -154,57 +154,53 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets(
-    'home loads real list then fetches latest detail and preserves tab search',
-    (tester) async {
-      var detailCalls = 0;
-      final repo = repository((request) {
-        if (request.url.path == '/sell_product') {
-          return auth.response([
-            productJson(),
-            productJson(code: 'P-2', title: '리자몽'),
-            productJson(code: 'P-3', title: '완료된 카드', status: '거래완료'),
-            productJson(code: 'P-4', title: '거래중 카드', status: '거래중'),
-          ]);
-        }
-        detailCalls++;
-        return auth.response(productJson(title: '피카츄 카드 최신', price: 15000));
-      });
-      await showHome(tester, repo);
-      expect(find.text('피카츄 카드'), findsOneWidget);
-      expect(find.text('완료된 카드'), findsNothing);
-      expect(find.text('거래중 카드'), findsNothing);
-      expect(find.byType(ChoiceChip), findsNothing);
-      await tester.enterText(find.byKey(const Key('productSearch')), '피카츄');
-      await tester.pumpAndSettle();
-      expect(find.text('리자몽'), findsNothing);
-      await tester.tap(find.text('관심'));
-      await tester.pumpAndSettle();
-      expect(find.text('관심상품이 없습니다.'), findsOneWidget);
-      await tester.tap(find.text('홈'));
-      await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<EditableText>(
-              find.descendant(
-                of: find.byKey(const Key('productSearch')),
-                matching: find.byType(EditableText),
-              ),
-            )
-            .controller
-            .text,
-        '피카츄',
-      );
-      expect(find.text('리자몽'), findsNothing);
-      await tester.ensureVisible(find.byKey(const ValueKey('product-P-1')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('product-P-1')));
-      await tester.pumpAndSettle();
-      expect(detailCalls, 1);
-      expect(find.text('피카츄 카드 최신'), findsOneWidget);
-      expect(find.text('15,000원'), findsOneWidget);
-    },
-  );
+  testWidgets('home uses toolbar search and detail keeps the search query', (
+    tester,
+  ) async {
+    var detailCalls = 0;
+    final repo = repository((request) {
+      if (request.url.path == '/sell_product') {
+        return auth.response([
+          productJson(),
+          productJson(code: 'P-2', title: '리자몽'),
+          productJson(code: 'P-3', title: '완료된 카드', status: '거래완료'),
+          productJson(code: 'P-4', title: '거래중 카드', status: '거래중'),
+        ]);
+      }
+      detailCalls++;
+      return auth.response(productJson(title: '피카츄 카드 최신', price: 15000));
+    });
+    await showHome(tester, repo);
+    expect(find.text('피카츄 카드'), findsOneWidget);
+    expect(find.text('완료된 카드'), findsNothing);
+    expect(find.text('거래중 카드'), findsNothing);
+    expect(find.byType(ChoiceChip), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+    await tester.tap(find.byTooltip('상품 검색'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '피카츄');
+    await tester.pumpAndSettle();
+    expect(find.text('리자몽'), findsNothing);
+    await tester.tap(find.text('피카츄 카드'));
+    await tester.pumpAndSettle();
+    expect(detailCalls, 1);
+    expect(find.text('피카츄 카드 최신'), findsOneWidget);
+    expect(find.text('15,000원'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).controller.text,
+      '피카츄',
+    );
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    await tester.tap(find.text('관심'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('홈'));
+    await tester.pumpAndSettle();
+    expect(find.text('리자몽'), findsOneWidget);
+  });
 
   testWidgets('empty list and local search misses are clear', (tester) async {
     await showHome(tester, repository((_) => auth.response([])));

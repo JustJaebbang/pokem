@@ -1,3 +1,7 @@
+import 'package:pokem_app/vm/notifications/notifications_vm.dart';
+import 'package:pokem_app/vm/mypage/pending_actions_vm.dart';
+import 'package:pokem_app/vm/wallet/wallet_ledger_vm.dart';
+import 'package:pokem_app/vm/wallet/payment_vm.dart';
 import 'package:pokem_app/vm/products/product_detail_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/core/providers/data_providers.dart';
@@ -69,6 +73,8 @@ class SellerCancelDecisionVm extends Notifier<SellerCancelDecisionState> {
             : '취소 요청을 확인하지 못했습니다.',
       );
       ref.invalidate(sellerCancelVmProvider);
+      ref.invalidate(pendingActionsVmProvider);
+      ref.invalidate(notificationsVmProvider);
       await _unauthorized(e);
     }
   }
@@ -107,11 +113,16 @@ class SellerCancelDecisionVm extends Notifier<SellerCancelDecisionState> {
   void _complete(PurchaseCancellation result) {
     state = SellerCancelDecisionState(result: result);
     ref.invalidate(sellerCancelVmProvider);
+    ref.invalidate(pendingActionsVmProvider);
+    ref.invalidate(notificationsVmProvider);
     ref.invalidate(salesVmProvider);
     ref.invalidate(productsVmProvider);
     ref.invalidate(productDetailVmProvider);
     ref.invalidate(wishlistVmProvider);
     ref.invalidate(walletVmProvider);
+    ref.invalidate(walletLedgerVmProvider);
+    ref.invalidate(paymentHistoryVmProvider);
+    ref.invalidate(paymentDetailVmProvider);
   }
 
   Future<void> _unauthorized(Object e) async {

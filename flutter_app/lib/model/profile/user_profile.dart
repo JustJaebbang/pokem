@@ -6,8 +6,10 @@ class UserProfile {
     required this.phone,
     required this.email,
     required this.address,
+    this.imageUrl,
   });
   final String id, name, nickname, phone, email, address;
+  final String? imageUrl;
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
     id: json['user_id'] as String,
     name: json['user_name'] as String,
@@ -15,6 +17,7 @@ class UserProfile {
     phone: json['user_phone'] as String,
     email: json['user_email'] as String,
     address: json['user_address'] as String,
+    imageUrl: json['user_profile_image'] as String?,
   );
 }
 
@@ -23,11 +26,16 @@ class ProfileInput {
     required this.phone,
     required this.email,
     required this.address,
+    this.imageUrl,
+    this.updateImage = false,
   });
   final String phone, email, address;
-  Map<String, String> toJson() => {
+  final String? imageUrl;
+  final bool updateImage;
+  Map<String, Object?> toJson() => {
     'user_phone': phone.trim(),
     'user_email': email.trim(),
     'user_address': address.trim(),
+    if (updateImage) 'user_profile_image': imageUrl,
   };
 }

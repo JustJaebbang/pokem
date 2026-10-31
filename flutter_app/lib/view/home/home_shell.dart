@@ -1,3 +1,8 @@
+import 'package:pokem_app/view/profile/widgets/my_profile_avatar.dart';
+import 'package:pokem_app/view/products/product_search_view.dart';
+import 'package:pokem_app/view/notifications/notification_bell.dart';
+import 'package:pokem_app/vm/notifications/notifications_vm.dart';
+import 'package:pokem_app/view/mypage/pending_actions_card.dart';
 import 'package:pokem_app/view/profile/quit_view.dart';
 import 'package:pokem_app/view/inspection/return_view.dart';
 import 'package:pokem_app/view/inspection/inspection_history_view.dart';
@@ -22,7 +27,7 @@ class HomeShell extends ConsumerWidget {
     final index = ref.watch(homeShellVmProvider);
     final state = ref.watch(loginVmProvider);
     final account = state.session?.account;
-    const names = ['홈', '관심', '등록', '채팅', '나'];
+    const names = ['홈', '관심', '등록', '채팅', '마이페이지'];
     const icons = [
       Icons.home_outlined,
       Icons.favorite_border,
@@ -31,7 +36,21 @@ class HomeShell extends ConsumerWidget {
       Icons.person_outline,
     ];
     return Scaffold(
-      appBar: AppBar(title: Text(index == 0 ? '포켐' : names[index])),
+      appBar: AppBar(
+        title: Text(index == 0 ? '포켐' : names[index]),
+        actions: [
+          IconButton(
+            tooltip: index == 1 ? '관심상품 검색' : '상품 검색',
+            icon: const Icon(Icons.search),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => ProductSearchView(wishlistOnly: index == 1),
+              ),
+            ),
+          ),
+          const NotificationBell(),
+        ],
+      ),
       body: IndexedStack(
         index: index,
         children: [
@@ -44,7 +63,10 @@ class HomeShell extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.account_circle_outlined, size: 72),
+                if (index == 4)
+                  const MyProfileAvatar()
+                else
+                  const Icon(Icons.account_circle_outlined, size: 72),
                 const SizedBox(height: 16),
                 Text(
                   account?.name ?? '',
@@ -58,6 +80,7 @@ class HomeShell extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 if (index == 4) const WalletSummary(),
+                if (index == 4) const PendingActionsCard(),
                 MypageMenu(
                   onWishlist: () =>
                       ref.read(homeShellVmProvider.notifier).select(1),
@@ -116,6 +139,7 @@ class HomeShell extends ConsumerWidget {
         onDestinationSelected: (value) async {
           if (value != 2) {
             ref.read(homeShellVmProvider.notifier).select(value);
+            ref.invalidate(notificationsVmProvider);
             return;
           }
           final product = await Navigator.of(context).push<Product>(

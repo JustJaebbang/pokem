@@ -16,7 +16,7 @@ def login_user(db, login: LoginRequest) -> UserLoginResponse:
         cursor.execute(
             """
             SELECT user_id, user_password, user_nickname, user_name,
-                   user_phone, user_email, user_address, user_money
+                   user_phone, user_email, user_address, user_money, user_profile_image
             FROM `user`
             WHERE user_id = %s
               AND NOT EXISTS (SELECT 1 FROM `quit` q WHERE q.user_user_id = `user`.user_id)
@@ -35,9 +35,9 @@ def create_user(db, user: UserCreate) -> UserResponse:
         password_hash = hash_password(user.user_password)
         sql = """
               insert into user
-              (user_id,user_password,user_nickname,user_name,user_phone,user_email,user_address,user_money) 
+              (user_id,user_password,user_nickname,user_name,user_phone,user_email,user_address,user_profile_image,user_money) 
               values 
-              (%s,%s,%s,%s,%s,%s,%s,%s)
+              (%s,%s,%s,%s,%s,%s,%s,%s,%s)
               """
         with db.cursor() as cursor:
             cursor.execute(sql,
@@ -49,6 +49,7 @@ def create_user(db, user: UserCreate) -> UserResponse:
                                 user.user_phone,
                                 user.user_email,
                                 user.user_address,
+                                user.user_profile_image,
                                 0
                             )
                         )
@@ -71,7 +72,7 @@ def get_user(db) -> list[UserResponse]: #UserResponse | None:
             """
             SELECT
                 user_id, user_nickname, user_name,
-                user_phone, user_email, user_address, user_money
+                user_phone, user_email, user_address, user_money, user_profile_image
             FROM user
             """,
         )
@@ -87,7 +88,7 @@ def get_user_id(db, user_id: str) -> UserResponse | None:
             """
             SELECT
                 user_id, user_nickname, user_name,
-                user_phone, user_email, user_address, user_money
+                user_phone, user_email, user_address, user_money, user_profile_image
             FROM user
             WHERE user_id = %s
               AND NOT EXISTS (SELECT 1 FROM `quit` q WHERE q.user_user_id = user.user_id)
@@ -102,21 +103,18 @@ def get_user_id(db, user_id: str) -> UserResponse | None:
 # user_id에 해당하는 user 정보 변경
 def put_user_id(db, user: UserUpdate, user_id: str) -> UserResponse | None:
     try:
+        # Omitted image keeps the current value; explicit null restores the default avatar.
+        values = [user.user_phone, user.user_email, user.user_address]
+        image_sql = ""
+        if "user_profile_image" in user.model_fields_set:
+            image_sql = ", user_profile_image = %s"
+            values.append(user.user_profile_image)
+        values.append(user_id)
         with db.cursor() as cursor:
             cursor.execute(
-                """
-                UPDATE `user`
-                SET user_phone = %s,
-                    user_email = %s,
-                    user_address = %s
-                WHERE user_id = %s
-                """,
-                (
-                    user.user_phone,
-                    user.user_email,
-                    user.user_address,
-                    user_id,
-                ),
+                f"""UPDATE `user` SET user_phone = %s, user_email = %s,
+                    user_address = %s{image_sql} WHERE user_id = %s""",
+                tuple(values),
             )
 
         db.commit()

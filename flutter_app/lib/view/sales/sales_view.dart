@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/products/product_delete_view.dart';
 import 'package:pokem_app/view/consignment/consignment_view.dart';
 import 'package:pokem_app/view/products/product_edit_view.dart';
 import 'package:pokem_app/core/formatters/money.dart';
@@ -140,6 +141,19 @@ class SalesView extends ConsumerWidget {
                                       ),
                                     ),
                                     child: const Text('수정'),
+                                  ),
+                                if (manage &&
+                                    item.type == 'direct' &&
+                                    item.status == '판매중')
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => ProductDeleteView(
+                                          code: item.productCode,
+                                        ),
+                                      ),
+                                    ),
+                                    child: const Text('삭제'),
                                   ),
                                 if (item.type == 'consign')
                                   TextButton(

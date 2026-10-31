@@ -81,10 +81,13 @@ def get_cybermoney_pay(db, user_id: str) -> list[CybermoneyPayResponse]:
             raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
         cursor.execute(
             """
-            SELECT cp.*, pi.user_user_id
+            SELECT cp.*, pi.user_user_id, pi.sell_product_sell_product_code,
+                   sp.sell_product_title, sp.sell_product_image
             FROM cybermoney_pay cp
             JOIN purchase_item pi
                 ON pi.purchase_item_code = cp.purchase_item_purchase_item_code
+            LEFT JOIN sell_product sp
+                ON sp.sell_product_code = pi.sell_product_sell_product_code
             WHERE pi.user_user_id = %s
             ORDER BY cp.cybermoney_pay_date DESC, cp.cybermoney_pay_code DESC
             """,
@@ -98,10 +101,13 @@ def get_cybermoney_pay_code(db, cybermoney_pay_code: str) -> CybermoneyPayRespon
     with db.cursor() as cursor:
         cursor.execute(
             """
-            SELECT cp.*, pi.user_user_id
+            SELECT cp.*, pi.user_user_id, pi.sell_product_sell_product_code,
+                   sp.sell_product_title, sp.sell_product_image
             FROM cybermoney_pay cp
             JOIN purchase_item pi
                 ON pi.purchase_item_code = cp.purchase_item_purchase_item_code
+            LEFT JOIN sell_product sp
+                ON sp.sell_product_code = pi.sell_product_sell_product_code
             WHERE cp.cybermoney_pay_code = %s
             """,
             (cybermoney_pay_code,),

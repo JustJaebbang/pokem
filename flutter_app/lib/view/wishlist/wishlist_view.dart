@@ -16,6 +16,15 @@ class WishlistView extends ConsumerWidget {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text(
+                '관심목록',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+          ),
           if (state.error != null)
             SliverToBoxAdapter(
               child: Padding(

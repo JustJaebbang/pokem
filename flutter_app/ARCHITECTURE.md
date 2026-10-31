@@ -133,3 +133,18 @@ VM이 소유자·판매 유형·상태·가격 검증과 수정 후 갱신을 �
 - 회원탈퇴: QuitView → QuitVm → QuitRepository → QuitApiService. 확인·중복 방지·불명확한 결과는 VM에서 관리합니다. 세션별 VM 상태를 유지하며 계정 변경 시 초기화하고, 서버의 성공 응답 확인 후 LoginVm에서 세션을 정리합니다.
 
 - 회원탈퇴 서버 판정: user 행과 거래 관계를 보존하고 quit의 user_user_id 존재 여부로 활성 계정을 판단합니다. 공통 JWT 인증과 별도 WebSocket 인증·메시지 저장 경로에 동일한 탈퇴 판정을 적용합니다.
+
+- 상품 삭제: ProductDeleteView → ProductDeleteVm → ProductDeleteRepository → ProductDeleteApiService/ProductRepository. VM에서 최신 상품의 소유자·유형·상태를 검증하고 세션별 중복 요청과 불명확한 결과를 관리합니다. 최종 권한과 상태 제한은 서버에서 검증합니다.
+
+- 상품 결제내역: PaymentHistoryView/PaymentDetailView → PaymentHistoryVm/PaymentDetailVm → PaymentRepository → PaymentApiService. 세션 변경 시 데이터를 초기화하고 저장소에서 소유자·결제번호를 검증합니다. 상품 메타데이터는 서버 조회에서 조인하며 구매·취소 VM이 결제 조회 캐시를 갱신합니다.
+
+- 포켐머니 이용내역: WalletLedgerView → LedgerDirectionVm/WalletLedgerVm → WalletLedgerRepository → WalletLedgerApiService → GET /wallet/transactions. 서버가 기존 5개 원본의 실제 입출금을 사용자별 UNION ALL로 조회하며 잔액을 변경하지 않습니다. VM은 필터별 페이지·중복 로드·세션 변경·조회 실패를 관리합니다. 기존 결제 상세 화면은 입출금 항목에서 연결합니다.
+
+- 포켐머니 화면의 잔액 영역과 WalletLedgerSliver를 동일한 CustomScrollView로 구성합니다. 이용내역 필터·페이지 상태는 기존 Riverpod VM을 공유하며 중첩 스크롤은 사용하지 않습니다.
+
+- 처리 대기: PendingActionsCard → PendingActionsVm → PendingActionsRepository → PendingActionsApiService → GET /mypage/pending-actions. 마이페이지 탭에서만 구독하며 인증 변경 시 초기화하고 검수비 결제·검수 의사 선택·판매자 취소 결정 VM이 건수 캐시를 갱신합니다.
+
+- 검색: ProductSearchView → ProductSearchVm/검색 결과 Provider → 기존 ProductsVm 또는 WishlistVm. 검색어 상태는 Riverpod에서 관리하고 관심상품 검색은 판매 상태 필터를 적용하지 않습니다.
+- 알림: NotificationBell/NotificationsView → NotificationsVm → NotificationsRepository → NotificationsApiService/NotificationReadStorage. 서버는 업무 기록을 사용자별로 조회하고 클라이언트는 기기·환경·계정별 읽음 상태만 보관합니다. 읽음 저장 실패는 낙관 상태를 되돌리고 업무 처리 VM에서 알림 캐시를 갱신합니다.
+
+- 프로필 이미지: ProfileView → ProfileVm → 기존 ProductPhotoPicker/ProductPublishRepository 및 ProfileRepository. 편집 상태는 사진 미리보기·선택 중·업로드 URL 캐시·기본 이미지 복원을 관리합니다. ProfileSummaryVm은 마이페이지에서만 회원정보를 읽고 저장 완료 시 갱신합니다. 공통 ProfileAvatar는 URL/선택 이미지와 기본 아이콘 표시만 담당합니다.

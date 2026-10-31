@@ -1,5 +1,6 @@
 from services.sale_registration_service import get_sale_registrations
 from fastapi import HTTPException
+from pymysql.err import IntegrityError
 
 from schemas.sell_product import SellProductCreate, SellProductResponse, SellProductUpdate, SellProductDelete
 from services import post_item_service
@@ -213,7 +214,7 @@ def delete_sell_product_code(db, sell_product_code: str) -> SellProductDelete | 
                 WHERE sell_product_code = %s
                 FOR UPDATE
                 """,
-                (sell_product_code),
+                (sell_product_code,),
             )
             product = cursor.fetchone()
 
@@ -221,17 +222,25 @@ def delete_sell_product_code(db, sell_product_code: str) -> SellProductDelete | 
                 db.rollback()
                 return None
 
+            if product["sell_product_sell_status"] != "판매중":
+                raise HTTPException(status_code=409, detail="판매중인 상품만 삭제할 수 있습니다.")
+
             cursor.execute(
                 """
                 DELETE
                 FROM sell_product
                 WHERE sell_product_code = %s
                 """,
-                (sell_product_code),
+                (sell_product_code,),
             )
 
         db.commit()
     
+    except IntegrityError as exc:
+        db.rollback()
+        if exc.args[0] == 1451:
+            raise HTTPException(status_code=409, detail="관심상품·채팅·거래 등 연결된 기록이 있어 삭제할 수 없습니다.") from exc
+        raise
     except Exception:
         db.rollback()
         raise
