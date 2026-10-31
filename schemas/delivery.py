@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
@@ -21,6 +23,12 @@ class DeliveryCreate(BaseModel):
 class DeliveryRequest(DeliveryCreate):
     # API 요청에서는 매니저 ID를 생략할 수 있으며 로그인 계정으로 채운다.
     manager_manager_id: str | None = Field(default=None, min_length=1, max_length=45)
+
+
+class DeliveryStatusUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    delivery_status: Literal["배송준비", "배송중", "배송완료"]
 
 
 class DeliveryResponse(BaseModel):

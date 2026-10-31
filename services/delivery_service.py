@@ -6,6 +6,12 @@ from pymysql.err import IntegrityError
 from schemas.delivery import DeliveryCreate, DeliveryResponse
 
 
+DELIVERY_STATUS_TRANSITIONS = {
+    "배송준비": "배송중",
+    "배송중": "배송완료",
+}
+
+
 # 구매 배송은 상품, 반송 배송은 검수 대상에 연결한다.
 DELIVERY_SELECT = """
     SELECT d.delivery_no, d.delivery_date, d.delivery_status,
@@ -145,3 +151,44 @@ def get_delivery(db, delivery_no: str, user_id=None) -> DeliveryResponse | None:
         cursor.execute(f"{DELIVERY_SELECT} WHERE d.delivery_no = %s{owner_filter}", params)
         row = cursor.fetchone()
     return DeliveryResponse(**row) if row else None
+
+
+def update_delivery_status(db, delivery_no: str, status: str) -> DeliveryResponse:
+    """배송준비 → 배송중 → 배송완료 순서로만 상태를 변경한다."""
+    try:
+        db.begin()
+        with db.cursor() as cursor:
+            cursor.execute(
+                "SELECT delivery_status FROM delivery WHERE delivery_no = %s FOR UPDATE",
+                (delivery_no,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise HTTPException(status_code=404, detail="배송 내역을 찾을 수 없습니다.")
+
+            current = row["delivery_status"]
+            if current != status:
+                if DELIVERY_STATUS_TRANSITIONS.get(current) != status:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"배송 상태를 {current}에서 {status}(으)로 변경할 수 없습니다.",
+                    )
+                cursor.execute(
+                    """UPDATE delivery SET delivery_status = %s
+                    WHERE delivery_no = %s AND delivery_status = %s""",
+                    (status, delivery_no, current),
+                )
+                if cursor.rowcount != 1:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="배송 상태가 변경되었습니다. 다시 확인해주세요.",
+                    )
+
+        result = get_delivery(db, delivery_no)
+        if result is None:
+            raise RuntimeError("변경한 배송 내역을 조회할 수 없습니다.")
+        db.commit()
+        return result
+    except Exception:
+        db.rollback()
+        raise

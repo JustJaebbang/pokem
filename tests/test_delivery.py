@@ -143,6 +143,85 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(self.client.get("/delivery").json()[0]["return_no"], "return1")
         self.assertEqual(self.cursor.execute.call_args.args[1], ("return_owner", 20, 0))
 
+    def delivery_row(self, status):
+        return {
+            "delivery_no": "delivery1",
+            "delivery_date": "2026-10-31 10:00:00",
+            "delivery_status": status,
+            "purchase_item_code": "purchase1",
+            "return_no": None,
+            "user_user_id": "buyer1",
+            "manager_manager_id": "manager1",
+            "delivery_company_delivery_company_code": "company1",
+            "sell_product_sell_product_code": "product1",
+            "inspect_inspect_code": None,
+        }
+
+    def test_manager_updates_delivery_status_in_order(self):
+        self.cursor.fetchone.side_effect = [
+            {"delivery_status": "배송준비"},
+            self.delivery_row("배송중"),
+        ]
+        self.cursor.rowcount = 1
+
+        response = self.client.patch(
+            "/delivery/delivery1/status",
+            json={"delivery_status": "배송중"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["delivery_status"], "배송중")
+        update = self.cursor.execute.call_args_list[1]
+        self.assertIn("UPDATE delivery SET delivery_status", update.args[0])
+        self.assertEqual(update.args[1], ("배송중", "delivery1", "배송준비"))
+        self.db.commit.assert_called_once()
+
+    def test_status_update_is_idempotent_but_rejects_skips_and_invalid_values(self):
+        self.cursor.fetchone.side_effect = [
+            {"delivery_status": "배송중"},
+            self.delivery_row("배송중"),
+        ]
+        response = self.client.patch(
+            "/delivery/delivery1/status",
+            json={"delivery_status": "배송중"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["delivery_status"], "배송중")
+        self.assertFalse(any("UPDATE delivery SET" in call.args[0] for call in self.cursor.execute.call_args_list))
+
+        self.db.reset_mock()
+        self.cursor.fetchone.side_effect = None
+        self.cursor.fetchone.return_value = {"delivery_status": "배송준비"}
+        response = self.client.patch(
+            "/delivery/delivery1/status",
+            json={"delivery_status": "배송완료"},
+        )
+        self.assertEqual(response.status_code, 409)
+        self.db.rollback.assert_called_once()
+
+        response = self.client.patch(
+            "/delivery/delivery1/status",
+            json={"delivery_status": "분실"},
+        )
+        self.assertEqual(response.status_code, 422)
+
+    def test_status_update_requires_manager_and_existing_delivery(self):
+        self.current = SimpleNamespace(role="user", account=SimpleNamespace(user_id="buyer1"))
+        response = self.client.patch(
+            "/delivery/delivery1/status",
+            json={"delivery_status": "배송중"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+        self.current = SimpleNamespace(role="manager", account=SimpleNamespace(manager_id="manager1"))
+        self.cursor.fetchone.return_value = None
+        response = self.client.patch(
+            "/delivery/missing/status",
+            json={"delivery_status": "배송중"},
+        )
+        self.assertEqual(response.status_code, 404)
+        self.db.rollback.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()
