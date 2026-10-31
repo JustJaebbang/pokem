@@ -1,3 +1,5 @@
+import 'package:pokem_app/vm/notifications/notifications_vm.dart';
+import 'package:pokem_app/vm/wallet/wallet_ledger_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/core/providers/data_providers.dart';
 import 'package:pokem_app/model/purchase/purchase.dart';
@@ -97,6 +99,8 @@ class PurchaseConfirmVm extends Notifier<PurchaseConfirmState> {
     ref.invalidate(productsVmProvider);
     ref.invalidate(wishlistVmProvider);
     ref.invalidate(walletVmProvider);
+    ref.invalidate(notificationsVmProvider);
+    ref.invalidate(walletLedgerVmProvider);
   }
 
   Future<void> _unauthorized(Object e) async {

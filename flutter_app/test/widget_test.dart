@@ -1,3 +1,6 @@
+import 'package:pokem_app/vm/mypage/pending_actions_vm.dart';
+import 'package:pokem_app/model/mypage/pending_actions.dart';
+
 import 'support/wishlist_fixture.dart';
 
 import 'package:pokem_app/core/providers/data_providers.dart';
@@ -14,6 +17,12 @@ import 'package:http/http.dart' as http;
 import 'auth_test.dart' as fixtures;
 import 'product_test.dart' as products;
 
+class EmptyPendingActionsVm extends PendingActionsVm {
+  @override
+  Future<PendingActions> build() async =>
+      const PendingActions(fees: 0, choices: 0, cancellations: 0);
+}
+
 void main() {
   Future<void> showLogin(WidgetTester tester, AuthRepository repo) async {
     tester.view.physicalSize = const Size(430, 932);
@@ -24,6 +33,7 @@ void main() {
       ProviderScope(
         overrides: [
           authRepositoryProvider.overrideWithValue(repo),
+          pendingActionsVmProvider.overrideWith(EmptyPendingActionsVm.new),
           wishlistRepositoryProvider.overrideWithValue(
             MemoryWishlistRepository(),
           ),
@@ -68,9 +78,10 @@ void main() {
       await tester.tap(find.byKey(const Key('loginSubmit')));
       await tester.pumpAndSettle();
       expect(find.text('카드수집가님, 반가워요.'), findsOneWidget);
-      await tester.tap(find.text('나'));
+      await tester.tap(find.text('마이페이지'));
       await tester.pumpAndSettle();
       expect(find.text('일반 사용자 · tester'), findsOneWidget);
+      await tester.ensureVisible(find.text('로그아웃'));
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('loginId')), findsOneWidget);

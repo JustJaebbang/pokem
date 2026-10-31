@@ -1,3 +1,6 @@
+import 'package:pokem_app/vm/notifications/notifications_vm.dart';
+import 'package:pokem_app/vm/wallet/wallet_ledger_vm.dart';
+import 'package:pokem_app/vm/wallet/payment_vm.dart';
 import 'package:pokem_app/vm/wallet/wallet_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/core/providers/data_providers.dart';
@@ -134,6 +137,10 @@ class CheckoutVm extends Notifier<CheckoutState> {
   void _completed(Purchase purchase) {
     state = CheckoutState(data: state.data, loading: false, purchase: purchase);
     ref.invalidate(walletVmProvider);
+    ref.invalidate(notificationsVmProvider);
+    ref.invalidate(walletLedgerVmProvider);
+    ref.invalidate(paymentHistoryVmProvider);
+    ref.invalidate(paymentDetailVmProvider);
     ref.invalidate(productsVmProvider);
     ref.invalidate(productDetailVmProvider(code));
     ref.invalidate(wishlistVmProvider);

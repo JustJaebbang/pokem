@@ -1,3 +1,5 @@
+import 'package:pokem_app/vm/notifications/notifications_vm.dart';
+import 'package:pokem_app/vm/wallet/wallet_ledger_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/core/providers/data_providers.dart';
 import 'package:pokem_app/model/wallet/wallet_models.dart';
@@ -114,6 +116,8 @@ class MoneyTransferVm extends Notifier<MoneyTransferState> {
         receipt: receipt,
       );
       ref.invalidate(walletVmProvider);
+      ref.invalidate(notificationsVmProvider);
+      ref.invalidate(walletLedgerVmProvider);
     } catch (e) {
       if (!_current(session.token)) return;
       final uncertain = e is! WalletException || e.uncertain;
@@ -125,6 +129,8 @@ class MoneyTransferVm extends Notifier<MoneyTransferState> {
             : e.message,
       );
       ref.invalidate(walletVmProvider);
+      ref.invalidate(notificationsVmProvider);
+      ref.invalidate(walletLedgerVmProvider);
       await _unauthorized(e);
     }
   }

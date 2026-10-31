@@ -452,3 +452,14 @@ scripts
 !tests/test_user_quit.py
 
 !tests/test_quit_auth.py
+
+!tests/test_product_delete.py
+
+!tests/test_payment_history.py
+
+/.rollback/
+!tests/test_wallet_ledger.py
+
+!tests/test_pending_actions.py
+
+!tests/test_notifications.py

@@ -1,3 +1,5 @@
+import 'package:pokem_app/vm/notifications/notifications_vm.dart';
+import 'package:pokem_app/vm/mypage/pending_actions_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/core/providers/data_providers.dart';
 import 'package:pokem_app/model/inspection/inspection_request.dart';
@@ -37,6 +39,8 @@ class InspectionChoiceVm extends Notifier<InspectionChoiceState> {
       if (!item.canChoose) {
         state = const InspectionChoiceState(error: '검수완료 후 선택할 수 있습니다.');
         ref.invalidate(inspectionResultsVmProvider(item.requestNumber));
+        ref.invalidate(pendingActionsVmProvider);
+        ref.invalidate(notificationsVmProvider);
         return;
       }
       submitted = true;
@@ -88,6 +92,8 @@ class InspectionChoiceVm extends Notifier<InspectionChoiceState> {
   void _complete(InspectionResult item) {
     state = InspectionChoiceState(result: item);
     ref.invalidate(inspectionResultsVmProvider(item.requestNumber));
+    ref.invalidate(pendingActionsVmProvider);
+    ref.invalidate(notificationsVmProvider);
   }
 
   Future<void> _unauthorized(Object e) async {

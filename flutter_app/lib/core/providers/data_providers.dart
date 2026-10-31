@@ -1,3 +1,14 @@
+import 'package:pokem_app/repository/notifications/notifications_repository.dart';
+import 'package:pokem_app/service/notifications/notifications_api_service.dart';
+import 'package:pokem_app/service/notifications/notification_read_storage.dart';
+import 'package:pokem_app/repository/mypage/pending_actions_repository.dart';
+import 'package:pokem_app/service/mypage/pending_actions_api_service.dart';
+import 'package:pokem_app/repository/wallet/wallet_ledger_repository.dart';
+import 'package:pokem_app/service/wallet/wallet_ledger_api_service.dart';
+import 'package:pokem_app/repository/wallet/payment_repository.dart';
+import 'package:pokem_app/service/wallet/payment_api_service.dart';
+import 'package:pokem_app/repository/products/product_delete_repository.dart';
+import 'package:pokem_app/service/products/product_delete_api_service.dart';
 import 'package:pokem_app/repository/profile/quit_repository.dart';
 import 'package:pokem_app/service/profile/quit_api_service.dart';
 import 'package:pokem_app/repository/consignment/consignment_repository.dart';
@@ -211,4 +222,56 @@ final quitRepositoryProvider = Provider<QuitRepository>((ref) {
   final client = http.Client();
   ref.onDispose(client.close);
   return QuitRepository(QuitApiService(client, baseUrl: ApiConfig.baseUrl));
+});
+
+final productDeleteRepositoryProvider = Provider<ProductDeleteRepository>((
+  ref,
+) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return ProductDeleteRepository(
+    ProductDeleteApiService(client, baseUrl: ApiConfig.baseUrl),
+    ref.watch(productRepositoryProvider),
+  );
+});
+
+final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return PaymentRepository(
+    PaymentApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final walletLedgerRepositoryProvider = Provider<WalletLedgerRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return WalletLedgerRepository(
+    WalletLedgerApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final pendingActionsRepositoryProvider = Provider<PendingActionsRepository>((
+  ref,
+) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return PendingActionsRepository(
+    PendingActionsApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final notificationReadStorageProvider = Provider<NotificationReadStorage>(
+  (ref) => SecureNotificationReadStorage(),
+);
+final notificationsRepositoryProvider = Provider<NotificationsRepository>((
+  ref,
+) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return NotificationsRepository(
+    NotificationsApiService(client, baseUrl: ApiConfig.baseUrl),
+    ref.watch(notificationReadStorageProvider),
+    namespace: ApiConfig.baseUrl,
+  );
 });

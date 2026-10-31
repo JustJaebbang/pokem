@@ -52,16 +52,6 @@ class HomeView extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  TextField(
-                    key: const Key('productSearch'),
-                    decoration: const InputDecoration(
-                      hintText: '상품명·카드 코드 검색',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: (value) =>
-                        ref.read(productsVmProvider.notifier).search(value),
-                  ),
-                  const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(

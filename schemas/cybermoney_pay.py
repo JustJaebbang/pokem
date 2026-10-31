@@ -8,6 +8,9 @@ class CybermoneyPayResponse(BaseModel):
     cybermoney_pay_price: int
     purchase_item_purchase_item_code: str
     user_user_id: str
+    sell_product_sell_product_code: str | None = None
+    sell_product_title: str | None = None
+    sell_product_image: str | None = None
 
 
 class CybermoneyPayCreateResponse(CybermoneyPayResponse):

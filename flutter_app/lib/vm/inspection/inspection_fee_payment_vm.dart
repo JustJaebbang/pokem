@@ -1,3 +1,5 @@
+import 'package:pokem_app/vm/notifications/notifications_vm.dart';
+import 'package:pokem_app/vm/mypage/pending_actions_vm.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/core/providers/data_providers.dart';
 import 'package:pokem_app/model/inspection/inspection_fee.dart';
@@ -80,6 +82,8 @@ class InspectionFeePaymentVm extends Notifier<InspectionFeePaymentState> {
 
   void _completed() {
     state = const InspectionFeePaymentState(completed: true);
+    ref.invalidate(pendingActionsVmProvider);
+    ref.invalidate(notificationsVmProvider);
     ref.invalidate(inspectionFeeVmProvider(number));
   }
 

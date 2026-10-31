@@ -1,3 +1,6 @@
+import 'package:pokem_app/vm/notifications/notifications_vm.dart';
+import 'package:pokem_app/vm/wallet/wallet_ledger_vm.dart';
+import 'package:pokem_app/vm/wallet/payment_vm.dart';
 import 'package:pokem_app/vm/wallet/wallet_vm.dart';
 import 'package:pokem_app/vm/products/product_detail_vm.dart';
 import 'package:pokem_app/vm/products/products_vm.dart';
@@ -61,6 +64,10 @@ class PurchaseCancelVm extends Notifier<PurchaseCancelState> {
       }
       if (snapshot.cancellation?.status == '승인') {
         ref.invalidate(walletVmProvider);
+        ref.invalidate(notificationsVmProvider);
+        ref.invalidate(walletLedgerVmProvider);
+        ref.invalidate(paymentHistoryVmProvider);
+        ref.invalidate(paymentDetailVmProvider);
         ref.invalidate(productsVmProvider);
         ref.invalidate(productDetailVmProvider(snapshot.purchase.productCode));
         ref.invalidate(wishlistVmProvider);
