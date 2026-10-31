@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/push/push_settings_tile.dart';
 import 'package:pokem_app/view/profile/widgets/my_profile_avatar.dart';
 import 'package:pokem_app/view/products/product_search_view.dart';
 import 'package:pokem_app/view/notifications/notification_bell.dart';
@@ -85,6 +86,7 @@ class HomeShell extends ConsumerWidget {
                   onWishlist: () =>
                       ref.read(homeShellVmProvider.notifier).select(1),
                 ),
+                const PushSettingsTile(),
                 ListTile(
                   title: const Text('회원정보 수정'),
                   trailing: const Icon(Icons.chevron_right),

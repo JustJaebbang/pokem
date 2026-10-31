@@ -63,6 +63,11 @@ class LoginVm extends Notifier<LoginState> {
     final previous = state.session;
     state = LoginState(session: previous, submitting: true);
     try {
+      try {
+        await ref.read(pushRepositoryProvider).detach(previous);
+      } catch (_) {
+        /* Logout must remain available offline. */
+      }
       await ref.read(authRepositoryProvider).logout();
       if (ref.mounted) {
         state = LoginState(error: expired ? '로그인이 만료되었습니다. 다시 로그인해주세요.' : null);
@@ -79,6 +84,12 @@ class LoginVm extends Notifier<LoginState> {
 
   Future<void> finishWithdrawal({required bool confirmed}) async {
     _expiryTimer?.cancel();
+    final previous = state.session;
+    try {
+      await ref.read(pushRepositoryProvider).detach(previous);
+    } catch (_) {
+      /* Withdrawn accounts are also excluded by the sender. */
+    }
     ref.read(authRepositoryProvider).forgetSession();
     try {
       await ref.read(authRepositoryProvider).logout();

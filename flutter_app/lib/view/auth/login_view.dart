@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/auth/recovery_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -40,12 +41,6 @@ class _LoginViewState extends ConsumerState<LoginView> {
     _password.clear();
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다. 로그인해주세요.')));
-  }
-
-  void _comingSoon(String feature) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$feature 기능은 다음 단계에서 연결할 예정입니다.')));
   }
 
   @override
@@ -198,7 +193,12 @@ class _LoginViewState extends ConsumerState<LoginView> {
                                     TextButton(
                                       onPressed: state.submitting
                                           ? null
-                                          : () => _comingSoon('아이디·비밀번호 찾기'),
+                                          : () => Navigator.of(context).push(
+                                              MaterialPageRoute<void>(
+                                                builder: (_) =>
+                                                    const RecoveryView(),
+                                              ),
+                                            ),
                                       child: const Text(
                                         '아이디 / 비밀번호 찾기',
                                         style: TextStyle(fontSize: 12),

@@ -1,3 +1,4 @@
+from services.push_service import enqueue_inspection
 from schemas.inspect import InspectResponse
 from services.return_service import ensure_return
 from services.inspection_common import _now, _require, _inspect_row
@@ -66,6 +67,8 @@ def create_inspect(db, item, manager_id):
                 ),
             )
             result=InspectResponse(**_inspect_row(c, code))
+            if completed:
+                enqueue_inspection(c, result)
         db.commit()
     except Exception:
         db.rollback()
@@ -127,6 +130,8 @@ def transition_inspect(db, code, manager_id, complete=None):
                 )
             _require(c.rowcount == 1, "검수 상태가 변경되었습니다.")
             result=InspectResponse(**_inspect_row(c, code))
+            if complete:
+                enqueue_inspection(c, result)
         db.commit()
     except Exception:
         db.rollback()

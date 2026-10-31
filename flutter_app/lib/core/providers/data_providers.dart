@@ -1,3 +1,7 @@
+import 'package:pokem_app/repository/push/push_repository.dart';
+import 'package:pokem_app/service/push/push_device_service.dart';
+import 'package:pokem_app/service/push/push_messaging_service.dart';
+import 'package:pokem_app/repository/auth/recovery_repository.dart';
 import 'package:pokem_app/repository/profile/public_profile_repository.dart';
 import 'package:pokem_app/service/profile/public_profile_api_service.dart';
 import 'package:pokem_app/repository/notifications/notifications_repository.dart';
@@ -295,5 +299,18 @@ final publicProfileRepositoryProvider = Provider<PublicProfileRepository>((
   ref.onDispose(client.close);
   return PublicProfileRepository(
     PublicProfileApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final recoveryRepositoryProvider = Provider<RecoveryRepository>(
+  (ref) => RecoveryRepository(ref.watch(authApiServiceProvider)),
+);
+
+final pushRepositoryProvider = Provider<PushRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return PushRepository(
+    PushMessagingService(),
+    PushDeviceService(client, baseUrl: ApiConfig.baseUrl),
   );
 });

@@ -472,3 +472,14 @@ scripts
 !tests/test_public_profile.py
 
 !tests/test_product_browse.py
+
+!tests/test_account_recovery.py
+
+!/sql/push_notifications.sql
+!tests/test_push.py
+# Firebase local configuration and server credentials
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase-adminsdk*.json
+**/*firebase-adminsdk*.json
+/.secrets/

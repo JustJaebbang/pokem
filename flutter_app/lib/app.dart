@@ -1,3 +1,5 @@
+import 'package:pokem_app/view/push/push_bridge.dart';
+import 'package:pokem_app/view/inspection/inspection_results_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,6 +33,17 @@ class PokemApp extends ConsumerWidget {
     const green = Color(0xFF245844);
     return MaterialApp(
       title: '포켐',
+      builder: (context, child) => PushBridge(
+        child: child ?? const SizedBox.shrink(),
+        onOpen: (target) {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute<void>(
+              builder: (_) =>
+                  InspectionResultsView(number: target.requestNumber),
+            ),
+          );
+        },
+      ),
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
