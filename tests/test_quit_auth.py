@@ -40,6 +40,7 @@ class DB:
           INSERT INTO user VALUES('owner','hash','nickname','name','010','mail','address',0);
           INSERT INTO history VALUES('TRADE1','owner');
           INSERT INTO chat_room VALUES('ROOM','owner','seller');
+          ALTER TABLE user ADD COLUMN user_profile_image TEXT;
         """)
     def cursor(self): return Cursor(self.conn)
     def begin(self): self.conn.execute("BEGIN")

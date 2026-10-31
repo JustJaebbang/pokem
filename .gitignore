@@ -463,3 +463,8 @@ scripts
 !tests/test_pending_actions.py
 
 !tests/test_notifications.py
+
+!/sql/
+/sql/*
+!/sql/user_profile_image.sql
+!tests/test_profile_image.py

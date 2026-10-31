@@ -7,7 +7,9 @@ class ProfileRepository {
   final AuthApiService _api;
   Future<UserProfile> getProfile(String id, String token) async {
     try {
-      return UserProfile.fromJson(await _api.profile(id, token));
+      final profile = UserProfile.fromJson(await _api.profile(id, token));
+      if (profile.id != id) throw const AuthException('회원정보의 사용자가 일치하지 않습니다.');
+      return profile;
     } on TypeError {
       throw const AuthException('회원정보를 확인하지 못했습니다.');
     }
@@ -19,9 +21,11 @@ class ProfileRepository {
     String token,
   ) async {
     try {
-      return UserProfile.fromJson(
+      final profile = UserProfile.fromJson(
         await _api.updateProfile(id, input.toJson(), token),
       );
+      if (profile.id != id) throw const AuthException('저장 결과의 사용자가 일치하지 않습니다.');
+      return profile;
     } on TypeError {
       throw const AuthException('저장 결과를 확인하지 못했습니다. 회원정보를 다시 불러와 확인해주세요.');
     }

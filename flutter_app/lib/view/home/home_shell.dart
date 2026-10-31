@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/profile/widgets/my_profile_avatar.dart';
 import 'package:pokem_app/view/products/product_search_view.dart';
 import 'package:pokem_app/view/notifications/notification_bell.dart';
 import 'package:pokem_app/vm/notifications/notifications_vm.dart';
@@ -62,7 +63,10 @@ class HomeShell extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.account_circle_outlined, size: 72),
+                if (index == 4)
+                  const MyProfileAvatar()
+                else
+                  const Icon(Icons.account_circle_outlined, size: 72),
                 const SizedBox(height: 16),
                 Text(
                   account?.name ?? '',

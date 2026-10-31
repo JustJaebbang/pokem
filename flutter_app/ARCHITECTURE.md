@@ -146,3 +146,5 @@ VM이 소유자·판매 유형·상태·가격 검증과 수정 후 갱신을 �
 
 - 검색: ProductSearchView → ProductSearchVm/검색 결과 Provider → 기존 ProductsVm 또는 WishlistVm. 검색어 상태는 Riverpod에서 관리하고 관심상품 검색은 판매 상태 필터를 적용하지 않습니다.
 - 알림: NotificationBell/NotificationsView → NotificationsVm → NotificationsRepository → NotificationsApiService/NotificationReadStorage. 서버는 업무 기록을 사용자별로 조회하고 클라이언트는 기기·환경·계정별 읽음 상태만 보관합니다. 읽음 저장 실패는 낙관 상태를 되돌리고 업무 처리 VM에서 알림 캐시를 갱신합니다.
+
+- 프로필 이미지: ProfileView → ProfileVm → 기존 ProductPhotoPicker/ProductPublishRepository 및 ProfileRepository. 편집 상태는 사진 미리보기·선택 중·업로드 URL 캐시·기본 이미지 복원을 관리합니다. ProfileSummaryVm은 마이페이지에서만 회원정보를 읽고 저장 완료 시 갱신합니다. 공통 ProfileAvatar는 URL/선택 이미지와 기본 아이콘 표시만 담당합니다.

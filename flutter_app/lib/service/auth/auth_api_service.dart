@@ -22,7 +22,7 @@ class AuthApiService {
       _request('/user/${Uri.encodeComponent(id)}', token: token);
   Future<Map<String, dynamic>> updateProfile(
     String id,
-    Map<String, String> data,
+    Map<String, Object?> data,
     String token,
   ) => _request(
     '/user/${Uri.encodeComponent(id)}',
@@ -33,7 +33,7 @@ class AuthApiService {
 
   Future<Map<String, dynamic>> _request(
     String path, {
-    Map<String, String>? body,
+    Map<String, Object?>? body,
     String? token,
     bool put = false,
   }) async {

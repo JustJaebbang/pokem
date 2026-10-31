@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/profile/widgets/profile_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/model/profile/user_profile.dart';
@@ -35,7 +36,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
       _address.text = profile.address;
     }
     return PopScope(
-      canPop: !state.saving,
+      canPop: !state.saving && !state.picking,
       child: Scaffold(
         appBar: AppBar(title: const Text('회원정보 수정')),
         body: state.loading
@@ -61,6 +62,48 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
                 child: ListView(
                   padding: const EdgeInsets.all(24),
                   children: [
+                    Center(
+                      child: InkWell(
+                        key: const Key('profilePhoto'),
+                        onTap: state.saving || state.picking
+                            ? null
+                            : vm.pickPhoto,
+                        customBorder: const CircleBorder(),
+                        child: ProfileAvatar(
+                          size: 96,
+                          url: state.removeImage ? null : profile.imageUrl,
+                          bytes: state.photo?.bytes,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Wrap(
+                        spacing: 8,
+                        children: [
+                          TextButton(
+                            onPressed: state.saving || state.picking
+                                ? null
+                                : vm.pickPhoto,
+                            child: Text(state.picking ? '사진 불러오는 중' : '사진 변경'),
+                          ),
+                          if (state.photo != null || profile.imageUrl != null)
+                            TextButton(
+                              onPressed: state.saving || state.picking
+                                  ? null
+                                  : vm.useDefaultPhoto,
+                              child: const Text('기본 이미지로'),
+                            ),
+                          if (state.photo != null || state.removeImage)
+                            TextButton(
+                              onPressed: state.saving || state.picking
+                                  ? null
+                                  : vm.cancelPhotoChange,
+                              child: const Text('변경 취소'),
+                            ),
+                        ],
+                      ),
+                    ),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
@@ -73,7 +116,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
                     TextFormField(
                       key: const Key('profilePhone'),
                       controller: _phone,
-                      enabled: !state.saving,
+                      enabled: !state.saving && !state.picking,
                       decoration: const InputDecoration(labelText: '전화번호'),
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
@@ -83,7 +126,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
                     TextFormField(
                       key: const Key('profileEmail'),
                       controller: _email,
-                      enabled: !state.saving,
+                      enabled: !state.saving && !state.picking,
                       decoration: const InputDecoration(labelText: '이메일'),
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
@@ -93,7 +136,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
                     TextFormField(
                       key: const Key('profileAddress'),
                       controller: _address,
-                      enabled: !state.saving,
+                      enabled: !state.saving && !state.picking,
                       decoration: const InputDecoration(labelText: '주소'),
                       minLines: 2,
                       maxLines: 4,
@@ -112,7 +155,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
                       ),
                     const SizedBox(height: 24),
                     FilledButton(
-                      onPressed: state.saving
+                      onPressed: state.saving || state.picking
                           ? null
                           : () async {
                               if (!_form.currentState!.validate()) return;
