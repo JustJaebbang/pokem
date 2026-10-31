@@ -1,3 +1,4 @@
+from inspection_pricing import DEPOSIT_REFUND_UNIT_PRICE
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -14,12 +15,16 @@ def create_deposit_refund(db, request: DepositRefundCreate) -> DepositRefundResp
         with db.cursor() as cursor:
             # 요청자가 사용자 ID를 지정하지 않고, 연결된 결제의 사용자를 기록한다.
             cursor.execute(
-                "SELECT user_user_id FROM pay WHERE pay_no = %s FOR UPDATE",
+                """SELECT user_user_id, pay_status, pay_price,
+                          inspection_request_inspection_request_no
+                   FROM pay WHERE pay_no = %s FOR UPDATE""",
                 (request.pay_pay_no,),
             )
             pay = cursor.fetchone()
             if pay is None:
                 raise HTTPException(status_code=404, detail="해당 결제를 찾을 수 없습니다.")
+            if pay["pay_status"] != "결제완료":
+                raise HTTPException(status_code=409, detail="결제완료된 검수비만 보증금을 환급할 수 있습니다.")
             cursor.execute(
                 "SELECT manager_id FROM manager WHERE manager_id = %s FOR UPDATE",
                 (request.manager_manager_id,),
@@ -27,11 +32,42 @@ def create_deposit_refund(db, request: DepositRefundCreate) -> DepositRefundResp
             if cursor.fetchone() is None:
                 raise HTTPException(status_code=404, detail="해당 매니저를 찾을 수 없습니다.")
 
+            # 결제 행 잠금을 모든 환급 요청이 공유해 동시 요청의 중복 환급을 막는다.
+            cursor.execute(
+                """SELECT inspect_code, inspect_status, inspect_grade
+                   FROM inspect WHERE inspect_requested_no = %s FOR UPDATE""",
+                (pay["inspection_request_inspection_request_no"],),
+            )
+            items = cursor.fetchall()
+            eligible = sum(
+                1 for item in items
+                if item["inspect_status"] == "검수완료"
+                and isinstance(item["inspect_grade"], str)
+                and item["inspect_grade"].strip()
+                and item["inspect_grade"].strip().upper() != "FAKE"
+            )
+            refundable_total = eligible * DEPOSIT_REFUND_UNIT_PRICE
+            if refundable_total == 0:
+                raise HTTPException(status_code=409, detail="환급 가능한 검수완료 카드가 없습니다.")
+            if pay["pay_price"] is None or refundable_total > pay["pay_price"] or refundable_total > 2147483647:
+                raise HTTPException(status_code=409, detail="검수 수량과 결제 금액을 확인해주세요.")
+            cursor.execute(
+                """SELECT deposit_refund_price FROM deposit_refund
+                   WHERE pay_pay_no = %s FOR UPDATE""",
+                (request.pay_pay_no,),
+            )
+            previous = cursor.fetchall()
+            if any(row["deposit_refund_price"] is None or row["deposit_refund_price"] <= 0 for row in previous):
+                raise HTTPException(status_code=409, detail="기존 환급 내역의 금액을 확인해주세요.")
+            price = refundable_total - sum(row["deposit_refund_price"] for row in previous)
+            if price <= 0:
+                raise HTTPException(status_code=409, detail="새로 환급할 보증금이 없습니다.")
+
             now = datetime.now(ZoneInfo("Asia/Seoul"))
-            # 결제 번호와 반환일자(YYYYMMDD)를 연결한다. 같은 결제의 당일 중복 등록은 409로 처리한다.
+            # 분할 검수 완료 후 같은 날 추가 환급도 기록할 수 있도록 시각·마이크로초를 포함한다.
             refund = DepositRefundResponse(
-                deposit_refund_no=f"{request.pay_pay_no}{now:%Y%m%d}",
-                deposit_refund_price=request.deposit_refund_price,
+                deposit_refund_no=f"{request.pay_pay_no}{now:%Y%m%d%H%M%S%f}",
+                deposit_refund_price=price,
                 deposit_refund_date=now.strftime("%Y-%m-%d %H:%M:%S"),
                 user_user_id=pay["user_user_id"],
                 manager_manager_id=request.manager_manager_id,

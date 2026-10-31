@@ -142,22 +142,42 @@ ERD, DB, Table, Column 모두 수정 완료
 배송 처리 → delivery에서 반환 건을 연결해 배송 일자·상태를 관리
 ```
 
-- frontend 기능, 화면 구현
+- USER frontend 기능, 화면 구현
 ```
-login(JWT Token 기반), 
-Register, 
-home, 
-wishlist, 
-post_item, 
-chat, 
-recharge, 
-exchange, 
-purchase_item
-
-본인상품은 대화하기,구매하기 버튼이 나오지 않도록 수정
+로그인 - login(JWT Token 기반), 
+회원가입 - Register, 
+홈화면 - home, 
+관심상품 - wishlist, 
+판매등록 - post_item, 
+채팅 - chat, 
+충전 - recharge,
+환전 - exchange, 
+구매하기 - purchase_item,
 구매확정 기능 추가
+본인상품은 대화하기,구매하기 버튼이 나오지 않도록 수정
+검수신청 - insepction_request
+검수결과 확인 후 사용자 의사표시
+- 대리판매 -> 담당자가 대리판매 등록
+- 반환 -> 자동으로 반환 등록
+
+지금 검수신청 시 결제 관련 진행중
+
 ```
 
+### 26.10.30
+- FastAPI 수정
+```
+검수 신청 시 결제 금액 카드 개수 * 일정금액
+보증금 반환 시 검수등급 존재하는 카드 개수 * 일정금액
+으로 가격 API에서 안받아도 되게 수정
+```
+
+- USER frontend 기능, 화면 구현
+```
+검수신청 후 결제 기능
+
+
+```
 ## 남궁인성
 
 - manager는 등록자와 관계없이 proposal·order·receive·discard의 전체 목록과 상세를 조회할 수 있다.

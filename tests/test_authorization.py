@@ -152,7 +152,7 @@ class AuthorizationTests(unittest.TestCase):
                     response = self.client.request(method, concrete)
                     self.assertEqual(response.status_code, 401, response.text)
                 count += 1
-        self.assertEqual(count, 95)
+        self.assertEqual(count, 97)
         self.lookup_user.assert_not_called()
 
     def test_inspection_creation_uses_logged_in_user(self):
@@ -185,9 +185,9 @@ class AuthorizationTests(unittest.TestCase):
 
     def test_user_cannot_change_payment_or_create_refund_or_assign_manager(self):
         cases = (
-            ("patch", "/pay/pay1", {"pay_price": 3000}),
-            ("post", "/deposit_refund", {"pay_pay_no": "pay1", "deposit_refund_price": 100}),
-            ("patch", "/inspection_request/20261028000001/manager", {"pay_price": 3000}),
+            ("patch", "/pay/pay1", {"pay_status": "결제완료"}),
+            ("post", "/deposit_refund", {"pay_pay_no": "pay1"}),
+            ("patch", "/inspection_request/20261028000001/manager", {}),
         )
         for method, path, body in cases:
             with self.subTest(path=path):
@@ -198,10 +198,10 @@ class AuthorizationTests(unittest.TestCase):
         from schemas.deposit_refund import DepositRefundResponse
         from schemas.inspection_request import InspectionRequestResponse
         cases = (
-            ("/deposit_refund", "post", {"pay_pay_no": "pay1", "deposit_refund_price": 100},
+            ("/deposit_refund", "post", {"pay_pay_no": "pay1"},
              "routers.deposit_refund.deposit_refund_service.create_deposit_refund",
              DepositRefundResponse(deposit_refund_no="refund1", user_user_id="buyer", manager_manager_id="manager", pay_pay_no="pay1")),
-            ("/inspection_request/20261028000001/manager", "patch", {"pay_price": 3000},
+            ("/inspection_request/20261028000001/manager", "patch", {},
              "routers.inspection_request.inspection_request_service.assign_inspection_request_manager",
              InspectionRequestResponse(inspection_request_no="20261028000001", inspection_request_date="date", inspection_request_amount=1, user_user_id="buyer", manager_manager_id="manager")),
         )
