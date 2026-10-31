@@ -51,6 +51,12 @@ def create_purchase_item(db, purchase: PurchaseItemCreate) -> PurchaseItemRespon
                 raise HTTPException(status_code=409, detail="본인이 등록한 상품은 구매할 수 없습니다.")
             if posts[0]["post_item_complete_date"]:
                 raise HTTPException(status_code=409, detail="이미 판매가 완료된 상품입니다.")
+            if posts[0].get('registration_type') == 'consign':
+                cursor.execute('SELECT post_consign_item_expires_at FROM post_consign_item WHERE sell_product_sell_product_code=%s',
+                               (purchase.sell_product_sell_product_code,))
+                expiry = cursor.fetchone()['post_consign_item_expires_at']
+                if expiry is not None and expiry <= datetime.now(timezone(timedelta(hours=9))).replace(tzinfo=None):
+                    raise HTTPException(status_code=409, detail='대리판매 기간이 만료된 상품입니다.')
 
             cursor.execute(
                 """

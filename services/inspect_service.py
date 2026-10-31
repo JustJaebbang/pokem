@@ -46,14 +46,24 @@ def create_inspect(db, item, manager_id):
                 """, (seq, item.inspect_serial_code),
             )
             code=f"INS_{item.inspect_serial_code}-{seq}"
+            completed=item.inspect_grade is not None
             c.execute(
                 """
                 INSERT INTO inspect (
                     inspect_code, inspect_serial_code, seq, inspect_requested_no,
-                    inspect_status, manager_manager_id
+                    inspect_status, inspect_date, inspect_grade,
+                    inspect_grade_reason, inspect_user_choice, manager_manager_id
                 )
-                VALUES (%s, %s, %s, %s, %s, %s)
-                """, (code, item.inspect_serial_code, seq, item.inspect_requested_no, "검수대기", manager_id),
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    code, item.inspect_serial_code, seq, item.inspect_requested_no,
+                    "검수완료" if completed else "검수대기",
+                    _now() if completed else None,
+                    item.inspect_grade,
+                    item.inspect_grade_reason,
+                    "의사확인대기" if completed else None,
+                    manager_id,
+                ),
             )
             result=InspectResponse(**_inspect_row(c, code))
         db.commit()

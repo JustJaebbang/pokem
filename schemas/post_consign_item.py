@@ -9,6 +9,7 @@ class ConsignCreate(BaseModel):
     sell_product_image: str = Field(min_length=1, max_length=1000)
     sell_product_contents: str = Field(min_length=1, max_length=500)
     sell_product_sell_price: int = Field(strict=True, gt=0, le=2147483647)
+    return_delivery_company_code: str = Field(min_length=1, max_length=45)
 
 
 class ConsignResponse(BaseModel):
@@ -20,7 +21,14 @@ class ConsignResponse(BaseModel):
     inspect_inspect_code: str
     sell_product_sell_product_code: str
     user_user_id: str
+    post_consign_item_expires_at: str | None = None
+    return_delivery_company_code: str | None = None
 
 
 class ConsignCreateResponse(ConsignResponse):
     sell_product: SellProductResponse
+
+
+class ConsignReturnCompanyRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    return_delivery_company_code: str = Field(min_length=1, max_length=45)

@@ -5,6 +5,8 @@ import 'package:pokem_app/vm/auth/login_vm.dart';
 import 'package:pokem_app/view/auth/login_view.dart';
 import 'package:pokem_app/view/auth/session_view.dart';
 import 'package:pokem_app/view/home/home_shell.dart';
+import 'package:pokem_app/model/auth/auth_session.dart';
+import 'package:pokem_app/view/manager/manager_dashboard_view.dart';
 
 final appNavigatorKeyProvider = Provider<GlobalKey<NavigatorState>>(
   (ref) => GlobalKey<NavigatorState>(),
@@ -66,6 +68,8 @@ class PokemApp extends ConsumerWidget {
           ? const LoginView()
           : state.isCustomer
           ? const HomeShell()
+          : state.session?.account.role == AccountRole.manager
+          ? const ManagerDashboardView()
           : const SessionView(),
     );
   }
