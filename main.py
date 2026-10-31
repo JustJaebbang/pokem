@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from fastapi import FastAPI, Request
+import asyncio
+from contextlib import asynccontextmanager
+from services.consignment_expiry_worker import expiry_worker
 from pydantic import BaseModel
 import joblib
 
@@ -17,7 +20,6 @@ from routers.review import router as review_router
 from routers.purchase_cancel import router as purchase_cancel_router
 from routers.chat_room import router as chat_room_router
 from routers.chat_socket import router as chat_socket_router
-from routers.inspection_request import router as inspection_request_router
 from routers.inspect import router as inspect_router
 from routers.return_item import router as return_router
 from routers.post_consign_item import router as post_consign_item_router
@@ -38,7 +40,18 @@ from routers.receive import router as receive_router
 from routers.receipt import router as receipt_router
 from routers.discard import router as discard_router
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app):
+    stop = asyncio.Event()
+    task = asyncio.create_task(expiry_worker(stop))
+    try:
+        yield
+    finally:
+        stop.set()
+        await task
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(user_router)
 app.include_router(product_image_router)
@@ -53,7 +66,6 @@ app.include_router(review_router)
 app.include_router(purchase_cancel_router)
 app.include_router(chat_room_router)
 app.include_router(chat_socket_router)
-app.include_router(inspection_request_router)
 app.include_router(inspect_router)
 app.include_router(return_router)
 app.include_router(post_consign_item_router)
@@ -82,7 +94,7 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         app, 
-        #host="192.168.45.218", // 재영이 ip
-        host="192.168.20.42",
+        # 에뮬레이터와 같은 Wi-Fi의 실제 기기에서 모두 접속할 수 있게 대기합니다.
+        host="0.0.0.0",
         port=8000
     )

@@ -1,11 +1,19 @@
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class InspectCreate(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     inspect_requested_no: str = Field(min_length=1, max_length=14)
     inspect_serial_code: str = Field(min_length=1, max_length=50)
+    inspect_grade: str | None = Field(default=None, min_length=1, max_length=20)
+    inspect_grade_reason: str | None = Field(default=None, min_length=1, max_length=200)
+
+    @model_validator(mode="after")
+    def validate_result_pair(self):
+        if (self.inspect_grade is None) != (self.inspect_grade_reason is None):
+            raise ValueError("inspect_grade와 inspect_grade_reason은 함께 입력해야 합니다.")
+        return self
 
 
 class InspectComplete(BaseModel):

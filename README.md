@@ -2,20 +2,19 @@
 
 card 검수 및 대리판매, 사용자간 중고거래 플랫폼
 
-## 처음 설치하기
+## 의존성 설치 및 실행
 
-Python 3.14와 Flutter 3.47.2를 설치한 뒤 저장소 루트에서:
+프로젝트 루트의 PowerShell에서 실행합니다. Python 3.10 이상 또는 uv가 필요합니다.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1
+.\.venv\Scripts\python.exe -m uvicorn main:app --reload
 ```
 
-Python 가상환경과 전체 서버 의존성을 설치하고 Flutter 잠금 파일 기준으로 패키지를 복원합니다.
-기존 `.env`는 유지하며, 없으면 예시 설정과 새 JWT 키로 생성합니다. DB 연결 정보는 각자 입력해야 합니다.
-서버만 설치할 때는 `-SkipFlutter`를 추가합니다.
-서버 의존성만 직접 설치하려면 `python -m pip install -r requirements.txt`를 사용합니다.
-[팀원 설치·실행 안내](docs/setup.md)에 환경 설정, DB 준비 사항, Git 공유 파일을 정리했습니다.
-
+설치한 가상환경은 VS Code의 Python 인터프리터로 `.venv\Scripts\python.exe`를 선택합니다.
+실행 후 `http://127.0.0.1:8000/docs`에서 API를 확인할 수 있습니다.
+DB와 JWT 환경변수는 `.env.example`을 참고하여 `.env`에 별도로 설정합니다.
+테스트용 의존성까지 설치하려면 설치 명령 끝에 `-IncludeTests`를 추가합니다.
 
 ## 허재영
 
@@ -109,7 +108,9 @@ ERD,DB 각 테이블의 컬럼 및 참조 관계 수정
 문의자, 판매자 각각의 token과 같은 chat_room_id를 사용하면 연결 할 수 있다.
 이후 메시지 전송 시 동시에 발생
 ```
+
 - inspect CRU
+
 ```
 1. 사용자가 검수할 상품 개수를 입력해 검수신청
 2. 관리자가 도착한 상품을 확인하고 신청 건에 개별 검수 상품 등록
@@ -118,7 +119,9 @@ ERD,DB 각 테이블의 컬럼 및 참조 관계 수정
 5. 대리판매 선택 시 관리자가 판매상품과 대리판매등록을 하나의 트랜잭션으로 생성
 6. 구매자가 구매확정하면 실제 소유자인 검수신청자에게 판매대금 지급
 ```
+
 - post_consign_item CR
+
 ```
 ERD, DB, Table, Column 모두 수정 완료
 대리판매 등록은 다음을 하나의 트랜잭션으로 처리
@@ -129,11 +132,13 @@ ERD, DB, Table, Column 모두 수정 완료
 5. post_consign_item에 검수 코드·판매상품 코드·관리자 저장
 6. 모두 성공하면 커밋
 ```
+
 - 위 내용들의 FastAPI 구현 및 검증 완료
 
-### 26.10.30
+### 26.10.29
 
 - return R,PATCH
+
 ```
 검수 완료 → 사용자가 검수 결과를 확인
 사용자가 반환 선택 → 선택을 저장하면서 return에 해당 검수 물품의 반환 건을 자동 생성, 중복 생성은 방지
@@ -265,7 +270,9 @@ discard CR
 FastAPI 구현 및 검증 완료
 ```
 
-- delivery는 pruchase_item 데이블을 통해 user_id와 sell_product_code를 가져온다.
+- delivery는 purchase_item에서 user_id와 sell_product_code를 가져오거나 return에서 user_id와 inspect_code를 가져온다.
+  purchase_item_code와 return_no 중 하나만 지정하며, 같은 원본 건의 중복 배송은 허용하지 않는다.
+  return_no는 inspect_code + return_date(YYYYMMDD)로 구성한다.
 
 - manager가 director에게 proposal을 작성하면 director가 대기상태인 status를 승인 또는 반려로 바꾸고 NULL이었던 director_id를 update한다.
 
@@ -282,8 +289,14 @@ FastAPI 구현 및 검증 완료
 
 - discard는 현재 폐기할 상품을 등록하는 것만 할 수 있고 sell_product를 지우는 실질적 폐기는 진행하지 않고 있는 상태이다.
 
+---
 
 ### 검수 물품 반환
+
+- 대리판매 등록 시 만료일(등록 + 14일)과 매니저가 지정한 반환 배송업체를 저장합니다.
+  서버가 1분마다 만료된 미판매 물품을 확인해 반환·배송준비 건을 함께 생성합니다.
+  거래중·거래완료 물품은 제외하며, 만료 상품 구매와 중복 반환은 차단합니다.
+  기존 등록 건은 반환 배송업체를 지정해야 합니다. [대리판매 만료 반환](docs/consignment_expiry.md)
 
 검수완료 후 사용자가 반환을 선택하면 반환 건을 자동 접수합니다.
 `GET /return`, `GET /return/{return_no}`, `PATCH /return/{return_no}/manager`를 제공합니다.
