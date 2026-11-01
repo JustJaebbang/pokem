@@ -159,7 +159,7 @@ def update_delivery_status(db, delivery_no: str, status: str) -> DeliveryRespons
         db.begin()
         with db.cursor() as cursor:
             cursor.execute(
-                "SELECT delivery_status FROM delivery WHERE delivery_no = %s FOR UPDATE",
+                "SELECT delivery_status, return_return_no FROM delivery WHERE delivery_no = %s FOR UPDATE",
                 (delivery_no,),
             )
             row = cursor.fetchone()
@@ -182,6 +182,13 @@ def update_delivery_status(db, delivery_no: str, status: str) -> DeliveryRespons
                     raise HTTPException(
                         status_code=409,
                         detail="배송 상태가 변경되었습니다. 다시 확인해주세요.",
+                    )
+                if row.get("return_return_no") is not None:
+                    # 반환 상태는 별도 수동 입력을 받지 않고 실제 배송 상태에서 파생한다.
+                    return_status = "배송중" if status == "배송중" else "반환완료"
+                    cursor.execute(
+                        "UPDATE `return` SET return_status = %s WHERE return_no = %s",
+                        (return_status, row["return_return_no"]),
                     )
 
         result = get_delivery(db, delivery_no)

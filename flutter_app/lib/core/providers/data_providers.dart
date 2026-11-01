@@ -50,6 +50,8 @@ import 'package:pokem_app/repository/wishlist/wishlist_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/repository/manager/manager_repository.dart';
 import 'package:pokem_app/service/manager/manager_api_service.dart';
+import 'package:pokem_app/repository/director/director_repository.dart';
+import 'package:pokem_app/service/director/director_api_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:pokem_app/core/config/api_config.dart';
 import 'package:pokem_app/service/auth/auth_api_service.dart';
@@ -66,6 +68,14 @@ final managerRepositoryProvider = Provider<ManagerRepository>((ref) {
   ref.onDispose(client.close);
   return ManagerRepository(
     ManagerApiService(client, baseUrl: ApiConfig.baseUrl),
+  );
+});
+
+final directorRepositoryProvider = Provider<DirectorRepository>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return DirectorRepository(
+    DirectorApiService(client, baseUrl: ApiConfig.baseUrl),
   );
 });
 

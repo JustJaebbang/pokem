@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from database import get_db
 from dependencies import get_current_director
-from schemas.director import DirectorCreate, DirectorResponse
+from schemas.director import DirectorCreate, DirectorDashboardResponse, DirectorResponse
 from services import director_service
 
 # 하위 권한인 매니저가 상위 계정을 생성하거나 조회할 수 없도록 제한한다.
@@ -21,6 +21,12 @@ def get_directors(
     db=Depends(get_db),
 ):
     return director_service.get_directors(db, limit, offset)
+
+
+# /{director_id}보다 먼저 선언해 dashboard가 ID로 해석되지 않도록 한다.
+@router.get("/dashboard", response_model=DirectorDashboardResponse)
+def get_director_dashboard(db=Depends(get_db)):
+    return director_service.get_director_dashboard(db)
 
 
 @router.get("/{director_id}", response_model=DirectorResponse)

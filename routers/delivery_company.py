@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from database import get_db
 from dependencies import get_current_manager
-from schemas.delivery_company import DeliveryCompanyCreate, DeliveryCompanyResponse
+from schemas.delivery_company import DeliveryCompanyCreate, DeliveryCompanyResponse, DeliveryCompanyUpdate
 from services import delivery_company_service
 
 # 배송을 등록하는 매니저와 상위 권한 director가 업체를 관리한다.
@@ -31,3 +31,8 @@ def get_delivery_company_code(
     if company is None:
         raise HTTPException(status_code=404, detail="배송업체를 찾을 수 없습니다.")
     return company
+
+
+@router.patch("/{delivery_company_code}", response_model=DeliveryCompanyResponse)
+def update_delivery_company(delivery_company_code: str, request: DeliveryCompanyUpdate, db=Depends(get_db)):
+    return delivery_company_service.update_delivery_company(db, delivery_company_code, request)

@@ -1,6 +1,9 @@
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from schemas.case import CaseResponse
+from schemas.manager import ManagerResponse
+from schemas.proposal import ProposalResponse
 
 
 class DirectorCreate(BaseModel):
@@ -27,3 +30,26 @@ class DirectorResponse(BaseModel):
 class DirectorLoginResponse(BaseModel):
     role: Literal["director"] = "director"
     account: DirectorResponse
+
+
+class DirectorMetrics(BaseModel):
+    users: int
+    managers: int
+    unassigned_requests: int
+    inspections_in_progress: int
+    completed_inspections: int
+    active_consignments: int
+    pending_proposals: int
+    orders: int
+    deliveries_in_progress: int
+    returns_in_progress: int
+    payments: int
+    refunds: int
+    case_stock: int
+
+
+class DirectorDashboardResponse(BaseModel):
+    metrics: DirectorMetrics
+    proposals: list[ProposalResponse]
+    managers: list[ManagerResponse]
+    cases: list[CaseResponse]

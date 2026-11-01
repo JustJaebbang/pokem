@@ -104,11 +104,18 @@ def update_pay(db, pay_no: str, request: PayUpdate) -> PayResponse:
         db.begin()
         with db.cursor() as cursor:
             # 같은 값으로 수정해도 404가 되지 않도록 rowcount 대신 존재 여부를 확인한다.
-            cursor.execute("SELECT pay_no FROM pay WHERE pay_no = %s FOR UPDATE", (pay_no,))
-            if cursor.fetchone() is None:
+            cursor.execute("SELECT pay_no, pay_status FROM pay WHERE pay_no = %s FOR UPDATE", (pay_no,))
+            current = cursor.fetchone()
+            if current is None:
                 raise HTTPException(status_code=404, detail="해당 결제를 찾을 수 없습니다.")
 
             changes = request.model_dump(exclude_unset=True)
+            # 관리 화면은 결제를 대신 완료할 수 없다. 완료는 사용자 전용 /complete만 허용한다.
+            allowed = {"결제대기": "결제취소", "결제완료": "환급완료"}
+            target = changes.get("pay_status")
+            current_status = current.get("pay_status", target)
+            if target != current_status and allowed.get(current_status) != target:
+                raise HTTPException(status_code=409, detail="허용되지 않는 결제 상태 변경입니다.")
             # 컬럼명은 고정된 허용 목록으로 만들고, 값은 SQL 파라미터로 전달한다.
             columns = [name for name in ("pay_status",) if name in changes]
             assignments = ", ".join(f"{name} = %s" for name in columns)

@@ -12,3 +12,8 @@ class ProductCompanyCreate(BaseModel):
 class ProductCompanyResponse(BaseModel):
     product_company_code: str
     product_company_name: str | None = None
+
+
+class ProductCompanyUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    product_company_name: str = Field(min_length=1, max_length=100)

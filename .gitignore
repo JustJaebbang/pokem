@@ -467,6 +467,7 @@ scripts
 !/sql/
 /sql/*
 !/sql/user_profile_image.sql
+!/sql/return_status.sql
 !tests/test_profile_image.py
 
 !tests/test_public_profile.py
@@ -477,6 +478,7 @@ scripts
 
 !/sql/push_notifications.sql
 !tests/test_push.py
+!tests/test_director_dashboard.py
 # Firebase local configuration and server credentials
 **/google-services.json
 **/GoogleService-Info.plist

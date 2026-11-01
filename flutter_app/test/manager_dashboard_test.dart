@@ -183,6 +183,40 @@ void main() {
       'inspect_inspect_code': 'INS1',
       'sell_product_title': '카드',
     });
+    await api.assignReturn('token', 'R1');
+    await api.createDelivery('token', {
+      'return_no': 'R1',
+      'delivery_company_delivery_company_code': 'D1',
+    });
+    await api.updateDeliveryStatus('token', 'D1', '배송중');
+    await api.setConsignmentReturnCompany('token', 'C1', 'D1');
+    await api.createReceipt('token', {
+      'pay_pay_no': 'PAY1',
+      'receipt_amount': 1,
+      'sell_product_sell_product_code': 'SELL1',
+    });
+    await api.createRefund('token', 'PAY1');
+    await api.createCase('token', {
+      'case_serial_no': 'CASE-SERIAL',
+      'case_price': 1000,
+      'case_stock': 0,
+    });
+    await api.createProductCompany('token', {
+      'product_company_code': 'P1',
+      'product_company_name': '제조사',
+    });
+    await api.createDeliveryCompany('token', {
+      'delivery_company_code': 'D1',
+      'delivery_company_name': '배송사',
+    });
+    await api.createDiscard('token', 'SELL1');
+    await api.updateCase('token', 'CASE1', {
+      'case_price': 2000,
+      'case_stock': 3,
+    });
+    await api.updateProductCompany('token', 'P1', '새 제조사명');
+    await api.updateDeliveryCompany('token', 'D1', '새 배송사명');
+    await api.cancelReceive('token', 'RECEIVE1');
 
     expect(
       calls[0],
@@ -193,6 +227,20 @@ void main() {
     expect(calls[3], contains('POST /receive'));
     expect(calls[4], contains('POST /post_consign_item'));
     expect(calls[2], contains('"order_amount":2'));
+    expect(calls[5], startsWith('PATCH /return/R1/manager'));
+    expect(calls[6], contains('POST /delivery'));
+    expect(calls[7], contains('PATCH /delivery/D1/status'));
+    expect(calls[8], contains('PATCH /post_consign_item/C1/return-company'));
+    expect(calls[9], contains('POST /receipt'));
+    expect(calls[10], contains('POST /deposit_refund'));
+    expect(calls[11], contains('POST /case'));
+    expect(calls[12], contains('POST /product_company'));
+    expect(calls[13], contains('POST /delivery_company'));
+    expect(calls[14], contains('POST /discard'));
+    expect(calls[15], contains('PATCH /case/CASE1'));
+    expect(calls[16], contains('PATCH /product_company/P1'));
+    expect(calls[17], contains('PATCH /delivery_company/D1'));
+    expect(calls[18], contains('DELETE /receive/RECEIVE1'));
   });
 
   for (final size in [

@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from pymysql.err import IntegrityError
 
-from schemas.case import CaseCreate, CaseResponse
+from schemas.case import CaseCreate, CaseResponse, CaseUpdate
 
 
 CASE_COLUMNS = "case_code, case_serial_no, case_price, case_stock"
@@ -64,3 +64,25 @@ def get_case_code(db, case_code: str) -> CaseResponse | None:
         cursor.execute(f"SELECT {CASE_COLUMNS} FROM `case` WHERE case_code = %s", (case_code,))
         row = cursor.fetchone()
     return CaseResponse(**row) if row else None
+
+
+def update_case(db, case_code: str, request: CaseUpdate) -> CaseResponse:
+    changes = request.model_dump(exclude_unset=True)
+    allowed = {"case_price", "case_stock"}
+    columns = [name for name in changes if name in allowed]
+    try:
+        db.begin()
+        with db.cursor() as cursor:
+            cursor.execute("SELECT case_code FROM `case` WHERE case_code=%s FOR UPDATE", (case_code,))
+            if cursor.fetchone() is None:
+                raise HTTPException(status_code=404, detail="케이스를 찾을 수 없습니다.")
+            # 컬럼명은 허용 목록에서만 만들고 실제 값은 SQL 파라미터로 전달한다.
+            assignments = ", ".join(f"{name}=%s" for name in columns)
+            cursor.execute(f"UPDATE `case` SET {assignments} WHERE case_code=%s",
+                           tuple(changes[name] for name in columns) + (case_code,))
+        result = get_case_code(db, case_code)
+        db.commit()
+        return result
+    except Exception:
+        db.rollback()
+        raise

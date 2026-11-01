@@ -159,6 +159,20 @@ def get_purchase_item(db, user_id: str) -> list[PurchaseItemDetailResponse]:
     return [PurchaseItemDetailResponse(**row) for row in rows]
 
 
+def get_purchase_items_for_manager(db, limit: int, offset: int) -> list[PurchaseItemDetailResponse]:
+    """배송·접수 업무용 전체 구매 목록이며 거래에 필요한 필드만 반환한다."""
+    with db.cursor() as cursor:
+        cursor.execute(
+            _PURCHASE_DETAILS_SELECT + """
+            ORDER BY pi.purchase_item_date DESC, pi.purchase_item_code DESC
+            LIMIT %s OFFSET %s
+            """,
+            (limit, offset),
+        )
+        rows = cursor.fetchall()
+    return [PurchaseItemDetailResponse(**row) for row in rows]
+
+
 def get_purchase_item_code(db, purchase_item_code: str) -> PurchaseItemDetailResponse | None:
     with db.cursor() as cursor:
         cursor.execute(

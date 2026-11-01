@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from pymysql.err import IntegrityError
 
-from schemas.product_company import ProductCompanyCreate, ProductCompanyResponse
+from schemas.product_company import ProductCompanyCreate, ProductCompanyResponse, ProductCompanyUpdate
 
 
 def create_product_company(db, request: ProductCompanyCreate) -> ProductCompanyResponse:
@@ -46,3 +46,14 @@ def get_product_company_code(db, product_company_code: str) -> ProductCompanyRes
         )
         row = cursor.fetchone()
     return ProductCompanyResponse(**row) if row else None
+
+
+def update_product_company(db, code: str, request: ProductCompanyUpdate) -> ProductCompanyResponse:
+    with db.cursor() as cursor:
+        cursor.execute("UPDATE product_company SET product_company_name=%s WHERE product_company_code=%s",
+                       (request.product_company_name, code))
+        if cursor.rowcount != 1:
+            db.rollback()
+            raise HTTPException(status_code=404, detail="제조업체를 찾을 수 없습니다.")
+    db.commit()
+    return get_product_company_code(db, code)

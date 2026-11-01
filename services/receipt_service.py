@@ -80,3 +80,23 @@ def get_receipt(db, receipt_no: str, user_id: str | None = None) -> ReceiptRespo
         cursor.execute(f"SELECT {RECEIPT_COLUMNS} FROM receipt WHERE receipt_no = %s{owner_filter}", params)
         row = cursor.fetchone()
     return ReceiptResponse(**row) if row else None
+
+
+def cancel_receipt(db, receipt_no: str, manager_id: str) -> ReceiptResponse:
+    """오입력 접수증만 취소하며 원 결제와 판매상품 데이터는 변경하지 않는다."""
+    try:
+        db.begin()
+        with db.cursor() as cursor:
+            cursor.execute(f"SELECT {RECEIPT_COLUMNS} FROM receipt WHERE receipt_no=%s FOR UPDATE", (receipt_no,))
+            row = cursor.fetchone()
+            if row is None:
+                raise HTTPException(status_code=404, detail="접수 내역을 찾을 수 없습니다.")
+            if row["manager_manager_id"] != manager_id:
+                raise HTTPException(status_code=403, detail="접수 담당자만 취소할 수 있습니다.")
+            result = ReceiptResponse(**row)
+            cursor.execute("DELETE FROM receipt WHERE receipt_no=%s", (receipt_no,))
+        db.commit()
+        return result
+    except Exception:
+        db.rollback()
+        raise

@@ -14,6 +14,10 @@ class ManagerDashboardView extends ConsumerWidget {
     '대리판매 등록',
     '품의 신청',
     '발주 / 수주',
+    '반환 / 배송',
+    '결제 / 정산',
+    '기초정보 관리',
+    '폐기 관리',
   ];
 
   @override
@@ -31,6 +35,18 @@ class ManagerDashboardView extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('POKEM  /  매니저'),
         actions: [
+          PopupMenuButton<ManagerSection>(
+            tooltip: '업무 메뉴',
+            onSelected: vm.selectSection,
+            itemBuilder: (context) => [
+              for (final section in ManagerSection.values)
+                PopupMenuItem(
+                  value: section,
+                  child: Text(_titles[section.index]),
+                ),
+            ],
+            icon: const Icon(Icons.apps),
+          ),
           IconButton(
             tooltip: '새로고침',
             onPressed: state.loading || state.submitting ? null : vm.refresh,
@@ -60,36 +76,46 @@ class ManagerDashboardView extends ConsumerWidget {
         ),
       ),
       bottomNavigationBar: MediaQuery.sizeOf(context).width < 720
-          ? NavigationBar(
-              selectedIndex: state.section.index,
-              onDestinationSelected: (index) =>
-                  vm.selectSection(ManagerSection.values[index]),
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.dashboard_outlined),
-                  label: '통합',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.inbox_outlined),
-                  label: '신청',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.fact_check_outlined),
-                  label: '검수',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.storefront_outlined),
-                  label: '대리판매',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.description_outlined),
-                  label: '품의',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.inventory_2_outlined),
-                  label: '발주',
-                ),
-              ],
+          ? Builder(
+              builder: (context) {
+                const compact = [
+                  ManagerSection.dashboard,
+                  ManagerSection.inspections,
+                  ManagerSection.consignments,
+                  ManagerSection.returnsDelivery,
+                  ManagerSection.settlements,
+                ];
+                final selected = compact.indexOf(state.section);
+                return NavigationBar(
+                  labelBehavior:
+                      NavigationDestinationLabelBehavior.onlyShowSelected,
+                  selectedIndex: selected < 0 ? 0 : selected,
+                  onDestinationSelected: (index) =>
+                      vm.selectSection(compact[index]),
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Icons.dashboard_outlined),
+                      label: '통합',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.fact_check_outlined),
+                      label: '검수',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.storefront_outlined),
+                      label: '판매',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.local_shipping_outlined),
+                      label: '물류',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.payments_outlined),
+                      label: '정산',
+                    ),
+                  ],
+                );
+              },
             )
           : null,
     );
@@ -125,6 +151,22 @@ class ManagerDashboardView extends ConsumerWidget {
           NavigationRailDestination(
             icon: Icon(Icons.inventory_2_outlined),
             label: Text('발주/수주'),
+          ),
+          NavigationRailDestination(
+            icon: Icon(Icons.local_shipping_outlined),
+            label: Text('반환/배송'),
+          ),
+          NavigationRailDestination(
+            icon: Icon(Icons.payments_outlined),
+            label: Text('결제/정산'),
+          ),
+          NavigationRailDestination(
+            icon: Icon(Icons.settings_outlined),
+            label: Text('기초정보'),
+          ),
+          NavigationRailDestination(
+            icon: Icon(Icons.delete_outline),
+            label: Text('폐기'),
           ),
         ],
       );
@@ -199,6 +241,39 @@ class ManagerDashboardView extends ConsumerWidget {
                   icon: const Icon(Icons.add_shopping_cart),
                   label: const Text('발주 등록'),
                 ),
+              if (data != null &&
+                  state.section == ManagerSection.returnsDelivery)
+                FilledButton.icon(
+                  onPressed: state.submitting || data.deliveryCompanies.isEmpty
+                      ? null
+                      : () => _deliveryMenu(context, ref, data),
+                  icon: const Icon(Icons.add_road),
+                  label: const Text('반환 배송 등록'),
+                ),
+              if (data != null && state.section == ManagerSection.settlements)
+                FilledButton.icon(
+                  onPressed: state.submitting || data.pays.isEmpty
+                      ? null
+                      : () => _receiptDialog(context, ref, data),
+                  icon: const Icon(Icons.receipt_long),
+                  label: const Text('접수증 등록'),
+                ),
+              if (data != null && state.section == ManagerSection.masterData)
+                FilledButton.icon(
+                  onPressed: state.submitting
+                      ? null
+                      : () => _masterMenu(context, ref),
+                  icon: const Icon(Icons.add),
+                  label: const Text('기초정보 등록'),
+                ),
+              if (data != null && state.section == ManagerSection.discards)
+                FilledButton.icon(
+                  onPressed: state.submitting
+                      ? null
+                      : () => _discardDialog(context, ref),
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('폐기 등록'),
+                ),
             ],
           ),
         ),
@@ -238,6 +313,10 @@ class ManagerDashboardView extends ConsumerWidget {
     ManagerSection.consignments => '대리판매를 선택한 검수 완료 상품을 판매 등록합니다.',
     ManagerSection.proposals => '케이스 발주를 위한 품의를 작성하고 결재 상태를 확인합니다.',
     ManagerSection.procurement => '승인된 품의로 발주하고 수주·입고 수량을 기록합니다.',
+    ManagerSection.returnsDelivery => '반환 담당자를 배정하고 배송 등록·상태를 관리합니다.',
+    ManagerSection.settlements => '검수비 결제, 접수증과 환급 내역을 관리합니다.',
+    ManagerSection.masterData => '케이스와 제조·배송업체 기준정보를 등록합니다.',
+    ManagerSection.discards => '판매상품 폐기 이력과 담당자를 관리합니다.',
   };
 
   Widget _dashboard(
@@ -284,6 +363,24 @@ class ManagerDashboardView extends ConsumerWidget {
               secondary: data.receives.length,
               icon: Icons.inventory_2_outlined,
             ),
+            _Metric(
+              label: '미배정 반환',
+              value: data.unassignedReturns,
+              icon: Icons.assignment_return_outlined,
+            ),
+            _Metric(
+              label: '배송준비',
+              value: data.deliveries
+                  .where((item) => item.status == '배송준비')
+                  .length,
+              icon: Icons.local_shipping_outlined,
+            ),
+            _Metric(
+              label: '결제 / 환급',
+              value: data.pays.length,
+              secondary: data.refunds.length,
+              icon: Icons.payments_outlined,
+            ),
           ],
         ),
         const SizedBox(height: 22),
@@ -326,6 +423,19 @@ class ManagerDashboardView extends ConsumerWidget {
               detail: '발주 ${data.orders.length}건 · 수주 ${data.receives.length}건',
               icon: Icons.local_shipping_outlined,
               onTap: () => vm.selectSection(ManagerSection.procurement),
+            ),
+            _WorkflowCard(
+              title: '반환 / 배송',
+              detail:
+                  '미배정 반환 ${data.unassignedReturns}건 · 배송 ${data.deliveries.length}건',
+              icon: Icons.local_shipping_outlined,
+              onTap: () => vm.selectSection(ManagerSection.returnsDelivery),
+            ),
+            _WorkflowCard(
+              title: '결제 / 정산',
+              detail: '결제 ${data.pays.length}건 · 환급 ${data.refunds.length}건',
+              icon: Icons.payments_outlined,
+              onTap: () => vm.selectSection(ManagerSection.settlements),
             ),
           ],
         ),
@@ -498,6 +608,100 @@ class ManagerDashboardView extends ConsumerWidget {
             ),
           );
         }
+      case ManagerSection.returnsDelivery:
+        for (final item in data.returns) {
+          rows.add(
+            _RowData(
+              'return:${item.number}',
+              item.number,
+              '${item.userId} · ${item.inspectionCode}',
+              item.managerId == null ? '담당자 미배정' : item.status,
+            ),
+          );
+        }
+        for (final item in data.deliveries) {
+          rows.add(
+            _RowData(
+              'delivery:${item.number}',
+              item.number,
+              '${item.userId} · ${item.returnNumber ?? item.purchaseCode ?? '-'}',
+              item.status,
+            ),
+          );
+        }
+      case ManagerSection.settlements:
+        for (final item in data.pays) {
+          rows.add(
+            _RowData(
+              'pay:${item.number}',
+              item.number,
+              '${item.userId} · ${item.requestNumber}',
+              item.status,
+            ),
+          );
+        }
+        for (final item in data.receipts) {
+          rows.add(
+            _RowData(
+              'receipt:${item.number}',
+              item.number,
+              '${item.userId} · ${item.payNumber}',
+              '접수증',
+            ),
+          );
+        }
+        for (final item in data.refunds) {
+          rows.add(
+            _RowData(
+              'refund:${item.number}',
+              item.number,
+              '${item.userId} · ${item.payNumber}',
+              '환급',
+            ),
+          );
+        }
+      case ManagerSection.masterData:
+        for (final item in data.cases) {
+          rows.add(
+            _RowData(
+              'case:${item.code}',
+              item.code,
+              item.serialNo ?? '-',
+              '재고 ${item.stock}개',
+            ),
+          );
+        }
+        for (final item in data.productCompanies) {
+          rows.add(
+            _RowData(
+              'productCompany:${item.code}',
+              item.code,
+              item.name ?? '-',
+              '제조업체',
+            ),
+          );
+        }
+        for (final item in data.deliveryCompanies) {
+          rows.add(
+            _RowData(
+              'deliveryCompany:${item.code}',
+              item.code,
+              item.name ?? '-',
+              '배송업체',
+            ),
+          );
+        }
+      case ManagerSection.discards:
+        for (final item in data.discards) {
+          rows.add(
+            _RowData(
+              'discard:${item.managerId}:${item.productCode}',
+              item.productCode,
+              item.managerId,
+              item.date ?? '-',
+            ),
+          );
+        }
       case ManagerSection.dashboard:
         break;
     }
@@ -519,47 +723,85 @@ class ManagerDashboardView extends ConsumerWidget {
   ) {
     final rows = _rows(state);
     if (rows.isEmpty) return const Center(child: Text('표시할 내역이 없습니다.'));
-    return ListView.separated(
-      itemCount: rows.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final row = rows[index];
-        return Card(
-          color: state.selectedId == row.id
-              ? Theme.of(context).colorScheme.primaryContainer
-              : Colors.white,
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            title: Text(
-              row.title,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text('${row.subtitle}\n${row.status}'),
-            isThreeLine: true,
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              ref.read(managerDashboardVmProvider.notifier).select(row.id);
-              if (openSheet) {
-                showModalBottomSheet<void>(
-                  context: context,
-                  isScrollControlled: true,
-                  useSafeArea: true,
-                  builder: (_) => FractionallySizedBox(
-                    heightFactor: .9,
-                    child: Consumer(
-                      builder: (context, ref, _) => _detail(
-                        context,
-                        ref,
-                        ref.watch(managerDashboardVmProvider),
-                      ),
-                    ),
+    const pageSize = 20;
+    final pageCount = (rows.length / pageSize).ceil();
+    final page = state.page.clamp(0, pageCount - 1);
+    final visible = rows.skip(page * pageSize).take(pageSize).toList();
+    // 각 탭은 서버에서 받은 최신 100건을 20건씩 나눠 태블릿 렌더링 부담을 줄인다.
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.separated(
+            itemCount: visible.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final row = visible[index];
+              return Card(
+                color: state.selectedId == row.id
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : Colors.white,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  title: Text(
+                    row.title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                );
-              }
+                  subtitle: Text('${row.subtitle}\n${row.status}'),
+                  isThreeLine: true,
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    ref
+                        .read(managerDashboardVmProvider.notifier)
+                        .select(row.id);
+                    if (openSheet) {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        builder: (_) => FractionallySizedBox(
+                          heightFactor: .9,
+                          child: Consumer(
+                            builder: (context, ref, _) => _detail(
+                              context,
+                              ref,
+                              ref.watch(managerDashboardVmProvider),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              );
             },
           ),
-        );
-      },
+        ),
+        if (pageCount > 1)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                tooltip: '이전 페이지',
+                onPressed: page > 0
+                    ? () => ref
+                          .read(managerDashboardVmProvider.notifier)
+                          .changePage(page - 1)
+                    : null,
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Text('${page + 1} / $pageCount'),
+              IconButton(
+                tooltip: '다음 페이지',
+                onPressed: page + 1 < pageCount
+                    ? () => ref
+                          .read(managerDashboardVmProvider.notifier)
+                          .changePage(page + 1)
+                    : null,
+                icon: const Icon(Icons.chevron_right),
+              ),
+            ],
+          ),
+      ],
     );
   }
 
@@ -718,6 +960,16 @@ class ManagerDashboardView extends ConsumerWidget {
             _info('반환 배송업체', item.returnCompanyCode ?? '-'),
             _info('만료일', item.expiresAt ?? '-'),
             _info('거래 완료일', item.completedAt ?? '미완료'),
+            const SizedBox(height: 16),
+            FilledButton.tonalIcon(
+              onPressed: enabled && data.deliveryCompanies.isNotEmpty
+                  ? () => _returnCompanyDialog(context, ref, data, item)
+                  : null,
+              icon: const Icon(Icons.local_shipping_outlined),
+              label: Text(
+                item.returnCompanyCode == null ? '반환 배송업체 지정' : '반환 배송업체 변경',
+              ),
+            ),
           ]);
         }
       case ManagerSection.proposals:
@@ -752,6 +1004,7 @@ class ManagerDashboardView extends ConsumerWidget {
             _info('제조업체', item.companyCode),
             _info('발주수량', '${item.amount ?? 0}개'),
             _info('수주/입고', '$received개'),
+            _info('잔여수량', '${data.remainingAmount(item)}개'),
             _info('총 발주금액', '${item.price ?? 0}원'),
             const SizedBox(height: 16),
             FilledButton.icon(
@@ -759,7 +1012,9 @@ class ManagerDashboardView extends ConsumerWidget {
                   ? () => _receiveDialog(context, ref, item)
                   : null,
               icon: const Icon(Icons.move_to_inbox),
-              label: const Text('수주·입고 등록'),
+              label: Text(
+                data.remainingAmount(item) == 0 ? '입고 완료' : '수주·입고 등록',
+              ),
             ),
           ]);
         } else {
@@ -779,6 +1034,252 @@ class ManagerDashboardView extends ConsumerWidget {
             _info('수량', '${item.amount ?? 0}개'),
             _info('금액', '${item.price ?? 0}원'),
             _info('입고일', item.date ?? '-'),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: enabled
+                  ? () async {
+                      if (await _confirm(
+                        context,
+                        '입고 취소',
+                        '입고 수량만큼 케이스 재고가 함께 차감됩니다. 계속할까요?',
+                      )) {
+                        await vm.cancelReceive(item.number);
+                      }
+                    }
+                  : null,
+              icon: const Icon(Icons.undo),
+              label: const Text('오입고 취소'),
+            ),
+          ]);
+        }
+      case ManagerSection.returnsDelivery:
+        if (state.selectedId!.startsWith('return:')) {
+          final item = data.returns
+              .where((value) => value.number == state.selectedId!.substring(7))
+              .firstOrNull;
+          if (item == null) break;
+          final delivery = data.deliveries
+              .where((value) => value.returnNumber == item.number)
+              .firstOrNull;
+          children.addAll([
+            _heading(context, '반환 상세'),
+            _info('반환번호', item.number),
+            _info('검수코드', item.inspectionCode),
+            _info('사용자', item.userId),
+            _info('담당자', item.managerId ?? '미배정'),
+            _info('반환 상태', item.status),
+            _info('배송', delivery?.number ?? '미등록'),
+            const SizedBox(height: 16),
+            if (item.managerId == null)
+              FilledButton.icon(
+                onPressed: enabled ? () => vm.assignReturn(item.number) : null,
+                icon: const Icon(Icons.person_add_alt),
+                label: const Text('내 담당으로 배정'),
+              ),
+            if (item.managerId != null && delivery == null)
+              FilledButton.icon(
+                onPressed: enabled && data.deliveryCompanies.isNotEmpty
+                    ? () =>
+                          _returnDeliveryForItemDialog(context, ref, data, item)
+                    : null,
+                icon: const Icon(Icons.local_shipping_outlined),
+                label: const Text('반환 배송 등록'),
+              ),
+          ]);
+        } else {
+          final item = data.deliveries
+              .where(
+                (value) =>
+                    value.number ==
+                    state.selectedId!.replaceFirst('delivery:', ''),
+              )
+              .firstOrNull;
+          if (item == null) break;
+          children.addAll([
+            _heading(context, '배송 상세'),
+            _info('배송번호', item.number),
+            _info('구분', item.returnNumber == null ? '구매 배송' : '반환 배송'),
+            _info('원본번호', item.returnNumber ?? item.purchaseCode ?? '-'),
+            _info('사용자', item.userId),
+            _info('배송업체', item.companyCode),
+            _info('상태', item.status),
+            _info('배송일', item.date ?? '-'),
+            const SizedBox(height: 16),
+            if (item.status != '배송완료')
+              FilledButton.icon(
+                onPressed: enabled
+                    ? () async {
+                        final next = item.status == '배송준비' ? '배송중' : '배송완료';
+                        if (next == '배송완료' &&
+                            !await _confirm(
+                              context,
+                              '배송 완료 처리',
+                              '완료 후 이전 상태로 되돌릴 수 없습니다.',
+                            )) {
+                          return;
+                        }
+                        await vm.updateDeliveryStatus(item.number, next);
+                      }
+                    : null,
+                icon: const Icon(Icons.arrow_forward),
+                label: Text(item.status == '배송준비' ? '배송 시작' : '배송 완료'),
+              ),
+          ]);
+        }
+      case ManagerSection.settlements:
+        if (state.selectedId!.startsWith('pay:')) {
+          final item = data.pays
+              .where((value) => value.number == state.selectedId!.substring(4))
+              .firstOrNull;
+          if (item == null) break;
+          final refunded = data.refunds.any(
+            (value) => value.payNumber == item.number,
+          );
+          children.addAll([
+            _heading(context, '결제 상세'),
+            _info('결제번호', item.number),
+            _info('검수신청', item.requestNumber),
+            _info('사용자', item.userId),
+            _info('금액', '${item.price ?? 0}원'),
+            _info('상태', item.status),
+            const SizedBox(height: 16),
+            if (item.status == '결제대기')
+              FilledButton.tonalIcon(
+                onPressed: enabled
+                    ? () => _payStatusDialog(context, ref, item)
+                    : null,
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('결제 취소'),
+              ),
+            if (item.status == '결제대기') const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: enabled && !refunded && item.status == '결제완료'
+                  ? () async {
+                      if (await _confirm(
+                        context,
+                        '환급 등록',
+                        '이 결제의 환급 내역을 등록할까요?',
+                      )) {
+                        await vm.createRefund(item.number);
+                      }
+                    }
+                  : null,
+              icon: const Icon(Icons.currency_exchange),
+              label: Text(refunded ? '환급 완료' : '환급 등록'),
+            ),
+          ]);
+        } else if (state.selectedId!.startsWith('receipt:')) {
+          final item = data.receipts
+              .where((value) => value.number == state.selectedId!.substring(8))
+              .firstOrNull;
+          if (item == null) break;
+          children.addAll([
+            _heading(context, '접수증 상세'),
+            _info('접수번호', item.number),
+            _info('결제번호', item.payNumber),
+            _info('상품코드', item.productCode),
+            _info('수량', '${item.amount ?? 0}개'),
+            _info('접수일', item.date ?? '-'),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: enabled
+                  ? () async {
+                      if (await _confirm(
+                        context,
+                        '접수증 취소',
+                        '오입력한 접수증을 취소할까요?',
+                      )) {
+                        await vm.cancelReceipt(item.number);
+                      }
+                    }
+                  : null,
+              icon: const Icon(Icons.undo),
+              label: const Text('접수증 취소'),
+            ),
+          ]);
+        } else {
+          final item = data.refunds
+              .where(
+                (value) =>
+                    value.number ==
+                    state.selectedId!.replaceFirst('refund:', ''),
+              )
+              .firstOrNull;
+          if (item == null) break;
+          children.addAll([
+            _heading(context, '환급 상세'),
+            _info('환급번호', item.number),
+            _info('결제번호', item.payNumber),
+            _info('사용자', item.userId),
+            _info('환급액', '${item.price ?? 0}원'),
+            _info('환급일', item.date ?? '-'),
+          ]);
+        }
+      case ManagerSection.masterData:
+        final id = state.selectedId!;
+        if (id.startsWith('case:')) {
+          final item = data.cases
+              .where((value) => value.code == id.substring(5))
+              .firstOrNull;
+          if (item != null) {
+            children.addAll([
+              _heading(context, '케이스 상세'),
+              _info('코드', item.code),
+              _info('일련번호', item.serialNo ?? '-'),
+              _info('가격', '${item.price ?? 0}원'),
+              _info('재고', '${item.stock}개'),
+              const SizedBox(height: 16),
+              FilledButton.tonalIcon(
+                onPressed: enabled
+                    ? () => _caseEditDialog(context, ref, item)
+                    : null,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('가격·재고 수정'),
+              ),
+            ]);
+          }
+        } else {
+          final delivery = id.startsWith('deliveryCompany:');
+          final prefix = delivery ? 'deliveryCompany:' : 'productCompany:';
+          final items = delivery
+              ? data.deliveryCompanies
+              : data.productCompanies;
+          final item = items
+              .where((value) => value.code == id.substring(prefix.length))
+              .firstOrNull;
+          if (item != null) {
+            children.addAll([
+              _heading(context, delivery ? '배송업체 상세' : '제조업체 상세'),
+              _info('업체코드', item.code),
+              _info('업체명', item.name ?? '-'),
+              const SizedBox(height: 16),
+              FilledButton.tonalIcon(
+                onPressed: enabled
+                    ? () => _companyEditDialog(context, ref, item, delivery)
+                    : null,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('업체명 수정'),
+              ),
+            ]);
+          }
+        }
+      case ManagerSection.discards:
+        final id = state.selectedId!.substring(8);
+        final separator = id.indexOf(':');
+        final manager = id.substring(0, separator);
+        final product = id.substring(separator + 1);
+        final item = data.discards
+            .where(
+              (value) =>
+                  value.managerId == manager && value.productCode == product,
+            )
+            .firstOrNull;
+        if (item != null) {
+          children.addAll([
+            _heading(context, '폐기 상세'),
+            _info('판매상품', item.productCode),
+            _info('담당자', item.managerId),
+            _info('폐기일', item.date ?? '-'),
           ]);
         }
       case ManagerSection.dashboard:
@@ -1026,6 +1527,367 @@ class ManagerDashboardView extends ConsumerWidget {
           amount: values['amount']!,
         ),
   );
+
+  Future<void> _returnCompanyDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ManagerDashboard data,
+    ConsignmentRecord item,
+  ) => _simpleDialog(
+    context,
+    ref,
+    title: '반환 배송업체 지정',
+    fields: [_companyField(data)],
+    submit: (values) => ref
+        .read(managerDashboardVmProvider.notifier)
+        .setConsignmentReturnCompany(item.code, values['company']!),
+  );
+
+  _DialogField _companyField(ManagerDashboard data) => _DialogField(
+    'company',
+    '배송업체',
+    options: {
+      for (final company in data.deliveryCompanies)
+        company.code: company.name ?? company.code,
+    },
+  );
+
+  Future<void> _returnDeliveryDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ManagerDashboard data,
+  ) => _simpleDialog(
+    context,
+    ref,
+    title: '반환 배송 등록',
+    fields: [
+      _DialogField(
+        'return',
+        '담당 반환 건',
+        options: {
+          // 이미 배송이 만들어진 반환 건은 중복 등록 후보에서 제외한다.
+          for (final item in data.returns.where(
+            (item) =>
+                item.managerId != null &&
+                !data.deliveries.any(
+                  (delivery) => delivery.returnNumber == item.number,
+                ),
+          ))
+            item.number: '${item.number} · ${item.userId}',
+        },
+      ),
+      _companyField(data),
+    ],
+    submit: (values) => ref
+        .read(managerDashboardVmProvider.notifier)
+        .createReturnDelivery(values['return']!, values['company']!),
+  );
+
+  Future<void> _purchaseDeliveryDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ManagerDashboard data,
+  ) => _simpleDialog(
+    context,
+    ref,
+    title: '구매 배송 등록',
+    fields: [
+      _DialogField(
+        'purchase',
+        '배송 대기 구매 건',
+        options: {
+          for (final item in data.purchases.where(
+            (item) => !data.deliveries.any(
+              (delivery) => delivery.purchaseCode == item.code,
+            ),
+          ))
+            item.code: '${item.title ?? item.productCode} · ${item.userId}',
+        },
+      ),
+      _companyField(data),
+    ],
+    submit: (values) => ref
+        .read(managerDashboardVmProvider.notifier)
+        .createPurchaseDelivery(values['purchase']!, values['company']!),
+  );
+
+  Future<void> _deliveryMenu(
+    BuildContext context,
+    WidgetRef ref,
+    ManagerDashboard data,
+  ) async {
+    final type = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('배송 구분'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'return'),
+            child: const ListTile(
+              leading: Icon(Icons.assignment_return_outlined),
+              title: Text('반환 배송'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'purchase'),
+            child: const ListTile(
+              leading: Icon(Icons.shopping_bag_outlined),
+              title: Text('구매 배송'),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (type == null || !context.mounted) return;
+    if (type == 'return') {
+      await _returnDeliveryDialog(context, ref, data);
+    } else {
+      await _purchaseDeliveryDialog(context, ref, data);
+    }
+  }
+
+  Future<void> _returnDeliveryForItemDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ManagerDashboard data,
+    ReturnRecord item,
+  ) => _simpleDialog(
+    context,
+    ref,
+    title: '반환 배송 등록',
+    fields: [_companyField(data)],
+    submit: (values) => ref
+        .read(managerDashboardVmProvider.notifier)
+        .createReturnDelivery(item.number, values['company']!),
+  );
+
+  Future<void> _payStatusDialog(
+    BuildContext context,
+    WidgetRef ref,
+    PayRecord item,
+  ) => _simpleDialog(
+    context,
+    ref,
+    title: '결제 상태 변경',
+    fields: const [
+      _DialogField('status', '결제 상태', options: {'결제취소': '결제취소'}),
+    ],
+    submit: (values) => ref
+        .read(managerDashboardVmProvider.notifier)
+        .updatePayStatus(item.number, values['status']!),
+  );
+
+  Future<void> _receiptDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ManagerDashboard data,
+  ) => _simpleDialog(
+    context,
+    ref,
+    title: '접수증 등록',
+    fields: [
+      _DialogField(
+        'pay',
+        '미접수 결제 건',
+        options: {
+          for (final item in data.pays.where(
+            (pay) => !data.receipts.any(
+              (receipt) => receipt.payNumber == pay.number,
+            ),
+          ))
+            item.number: '${item.number} · ${item.userId}',
+        },
+      ),
+      _DialogField(
+        'product',
+        '판매상품',
+        options: {
+          for (final item in data.purchases)
+            item.productCode: item.title ?? item.productCode,
+        },
+      ),
+      const _DialogField('amount', '접수 수량', numeric: true),
+    ],
+    submit: (values) => ref
+        .read(managerDashboardVmProvider.notifier)
+        .createReceipt(
+          payNumber: values['pay']!,
+          productCode: values['product']!,
+          amount: values['amount']!,
+        ),
+  );
+
+  Future<void> _masterMenu(BuildContext context, WidgetRef ref) async {
+    final type = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('등록할 기초정보'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'case'),
+            child: const ListTile(
+              leading: Icon(Icons.inventory_outlined),
+              title: Text('케이스'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'product'),
+            child: const ListTile(
+              leading: Icon(Icons.factory_outlined),
+              title: Text('제조업체'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'delivery'),
+            child: const ListTile(
+              leading: Icon(Icons.local_shipping_outlined),
+              title: Text('배송업체'),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (type == null || !context.mounted) return;
+    if (type == 'case') {
+      await _simpleDialog(
+        context,
+        ref,
+        title: '케이스 등록',
+        fields: const [
+          _DialogField('serial', '케이스 일련번호'),
+          _DialogField('price', '가격', numeric: true),
+          _DialogField('stock', '초기 재고', numeric: true),
+        ],
+        submit: (values) => ref
+            .read(managerDashboardVmProvider.notifier)
+            .createCase(
+              serial: values['serial']!,
+              price: values['price']!,
+              stock: values['stock']!,
+            ),
+      );
+    } else {
+      await _simpleDialog(
+        context,
+        ref,
+        title: type == 'product' ? '제조업체 등록' : '배송업체 등록',
+        fields: const [
+          _DialogField('code', '업체 코드'),
+          _DialogField('name', '업체명'),
+        ],
+        submit: (values) => type == 'product'
+            ? ref
+                  .read(managerDashboardVmProvider.notifier)
+                  .createProductCompany(values['code']!, values['name']!)
+            : ref
+                  .read(managerDashboardVmProvider.notifier)
+                  .createDeliveryCompany(values['code']!, values['name']!),
+      );
+    }
+  }
+
+  Future<void> _discardDialog(BuildContext context, WidgetRef ref) =>
+      _simpleDialog(
+        context,
+        ref,
+        title: '판매상품 폐기 등록',
+        fields: [
+          _DialogField(
+            'product',
+            '폐기 대상 판매상품',
+            options: {
+              for (final code
+                  in {
+                    ...ref
+                        .read(managerDashboardVmProvider)
+                        .data!
+                        .purchases
+                        .map((item) => item.productCode),
+                    ...ref
+                        .read(managerDashboardVmProvider)
+                        .data!
+                        .consignments
+                        .map((item) => item.productCode),
+                  }.where(
+                    (code) => !ref
+                        .read(managerDashboardVmProvider)
+                        .data!
+                        .discards
+                        .any((item) => item.productCode == code),
+                  ))
+                code: code,
+            },
+          ),
+        ],
+        submit: (values) async {
+          if (!await _confirm(
+            context,
+            '폐기 등록',
+            '${values['product']} 상품을 폐기 처리할까요?',
+          )) {
+            return false;
+          }
+          return ref
+              .read(managerDashboardVmProvider.notifier)
+              .createDiscard(values['product']!);
+        },
+      );
+
+  Future<void> _caseEditDialog(
+    BuildContext context,
+    WidgetRef ref,
+    CaseRecord item,
+  ) => _simpleDialog(
+    context,
+    ref,
+    title: '케이스 가격·재고 수정',
+    fields: const [
+      _DialogField('price', '가격', numeric: true),
+      _DialogField('stock', '재고', numeric: true),
+    ],
+    submit: (values) => ref
+        .read(managerDashboardVmProvider.notifier)
+        .updateCase(item.code, values['price']!, values['stock']!),
+  );
+
+  Future<void> _companyEditDialog(
+    BuildContext context,
+    WidgetRef ref,
+    CompanyRecord item,
+    bool delivery,
+  ) => _simpleDialog(
+    context,
+    ref,
+    title: delivery ? '배송업체명 수정' : '제조업체명 수정',
+    fields: const [_DialogField('name', '업체명')],
+    submit: (values) => ref
+        .read(managerDashboardVmProvider.notifier)
+        .updateCompany(item.code, values['name']!, delivery: delivery),
+  );
+
+  Future<bool> _confirm(
+    BuildContext context,
+    String title,
+    String message,
+  ) async =>
+      await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('확인'),
+            ),
+          ],
+        ),
+      ) ??
+      false;
 
   Future<void> _simpleDialog(
     BuildContext context,
