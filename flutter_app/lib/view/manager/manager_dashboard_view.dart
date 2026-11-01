@@ -1208,7 +1208,7 @@ class _Metric extends StatelessWidget {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFDDDFD8)),
+      border: Border.all(color: const Color(0xFFE2E8F1)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,

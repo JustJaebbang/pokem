@@ -1,3 +1,5 @@
+import 'package:pokem_app/repository/products/product_guide_repository.dart';
+import 'package:pokem_app/service/products/product_guide_storage.dart';
 import 'package:pokem_app/repository/push/push_repository.dart';
 import 'package:pokem_app/service/push/push_device_service.dart';
 import 'package:pokem_app/service/push/push_messaging_service.dart';
@@ -314,3 +316,10 @@ final pushRepositoryProvider = Provider<PushRepository>((ref) {
     PushDeviceService(client, baseUrl: ApiConfig.baseUrl),
   );
 });
+
+final productGuideRepositoryProvider = Provider<ProductGuideRepository>(
+  (ref) => ProductGuideRepository(
+    SecureProductGuideStorage(),
+    server: ApiConfig.baseUrl,
+  ),
+);

@@ -144,10 +144,19 @@ class _ChatRoomViewState extends ConsumerState<ChatRoomView> {
                                 decoration: BoxDecoration(
                                   color: mine
                                       ? theme.colorScheme.primary
-                                      : theme
-                                            .colorScheme
-                                            .surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(16),
+                                      : theme.colorScheme.surface,
+                                  border: mine
+                                      ? null
+                                      : Border.all(
+                                          color:
+                                              theme.colorScheme.outlineVariant,
+                                        ),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(18),
+                                    topRight: const Radius.circular(18),
+                                    bottomLeft: Radius.circular(mine ? 18 : 5),
+                                    bottomRight: Radius.circular(mine ? 5 : 18),
+                                  ),
                                 ),
                                 child: Text(
                                   message.text,
@@ -172,8 +181,9 @@ class _ChatRoomViewState extends ConsumerState<ChatRoomView> {
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            Container(
+              color: theme.colorScheme.surface,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [

@@ -63,7 +63,7 @@ class QuitVm extends Notifier<QuitState> {
       return;
     }
     if (state.balance != 0) {
-      state = QuitState(balance: state.balance, error: '포켐머니 잔액을 확인하고 정리해주세요.');
+      state = QuitState(balance: state.balance, error: 'POKEM 머니 잔액을 확인하고 정리해주세요.');
       return;
     }
     final session = ref.read(authRepositoryProvider).session;

@@ -145,7 +145,7 @@ def delete_user_id(db, quit: UserQuitRequest, user_id: str) -> UserQuitResponse 
                 return None
 
             if account["user_money"] != 0:
-                raise HTTPException(status_code=409, detail="포켐머니 잔액을 정리한 후 탈퇴해주세요.")
+                raise HTTPException(status_code=409, detail="POKEM 머니 잔액을 정리한 후 탈퇴해주세요.")
 
             cursor.execute(
                 "SELECT user_user_id FROM `quit` WHERE user_user_id = %s FOR UPDATE",

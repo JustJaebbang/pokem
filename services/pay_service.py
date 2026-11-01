@@ -127,7 +127,7 @@ def update_pay(db, pay_no: str, request: PayUpdate) -> PayResponse:
 
 
 def complete_pay(db, pay_no: str, user_id: str, expected_price: int) -> PayResponse:
-    """사용자 버튼으로 상태만 완료한다. 외부 결제나 포켐머니 차감은 하지 않는다."""
+    """사용자 버튼으로 상태만 완료한다. 외부 결제나 POKEM 머니 차감은 하지 않는다."""
     try:
         db.begin()
         with db.cursor() as cursor:

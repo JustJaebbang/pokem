@@ -22,10 +22,10 @@ def mail_settings():
 def send_code(email, code):
     host, port, sender, mode = mail_settings()
     message = EmailMessage()
-    message["Subject"] = "[포켐] 계정 찾기 인증번호"
+    message["Subject"] = "[POKEM] 계정 찾기 인증번호"
     message["From"] = sender
     message["To"] = email
-    message.set_content(f"포켐 인증번호는 {code}입니다.\n5분 안에 입력해주세요.\n본인이 요청하지 않았다면 이 메일을 무시해주세요.")
+    message.set_content(f"POKEM 인증번호는 {code}입니다.\n5분 안에 입력해주세요.\n본인이 요청하지 않았다면 이 메일을 무시해주세요.")
     try:
         transport = smtplib.SMTP_SSL if mode == "ssl" else smtplib.SMTP
         kwargs = {"context": ssl.create_default_context()} if mode == "ssl" else {}

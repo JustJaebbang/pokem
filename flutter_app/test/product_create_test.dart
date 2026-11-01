@@ -1,3 +1,4 @@
+import 'support/product_guide_fixture.dart';
 import 'support/wishlist_fixture.dart';
 
 import 'package:pokem_app/model/products/product_form_input.dart';
@@ -83,10 +84,17 @@ void main() {
         ..failure = MissingPluginException('not registered');
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [productPhotoPickerProvider.overrideWithValue(picker)],
+          overrides: [
+            productPhotoPickerProvider.overrideWithValue(picker),
+            productGuideRepositoryProvider.overrideWithValue(
+              MemoryProductGuideStorage().repository(),
+            ),
+          ],
           child: const MaterialApp(home: ProductCreateView()),
         ),
       );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('확인'));
       await tester.pumpAndSettle();
       expect(find.text('사진 업로드'), findsOneWidget);
       await tester.tap(find.byKey(const Key('selectProductPhoto')));
@@ -226,6 +234,9 @@ void main() {
         ProviderScope(
           overrides: [
             authRepositoryProvider.overrideWithValue(session),
+            productGuideRepositoryProvider.overrideWithValue(
+              MemoryProductGuideStorage().repository(),
+            ),
             wishlistRepositoryProvider.overrideWithValue(
               MemoryWishlistRepository(),
             ),
@@ -249,6 +260,8 @@ void main() {
           .login('tester', 'pw', remember: false);
       await tester.pumpAndSettle();
       await tester.tap(find.text('등록'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('확인'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('selectProductPhoto')));
       await tester.pumpAndSettle();

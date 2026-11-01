@@ -146,7 +146,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                       const SizedBox(height: 10),
                       const Text(
                         '거래와 검수에 사용할 정보를 입력해주세요.',
-                        style: TextStyle(color: Color(0xFF67716A)),
+                        style: TextStyle(color: Color(0xFF69788E)),
                       ),
                       const SizedBox(height: 28),
                       _field(
@@ -261,7 +261,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                         '가입 후 로그인 화면으로 돌아갑니다.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Color(0xFF67716A),
+                          color: Color(0xFF69788E),
                           fontSize: 12,
                         ),
                       ),

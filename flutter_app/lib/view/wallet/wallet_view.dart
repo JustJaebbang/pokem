@@ -12,15 +12,34 @@ class WalletSummary extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final result = ref.watch(walletVmProvider);
+    final theme = Theme.of(context);
     return Card(
+      color: theme.colorScheme.primary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: ListTile(
-        title: const Text('포켐머니'),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 12,
+        ),
+        leading: Icon(
+          Icons.account_balance_wallet_outlined,
+          color: theme.colorScheme.primaryContainer,
+          size: 28,
+        ),
+        titleTextStyle: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+        ),
+        subtitleTextStyle: theme.textTheme.titleLarge?.copyWith(
+          color: theme.colorScheme.onPrimary,
+          fontWeight: FontWeight.w800,
+        ),
+        title: const Text('POKEM 머니'),
         subtitle: result.when(
           data: (wallet) => Text(formatWon(wallet.balance)),
           loading: () => const Text('잔액 확인 중'),
           error: (_, _) => const Text('잔액을 확인하지 못했습니다.'),
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onPrimary),
         onTap: () async {
           await Navigator.of(
             context,
@@ -57,7 +76,7 @@ class WalletView extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('포켐머니'),
+        title: const Text('POKEM 머니'),
         actions: [
           IconButton(
             onPressed: result.isLoading ? null : refresh,
@@ -74,7 +93,9 @@ class WalletView extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(e is WalletException ? e.message : '포켐머니를 불러오지 못했습니다.'),
+                Text(
+                  e is WalletException ? e.message : 'POKEM 머니를 불러오지 못했습니다.',
+                ),
                 TextButton(
                   onPressed: () =>
                       ref.read(walletVmProvider.notifier).refresh(),
@@ -95,7 +116,7 @@ class WalletView extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text('사용 가능한 포켐머니'),
+                      const Text('사용 가능한 POKEM 머니'),
                       const SizedBox(height: 12),
                       Text(
                         formatWon(wallet.balance),

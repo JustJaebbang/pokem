@@ -63,7 +63,7 @@ class _MoneyTransferViewState extends ConsumerState<MoneyTransferView> {
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              const Text('포켐머니 잔액'),
+              const Text('POKEM 머니 잔액'),
               const SizedBox(height: 8),
               Text(
                 state.balance == null ? '잔액 확인 중' : formatWon(state.balance!),
@@ -143,7 +143,7 @@ class _MoneyTransferViewState extends ConsumerState<MoneyTransferView> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                const Text('현재 실제 입출금은 연동되어 있지 않습니다. 요청하면 앱의 포켐머니 잔액에만 반영됩니다.'),
+                const Text('현재 실제 입출금은 연동되어 있지 않습니다. 요청하면 앱의 POKEM 머니 잔액에만 반영됩니다.'),
                 if (state.error != null)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),

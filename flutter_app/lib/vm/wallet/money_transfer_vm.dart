@@ -36,7 +36,7 @@ class MoneyTransferVm extends Notifier<MoneyTransferState> {
     if (amount > maxMoney) return '금액은 2,147,483,647원 이하여야 합니다.';
     final balance = state.balance;
     if (balance != null && action == MoneyAction.exchange && amount > balance) {
-      return '포켐머니 잔액이 부족합니다.';
+      return 'POKEM 머니 잔액이 부족합니다.';
     }
     if (balance != null &&
         action == MoneyAction.recharge &&

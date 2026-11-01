@@ -1,3 +1,4 @@
+import 'package:pokem_app/model/auth/auth_session.dart';
 import 'package:pokem_app/vm/mypage/pending_actions_vm.dart';
 import 'package:pokem_app/model/mypage/pending_actions.dart';
 
@@ -80,7 +81,8 @@ void main() {
       expect(find.text('카드수집가님, 반가워요.'), findsOneWidget);
       await tester.tap(find.text('마이페이지'));
       await tester.pumpAndSettle();
-      expect(find.text('일반 사용자 · tester'), findsOneWidget);
+      expect(repo.session?.account.role, AccountRole.user);
+      expect(find.text('@tester'), findsOneWidget);
       await tester.ensureVisible(find.text('로그아웃'));
       await tester.tap(find.text('로그아웃'));
       await tester.pumpAndSettle();

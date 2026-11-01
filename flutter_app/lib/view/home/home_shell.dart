@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/shared/pokem_wordmark.dart';
 import 'package:pokem_app/view/push/push_settings_tile.dart';
 import 'package:pokem_app/view/profile/widgets/my_profile_avatar.dart';
 import 'package:pokem_app/view/products/product_search_view.dart';
@@ -36,9 +37,16 @@ class HomeShell extends ConsumerWidget {
       Icons.chat_bubble_outline,
       Icons.person_outline,
     ];
+    const selectedIcons = [
+      Icons.home_rounded,
+      Icons.favorite_rounded,
+      Icons.add_circle_rounded,
+      Icons.chat_bubble_rounded,
+      Icons.person_rounded,
+    ];
     return Scaffold(
       appBar: AppBar(
-        title: Text(index == 0 ? '포켐' : names[index]),
+        title: index == 0 ? const PokemWordmark() : Text(names[index]),
         actions: [
           IconButton(
             tooltip: index == 1 ? '관심상품 검색' : '상품 검색',
@@ -64,22 +72,51 @@ class HomeShell extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (index == 4)
-                  const MyProfileAvatar()
-                else
-                  const Icon(Icons.account_circle_outlined, size: 72),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      if (index == 4)
+                        const MyProfileAvatar()
+                      else
+                        const Icon(Icons.account_circle_outlined, size: 64),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              account?.name ?? '',
+                              style: Theme.of(context).textTheme.titleLarge,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              '@${account?.id ?? ''}',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),
-                Text(
-                  account?.name ?? '',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${account?.role.label ?? ''} · ${account?.id ?? ''}',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
                 if (index == 4) const WalletSummary(),
                 if (index == 4) const PendingActionsCard(),
                 MypageMenu(
@@ -88,6 +125,7 @@ class HomeShell extends ConsumerWidget {
                 ),
                 const PushSettingsTile(),
                 ListTile(
+                  leading: const Icon(Icons.manage_accounts_outlined),
                   title: const Text('회원정보 수정'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
@@ -97,6 +135,7 @@ class HomeShell extends ConsumerWidget {
                   ),
                 ),
                 ListTile(
+                  leading: const Icon(Icons.fact_check_outlined),
                   title: const Text('검수신청 내역'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
@@ -106,6 +145,7 @@ class HomeShell extends ConsumerWidget {
                   ),
                 ),
                 ListTile(
+                  leading: const Icon(Icons.inventory_2_outlined),
                   title: const Text('반환내역'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
@@ -113,6 +153,7 @@ class HomeShell extends ConsumerWidget {
                   ),
                 ),
                 ListTile(
+                  leading: const Icon(Icons.person_remove_outlined),
                   title: const Text('회원탈퇴'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
@@ -154,7 +195,24 @@ class HomeShell extends ConsumerWidget {
         },
         destinations: [
           for (var i = 0; i < names.length; i++)
-            NavigationDestination(icon: Icon(icons[i]), label: names[i]),
+            NavigationDestination(
+              icon: i == 2
+                  ? Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.add_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    )
+                  : Icon(icons[i]),
+              selectedIcon: Icon(selectedIcons[i]),
+              label: names[i],
+            ),
         ],
       ),
     );

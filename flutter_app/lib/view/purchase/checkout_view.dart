@@ -83,7 +83,7 @@ class CheckoutView extends ConsumerWidget {
                       const Divider(height: 40),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('포켐머니 잔액'),
+                        title: const Text('POKEM 머니 잔액'),
                         trailing: Text(formatWon(data.buyer.balance)),
                       ),
                       TextButton(
@@ -112,7 +112,7 @@ class CheckoutView extends ConsumerWidget {
                       if (!data.product.isForSale)
                         const Text('판매중인 상품만 구매할 수 있습니다.'),
                       if (data.buyer.balance < data.product.price)
-                        const Text('포켐머니 잔액이 부족합니다.'),
+                        const Text('POKEM 머니 잔액이 부족합니다.'),
                       CheckboxListTile(
                         contentPadding: EdgeInsets.zero,
                         title: const Text('상품과 결제금액을 확인했습니다.'),

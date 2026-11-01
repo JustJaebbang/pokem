@@ -1,3 +1,4 @@
+import 'package:pokem_app/view/shared/pokem_wordmark.dart';
 import 'package:pokem_app/view/auth/recovery_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,58 +67,33 @@ class _LoginViewState extends ConsumerState<LoginView> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'POKEM / CARD & COLLECT',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              letterSpacing: 2,
-                              color: const Color(0xFF657469),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 38),
                         Container(
-                          width: 92,
-                          height: 108,
+                          width: 76,
+                          height: 88,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE5ECD8),
+                            color: theme.colorScheme.secondary,
                             borderRadius: BorderRadius.circular(22),
-                            border: Border.all(color: const Color(0xFFC7D3B8)),
                           ),
                           child: Icon(
                             Icons.style_rounded,
-                            size: 52,
+                            size: 42,
                             color: theme.colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 18),
-                        Text(
-                          '포켐',
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -2,
-                          ),
-                        ),
+                        const PokemWordmark(size: 40),
                         const SizedBox(height: 10),
                         const Text(
                           '좋아하는 카드, 믿을 수 있는 거래',
-                          style: TextStyle(color: Color(0xFF67716A)),
+                          style: TextStyle(color: Color(0xFF69788E)),
                         ),
-                        const SizedBox(height: 38),
+                        const SizedBox(height: 32),
                         Form(
                           key: _form,
                           child: AutofillGroup(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Text(
-                                  '다시 만나서 반가워요',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 22),
                                 TextFormField(
                                   key: const Key('loginId'),
                                   controller: _id,
@@ -262,10 +238,10 @@ class _LoginViewState extends ConsumerState<LoginView> {
                                   crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     const Text(
-                                      '아직 포켐 회원이 아니신가요?',
+                                      '아직 POKEM 회원이 아니신가요?',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF67716A),
+                                        color: Color(0xFF69788E),
                                       ),
                                     ),
                                     TextButton(
@@ -285,7 +261,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                           '카드의 가치를 함께 발견하는 곳',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Color(0xFF8A938A),
+                            color: Color(0xFF8491A4),
                           ),
                         ),
                       ],

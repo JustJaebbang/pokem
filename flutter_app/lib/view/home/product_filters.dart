@@ -42,24 +42,34 @@ class ProductFilters extends ConsumerWidget {
           List<String> values,
           String? current,
           ValueChanged<String?> onSelect,
-        ) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        ) => Row(
           children: [
-            Text(label, style: Theme.of(context).textTheme.labelLarge),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final value in <String?>[null, ...values])
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(value ?? '전체'),
-                        selected: current == value,
-                        onSelected: (_) => onSelect(value),
+            SizedBox(
+              width: 72,
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final value in <String?>[null, ...values])
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(value ?? '전체'),
+                          selected: current == value,
+                          onSelected: (_) => onSelect(value),
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
