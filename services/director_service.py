@@ -5,9 +5,18 @@ from security import hash_password, verify_password
 from schemas.director import (
     DirectorCreate,
     DirectorDashboardResponse,
+    DirectorDelayedDelivery,
     DirectorLoginResponse,
+    DirectorInspectionPipeline,
+    DirectorLowStockCase,
+    DirectorManagerInspectionStat,
     DirectorMetrics,
+    DirectorOperationsStatistics,
+    DirectorOutstandingOrder,
+    DirectorQuitTypeStat,
+    DirectorReturnWithoutDelivery,
     DirectorResponse,
+    DirectorWithdrawalResponse,
 )
 from services import case_service, manager_service, proposal_service
 
@@ -87,15 +96,149 @@ def get_director_dashboard(db) -> DirectorDashboardResponse:
         "payments": "SELECT COUNT(*) AS value FROM pay",
         "refunds": "SELECT COUNT(*) AS value FROM deposit_refund",
         "case_stock": "SELECT COALESCE(SUM(case_stock), 0) AS value FROM `case`",
+        "withdrawn_users": "SELECT COUNT(*) AS value FROM `quit`",
     }
     values = {}
     with db.cursor() as cursor:
         for name, query in metric_queries.items():
             cursor.execute(query)
             values[name] = int(cursor.fetchone()["value"])
+    with db.cursor() as cursor:
+        cursor.execute(
+            """SELECT q.user_user_id AS user_id, u.user_nickname,
+                      q.quit_date, q.quit_type, q.quit_reason
+               FROM `quit` q
+               LEFT JOIN `user` u ON u.user_id = q.user_user_id
+               ORDER BY q.quit_date DESC, q.user_user_id
+               LIMIT 100"""
+        )
+        withdrawals = [DirectorWithdrawalResponse(**row) for row in cursor.fetchall()]
+    statistics = _get_operations_statistics(db, values)
     return DirectorDashboardResponse(
         metrics=DirectorMetrics(**values),
         proposals=proposal_service.get_proposals(db, 100, 0),
         managers=manager_service.get_manager(db),
         cases=case_service.get_cases(db, 100, 0),
+        withdrawals=withdrawals,
+        statistics=statistics,
+    )
+
+
+def _get_operations_statistics(db, metrics: dict[str, int]) -> DirectorOperationsStatistics:
+    """결재 통계를 제외한 검수·재고·물류·탈퇴 운영 지표를 계산한다."""
+    with db.cursor() as cursor:
+        cursor.execute(
+            """SELECT
+                   SUM(inspect_status = '검수대기') AS waiting,
+                   SUM(inspect_status = '검수중') AS in_progress
+               FROM inspect"""
+        )
+        pipeline_row = cursor.fetchone()
+        pipeline = DirectorInspectionPipeline(
+            unassigned_requests=metrics["unassigned_requests"],
+            waiting=int(pipeline_row["waiting"] or 0),
+            in_progress=int(pipeline_row["in_progress"] or 0),
+            completed=metrics["completed_inspections"],
+        )
+
+        cursor.execute(
+            """SELECT m.manager_id, m.manager_name,
+                      COUNT(i.inspect_code) AS total,
+                      COALESCE(SUM(i.inspect_status = '검수완료'), 0) AS completed,
+                      COALESCE(SUM(i.inspect_status IN ('검수대기', '검수중')), 0) AS active
+               FROM manager m
+               LEFT JOIN inspect i ON i.manager_manager_id = m.manager_id
+               GROUP BY m.manager_id, m.manager_name
+               ORDER BY completed DESC, total DESC, m.manager_id"""
+        )
+        manager_inspections = [
+            DirectorManagerInspectionStat(**row) for row in cursor.fetchall()
+        ]
+
+        # 운영 초기 기준은 10개이며 향후 설정 테이블로 분리할 수 있다.
+        cursor.execute(
+            """SELECT case_code, case_stock, 10 AS threshold
+               FROM `case` WHERE case_stock <= 10
+               ORDER BY case_stock, case_code"""
+        )
+        low_stock_cases = [DirectorLowStockCase(**row) for row in cursor.fetchall()]
+
+        cursor.execute(
+            """SELECT o.order_no, o.order_date, o.case_case_code AS case_code,
+                      COALESCE(o.order_amount, 0) AS order_amount,
+                      COALESCE(SUM(r.receive_amount), 0) AS received_amount,
+                      GREATEST(COALESCE(o.order_amount, 0) - COALESCE(SUM(r.receive_amount), 0), 0)
+                          AS outstanding_amount
+               FROM `order` o
+               LEFT JOIN receive r ON r.order_order_no = o.order_no
+               GROUP BY o.order_no, o.order_date, o.case_case_code, o.order_amount
+               HAVING outstanding_amount > 0
+               ORDER BY o.order_date, o.order_no"""
+        )
+        outstanding_orders = [
+            DirectorOutstandingOrder(**row) for row in cursor.fetchall()
+        ]
+
+        # delivery_date가 문자열이므로 ISO/일반 날짜의 앞 19자만 정규화해 비교한다.
+        cursor.execute(
+            """SELECT COUNT(*) AS value FROM delivery
+               WHERE delivery_status <> '배송완료'
+                 AND STR_TO_DATE(REPLACE(SUBSTRING(delivery_date, 1, 19), 'T', ' '),
+                                 '%Y-%m-%d %H:%i:%s') < NOW() - INTERVAL 3 DAY"""
+        )
+        delayed_deliveries = int(cursor.fetchone()["value"])
+        cursor.execute(
+            """SELECT delivery_no, delivery_date, delivery_status,
+                      manager_manager_id AS manager_id,
+                      delivery_company_delivery_company_code AS company_code
+               FROM delivery
+               WHERE delivery_status <> '배송완료'
+                 AND STR_TO_DATE(REPLACE(SUBSTRING(delivery_date, 1, 19), 'T', ' '),
+                                 '%Y-%m-%d %H:%i:%s') < NOW() - INTERVAL 3 DAY
+               ORDER BY delivery_date, delivery_no
+               LIMIT 100"""
+        )
+        delayed_delivery_items = [
+            DirectorDelayedDelivery(**row) for row in cursor.fetchall()
+        ]
+
+        cursor.execute(
+            """SELECT COUNT(*) AS value FROM `return` r
+               WHERE r.return_status <> '반환완료'
+                 AND NOT EXISTS (
+                     SELECT 1 FROM delivery d WHERE d.return_return_no = r.return_no
+                 )"""
+        )
+        returns_without_delivery = int(cursor.fetchone()["value"])
+        cursor.execute(
+            """SELECT r.return_no, r.return_status, r.user_user_id AS user_id,
+                      r.manager_manager_id AS manager_id
+               FROM `return` r
+               WHERE r.return_status <> '반환완료'
+                 AND NOT EXISTS (
+                     SELECT 1 FROM delivery d WHERE d.return_return_no = r.return_no
+                 )
+               ORDER BY r.return_no
+               LIMIT 100"""
+        )
+        return_without_delivery_items = [
+            DirectorReturnWithoutDelivery(**row) for row in cursor.fetchall()
+        ]
+
+        cursor.execute(
+            """SELECT quit_type, COUNT(*) AS count FROM `quit`
+               GROUP BY quit_type ORDER BY count DESC, quit_type"""
+        )
+        quit_types = [DirectorQuitTypeStat(**row) for row in cursor.fetchall()]
+
+    return DirectorOperationsStatistics(
+        pipeline=pipeline,
+        manager_inspections=manager_inspections,
+        low_stock_cases=low_stock_cases,
+        outstanding_orders=outstanding_orders,
+        delayed_deliveries=delayed_deliveries,
+        returns_without_delivery=returns_without_delivery,
+        quit_types=quit_types,
+        delayed_delivery_items=delayed_delivery_items,
+        return_without_delivery_items=return_without_delivery_items,
     )

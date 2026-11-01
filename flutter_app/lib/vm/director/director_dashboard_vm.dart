@@ -4,7 +4,14 @@ import 'package:pokem_app/model/auth/auth_session.dart';
 import 'package:pokem_app/model/director/director_dashboard.dart';
 import 'package:pokem_app/vm/auth/login_vm.dart';
 
-enum DirectorSection { dashboard, approvals, managers, inventory }
+enum DirectorSection {
+  dashboard,
+  analytics,
+  approvals,
+  withdrawals,
+  managers,
+  inventory,
+}
 
 class DirectorDashboardState {
   const DirectorDashboardState({

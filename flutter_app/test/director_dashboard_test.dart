@@ -55,6 +55,7 @@ Map<String, Object?> dashboard(String status) => {
     'payments': 4,
     'refunds': 2,
     'case_stock': 10,
+    'withdrawn_users': 1,
   },
   'proposals': [proposal(status)],
   'managers': [
@@ -74,6 +75,67 @@ Map<String, Object?> dashboard(String status) => {
       'case_stock': 10,
     },
   ],
+  'withdrawals': [
+    {
+      'user_id': 'retired-user',
+      'user_nickname': '탈퇴사용자',
+      'quit_date': '2026-11-01T12:00:00+09:00',
+      'quit_type': '서비스 불만',
+      'quit_reason': '응답이 느립니다.',
+    },
+  ],
+  'statistics': {
+    'pipeline': {
+      'unassigned_requests': 1,
+      'waiting': 2,
+      'in_progress': 1,
+      'completed': 5,
+    },
+    'manager_inspections': [
+      {
+        'manager_id': 'manager1',
+        'manager_name': '담당자',
+        'total': 8,
+        'completed': 5,
+        'active': 3,
+      },
+    ],
+    'low_stock_cases': [
+      {'case_code': 'CASE1', 'case_stock': 3, 'threshold': 10},
+    ],
+    'outstanding_orders': [
+      {
+        'order_no': 'ORDER1',
+        'order_date': '2026-11-01 09:00:00',
+        'case_code': 'CASE1',
+        'order_amount': 10,
+        'received_amount': 4,
+        'outstanding_amount': 6,
+      },
+    ],
+    'delayed_deliveries': 2,
+    'returns_without_delivery': 1,
+    'quit_types': [
+      {'quit_type': '서비스 불만', 'count': 1},
+    ],
+    'delayed_delivery_items': [
+      {
+        'delivery_no': 'DELIVERY1',
+        'delivery_date': '2026-10-28 09:00:00',
+        'delivery_status': '배송준비',
+        'manager_id': 'manager1',
+        'company_code': 'COMPANY1',
+      },
+    ],
+    'return_without_delivery_items': [
+      {
+        'return_no': 'RETURN1',
+        'return_status': '반환접수',
+        'user_id': 'user1',
+        'manager_id': 'manager1',
+      },
+    ],
+  },
 };
 
 DirectorRepository repository() {
@@ -128,6 +190,63 @@ void main() {
     );
   });
 
+  testWidgets('director can inspect withdrawal type and reason', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          loginVmProvider.overrideWith(DirectorLogin.new),
+          directorRepositoryProvider.overrideWithValue(repository()),
+        ],
+        child: const PokemApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('회원 탈퇴'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('종류: 서비스 불만'), findsOneWidget);
+    expect(find.textContaining('사유: 응답이 느립니다.'), findsOneWidget);
+  });
+
+  testWidgets('analytics tab renders graphs and operational tables', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          loginVmProvider.overrideWith(DirectorLogin.new),
+          directorRepositoryProvider.overrideWithValue(repository()),
+        ],
+        child: const PokemApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('상세 통계'));
+    await tester.pumpAndSettle();
+    expect(find.text('검수 단계별 현황'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsWidgets);
+    expect(find.text('매니저별 검수 상세'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('미입고 발주'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('미입고 발주'), findsOneWidget);
+    expect(find.byType(DataTable), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final size in [
     const Size(1280, 800),
     const Size(768, 1024),
@@ -154,6 +273,8 @@ void main() {
 
       expect(find.text('총괄 대시보드'), findsOneWidget);
       expect(find.text('결재 대기'), findsOneWidget);
+      expect(find.text('운영 위험 요약'), findsOneWidget);
+      expect(find.text('상세 통계 보기'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

@@ -13,6 +13,7 @@ class DirectorMetrics {
     required this.payments,
     required this.refunds,
     required this.caseStock,
+    required this.withdrawnUsers,
   });
   final int users, managers, unassignedRequests, inspectionsInProgress;
   final int completedInspections, activeConsignments, pendingProposals, orders;
@@ -20,7 +21,8 @@ class DirectorMetrics {
       returnsInProgress,
       payments,
       refunds,
-      caseStock;
+      caseStock,
+      withdrawnUsers;
   factory DirectorMetrics.fromJson(Map<String, dynamic> json) =>
       DirectorMetrics(
         users: json['users'] as int,
@@ -36,6 +38,208 @@ class DirectorMetrics {
         payments: json['payments'] as int,
         refunds: json['refunds'] as int,
         caseStock: json['case_stock'] as int,
+        withdrawnUsers: json['withdrawn_users'] as int,
+      );
+}
+
+class DirectorWithdrawal {
+  const DirectorWithdrawal({
+    required this.userId,
+    required this.type,
+    this.nickname,
+    this.date,
+    this.reason,
+  });
+  final String userId, type;
+  final String? nickname, date, reason;
+  factory DirectorWithdrawal.fromJson(Map<String, dynamic> json) =>
+      DirectorWithdrawal(
+        userId: json['user_id'] as String,
+        nickname: json['user_nickname'] as String?,
+        date: json['quit_date'] as String?,
+        type: json['quit_type'] as String,
+        reason: json['quit_reason'] as String?,
+      );
+}
+
+class DirectorInspectionPipeline {
+  const DirectorInspectionPipeline({
+    required this.unassignedRequests,
+    required this.waiting,
+    required this.inProgress,
+    required this.completed,
+  });
+  final int unassignedRequests, waiting, inProgress, completed;
+  factory DirectorInspectionPipeline.fromJson(Map<String, dynamic> json) =>
+      DirectorInspectionPipeline(
+        unassignedRequests: json['unassigned_requests'] as int,
+        waiting: json['waiting'] as int,
+        inProgress: json['in_progress'] as int,
+        completed: json['completed'] as int,
+      );
+}
+
+class DirectorManagerInspectionStat {
+  const DirectorManagerInspectionStat({
+    required this.managerId,
+    required this.total,
+    required this.completed,
+    required this.active,
+    this.managerName,
+  });
+  final String managerId;
+  final String? managerName;
+  final int total, completed, active;
+  factory DirectorManagerInspectionStat.fromJson(Map<String, dynamic> json) =>
+      DirectorManagerInspectionStat(
+        managerId: json['manager_id'] as String,
+        managerName: json['manager_name'] as String?,
+        total: json['total'] as int,
+        completed: json['completed'] as int,
+        active: json['active'] as int,
+      );
+}
+
+class DirectorLowStockCase {
+  const DirectorLowStockCase({
+    required this.caseCode,
+    required this.stock,
+    required this.threshold,
+  });
+  final String caseCode;
+  final int stock, threshold;
+  factory DirectorLowStockCase.fromJson(Map<String, dynamic> json) =>
+      DirectorLowStockCase(
+        caseCode: json['case_code'] as String,
+        stock: json['case_stock'] as int,
+        threshold: json['threshold'] as int,
+      );
+}
+
+class DirectorOutstandingOrder {
+  const DirectorOutstandingOrder({
+    required this.orderNo,
+    required this.caseCode,
+    required this.orderAmount,
+    required this.receivedAmount,
+    required this.outstandingAmount,
+    this.orderDate,
+  });
+  final String orderNo, caseCode;
+  final String? orderDate;
+  final int orderAmount, receivedAmount, outstandingAmount;
+  factory DirectorOutstandingOrder.fromJson(Map<String, dynamic> json) =>
+      DirectorOutstandingOrder(
+        orderNo: json['order_no'] as String,
+        orderDate: json['order_date'] as String?,
+        caseCode: json['case_code'] as String,
+        orderAmount: json['order_amount'] as int,
+        receivedAmount: json['received_amount'] as int,
+        outstandingAmount: json['outstanding_amount'] as int,
+      );
+}
+
+class DirectorQuitTypeStat {
+  const DirectorQuitTypeStat({required this.type, required this.count});
+  final String type;
+  final int count;
+  factory DirectorQuitTypeStat.fromJson(Map<String, dynamic> json) =>
+      DirectorQuitTypeStat(
+        type: json['quit_type'] as String,
+        count: json['count'] as int,
+      );
+}
+
+class DirectorDelayedDelivery {
+  const DirectorDelayedDelivery({
+    required this.number,
+    required this.managerId,
+    required this.companyCode,
+    this.date,
+    this.status,
+  });
+  final String number, managerId, companyCode;
+  final String? date, status;
+  factory DirectorDelayedDelivery.fromJson(Map<String, dynamic> json) =>
+      DirectorDelayedDelivery(
+        number: json['delivery_no'] as String,
+        date: json['delivery_date'] as String?,
+        status: json['delivery_status'] as String?,
+        managerId: json['manager_id'] as String,
+        companyCode: json['company_code'] as String,
+      );
+}
+
+class DirectorReturnWithoutDelivery {
+  const DirectorReturnWithoutDelivery({
+    required this.number,
+    required this.status,
+    required this.userId,
+    this.managerId,
+  });
+  final String number, status, userId;
+  final String? managerId;
+  factory DirectorReturnWithoutDelivery.fromJson(Map<String, dynamic> json) =>
+      DirectorReturnWithoutDelivery(
+        number: json['return_no'] as String,
+        status: json['return_status'] as String,
+        userId: json['user_id'] as String,
+        managerId: json['manager_id'] as String?,
+      );
+}
+
+class DirectorOperationsStatistics {
+  const DirectorOperationsStatistics({
+    required this.pipeline,
+    required this.managerInspections,
+    required this.lowStockCases,
+    required this.outstandingOrders,
+    required this.delayedDeliveries,
+    required this.returnsWithoutDelivery,
+    required this.quitTypes,
+    required this.delayedDeliveryItems,
+    required this.returnWithoutDeliveryItems,
+  });
+  final DirectorInspectionPipeline pipeline;
+  final List<DirectorManagerInspectionStat> managerInspections;
+  final List<DirectorLowStockCase> lowStockCases;
+  final List<DirectorOutstandingOrder> outstandingOrders;
+  final int delayedDeliveries, returnsWithoutDelivery;
+  final List<DirectorQuitTypeStat> quitTypes;
+  final List<DirectorDelayedDelivery> delayedDeliveryItems;
+  final List<DirectorReturnWithoutDelivery> returnWithoutDeliveryItems;
+  factory DirectorOperationsStatistics.fromJson(Map<String, dynamic> json) =>
+      DirectorOperationsStatistics(
+        pipeline: DirectorInspectionPipeline.fromJson(
+          json['pipeline'] as Map<String, dynamic>,
+        ),
+        managerInspections: (json['manager_inspections'] as List)
+            .cast<Map<String, dynamic>>()
+            .map(DirectorManagerInspectionStat.fromJson)
+            .toList(),
+        lowStockCases: (json['low_stock_cases'] as List)
+            .cast<Map<String, dynamic>>()
+            .map(DirectorLowStockCase.fromJson)
+            .toList(),
+        outstandingOrders: (json['outstanding_orders'] as List)
+            .cast<Map<String, dynamic>>()
+            .map(DirectorOutstandingOrder.fromJson)
+            .toList(),
+        delayedDeliveries: json['delayed_deliveries'] as int,
+        returnsWithoutDelivery: json['returns_without_delivery'] as int,
+        quitTypes: (json['quit_types'] as List)
+            .cast<Map<String, dynamic>>()
+            .map(DirectorQuitTypeStat.fromJson)
+            .toList(),
+        delayedDeliveryItems: (json['delayed_delivery_items'] as List)
+            .cast<Map<String, dynamic>>()
+            .map(DirectorDelayedDelivery.fromJson)
+            .toList(),
+        returnWithoutDeliveryItems:
+            (json['return_without_delivery_items'] as List)
+                .cast<Map<String, dynamic>>()
+                .map(DirectorReturnWithoutDelivery.fromJson)
+                .toList(),
       );
 }
 
@@ -110,11 +314,15 @@ class DirectorDashboard {
     required this.proposals,
     required this.managers,
     required this.cases,
+    required this.withdrawals,
+    required this.statistics,
   });
   final DirectorMetrics metrics;
   final List<DirectorProposal> proposals;
   final List<DirectorManager> managers;
   final List<DirectorCase> cases;
+  final List<DirectorWithdrawal> withdrawals;
+  final DirectorOperationsStatistics statistics;
   factory DirectorDashboard.fromJson(Map<String, dynamic> json) =>
       DirectorDashboard(
         metrics: DirectorMetrics.fromJson(
@@ -132,6 +340,13 @@ class DirectorDashboard {
             .cast<Map<String, dynamic>>()
             .map(DirectorCase.fromJson)
             .toList(),
+        withdrawals: (json['withdrawals'] as List)
+            .cast<Map<String, dynamic>>()
+            .map(DirectorWithdrawal.fromJson)
+            .toList(),
+        statistics: DirectorOperationsStatistics.fromJson(
+          json['statistics'] as Map<String, dynamic>,
+        ),
       );
 }
 

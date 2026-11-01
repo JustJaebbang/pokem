@@ -23,7 +23,7 @@ class PublicProfileTests(unittest.TestCase):
         self.assertNotIn('private-mail',str(profile.model_dump()))
         self.assertIsNone(get_public_profile(self.db,'missing'))
     def test_retired_user_retains_record_but_public_name_and_image_are_masked(self):
-        self.db.conn.execute("INSERT INTO quit VALUES('seller','2026-10-31','reason')")
+        self.db.conn.execute("INSERT INTO quit VALUES('seller','2026-10-31','기타','reason')")
         profile=get_public_profile(self.db,'seller')
         self.assertTrue(profile.is_withdrawn);self.assertEqual(profile.user_nickname,'탈퇴한 사용자');self.assertIsNone(profile.user_profile_image)
         self.assertEqual(self.db.conn.execute("SELECT user_profile_image FROM user WHERE user_id='seller'").fetchone()[0],URL)
@@ -41,6 +41,6 @@ class PublicProfileTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as e:get_chat_room_id(self.db,'missing','owner')
         self.assertEqual(e.exception.status_code,404)
     def test_chat_retired_profile_is_masked_without_dropping_room(self):
-        self.db.conn.execute("INSERT INTO quit VALUES('seller','2026-10-31','reason')")
+        self.db.conn.execute("INSERT INTO quit VALUES('seller','2026-10-31','기타','reason')")
         room=get_chat_room(self.db,'owner')[0]
         self.assertTrue(room.other_user_withdrawn);self.assertEqual(room.other_user_nickname,'탈퇴한 사용자');self.assertIsNone(room.other_user_profile_image)

@@ -10,7 +10,9 @@ class QuitView extends ConsumerStatefulWidget {
 }
 
 class _QuitViewState extends ConsumerState<QuitView> {
+  static const quitTypes = ['서비스 불만', '이용 빈도 낮음', '개인정보 우려', '다른 서비스 이용', '기타'];
   final reason = TextEditingController();
+  String? quitType;
   bool acknowledged = false;
   @override
   void dispose() {
@@ -39,6 +41,19 @@ POKEM 머니 잔액을 정리한 후 진행해주세요.
             if (state.balance != null)
               Text('POKEM 머니 잔액 ${formatWon(state.balance!)}'),
             const SizedBox(height: 20),
+            DropdownButtonFormField<String>(
+              initialValue: quitType,
+              decoration: const InputDecoration(labelText: '탈퇴 종류'),
+              items: quitTypes
+                  .map(
+                    (type) => DropdownMenuItem(value: type, child: Text(type)),
+                  )
+                  .toList(),
+              onChanged: locked
+                  ? null
+                  : (value) => setState(() => quitType = value),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: reason,
               enabled: !locked,
@@ -78,7 +93,11 @@ POKEM 머니 잔액을 정리한 후 진행해주세요.
                   child: const Text('잔액 다시 확인'),
                 ),
               FilledButton(
-                onPressed: locked || state.balance != 0 || !acknowledged
+                onPressed:
+                    locked ||
+                        state.balance != 0 ||
+                        !acknowledged ||
+                        quitType == null
                     ? null
                     : () async {
                         final confirmed = await showDialog<bool>(
@@ -101,7 +120,11 @@ POKEM 머니 잔액을 정리한 후 진행해주세요.
                         if (confirmed == true && mounted) {
                           await ref
                               .read(quitVmProvider.notifier)
-                              .submit(reason.text, acknowledged: acknowledged);
+                              .submit(
+                                reason.text,
+                                quitType: quitType!,
+                                acknowledged: acknowledged,
+                              );
                         }
                       },
                 child: Text(state.busy ? '처리 중' : '회원탈퇴'),

@@ -13,6 +13,7 @@ class QuitApiService {
     String id,
     String token, {
     bool deleting = false,
+    String quitType = '기타',
     String? reason,
   }) async {
     try {
@@ -30,7 +31,10 @@ class QuitApiService {
                   ? _client.delete(
                       uri,
                       headers: headers,
-                      body: jsonEncode({'quit_reason': reason}),
+                      body: jsonEncode({
+                        'quit_type': quitType,
+                        'quit_reason': reason,
+                      }),
                     )
                   : _client.get(uri, headers: headers))
               .timeout(const Duration(seconds: 20));

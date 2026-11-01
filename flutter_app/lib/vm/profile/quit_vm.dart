@@ -49,10 +49,19 @@ class QuitVm extends Notifier<QuitState> {
     }
   }
 
-  Future<void> submit(String reason, {required bool acknowledged}) async {
+  Future<void> submit(
+    String reason, {
+    String quitType = '기타',
+    required bool acknowledged,
+  }) async {
     if (state.loading || state.busy || state.uncertain) return;
     if (!acknowledged) {
       state = QuitState(balance: state.balance, error: '탈퇴 안내를 확인해주세요.');
+      return;
+    }
+    const types = {'서비스 불만', '이용 빈도 낮음', '개인정보 우려', '다른 서비스 이용', '기타'};
+    if (!types.contains(quitType)) {
+      state = QuitState(balance: state.balance, error: '탈퇴 종류를 선택해주세요.');
       return;
     }
     if (reason.trim().length > 200) {
@@ -63,7 +72,10 @@ class QuitVm extends Notifier<QuitState> {
       return;
     }
     if (state.balance != 0) {
-      state = QuitState(balance: state.balance, error: 'POKEM 머니 잔액을 확인하고 정리해주세요.');
+      state = QuitState(
+        balance: state.balance,
+        error: 'POKEM 머니 잔액을 확인하고 정리해주세요.',
+      );
       return;
     }
     final session = ref.read(authRepositoryProvider).session;
@@ -72,7 +84,12 @@ class QuitVm extends Notifier<QuitState> {
     try {
       await ref
           .read(quitRepositoryProvider)
-          .quit(session.account.id, session.token, reason.trim());
+          .quit(
+            session.account.id,
+            session.token,
+            reason.trim(),
+            quitType: quitType,
+          );
       if (current(session.token)) {
         await ref
             .read(loginVmProvider.notifier)

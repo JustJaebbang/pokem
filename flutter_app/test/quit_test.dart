@@ -22,7 +22,12 @@ class FakeQuit implements QuitRepository {
   @override
   Future<int> balance(String id, String token) async => money;
   @override
-  Future<void> quit(String id, String token, String reason) async {
+  Future<void> quit(
+    String id,
+    String token,
+    String reason, {
+    String quitType = '기타',
+  }) async {
     writes++;
     if (error != null) throw error!;
     if (pending != null) await pending!.future;
@@ -48,16 +53,20 @@ void main() {
             expect(r.method, 'DELETE');
             expect(r.url.path, '/user/tester');
             expect(r.headers['Authorization'], 'Bearer token');
-            expect(jsonDecode(r.body), {'quit_reason': null});
+            expect(jsonDecode(r.body), {
+              'quit_type': '개인정보 우려',
+              'quit_reason': null,
+            });
             return auth.response({
               'user_id': 'tester',
               'quit_date': '2026-10-31T12:00:00+09:00',
+              'quit_type': '개인정보 우려',
             });
           }),
           baseUrl: 'http://test.local',
         ),
       );
-      await repo.quit('tester', 'token', '');
+      await repo.quit('tester', 'token', '', quitType: '개인정보 우려');
     },
   );
   test('409 is definite and malformed success is uncertain', () async {
@@ -178,6 +187,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byType(Checkbox));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('개인정보 우려').last);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.widgetWithText(FilledButton, '회원탈퇴'));
     await tester.tap(find.widgetWithText(FilledButton, '회원탈퇴'));

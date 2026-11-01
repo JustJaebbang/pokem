@@ -27,7 +27,8 @@ class UserQuitTests(unittest.TestCase):
         calls = self.cursor.execute.call_args_list
         self.assertIn("FOR UPDATE", calls[0].args[0])
         self.assertIn("INSERT INTO `quit`", calls[2].args[0])
-        self.assertEqual(calls[2].args[1], ("test-user", result.quit_date, "test reason"))
+        self.assertEqual(result.quit_type, "기타")
+        self.assertEqual(calls[2].args[1], ("test-user", result.quit_date, "기타", "test reason"))
         self.assertEqual(len(calls), 3)
         self.assertFalse(any("DELETE" in call.args[0] for call in calls))
         self.db.begin.assert_called_once()
