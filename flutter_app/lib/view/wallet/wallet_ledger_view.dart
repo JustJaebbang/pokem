@@ -13,7 +13,7 @@ class WalletLedgerView extends ConsumerWidget {
     final direction = ref.watch(ledgerDirectionProvider);
     final provider = walletLedgerVmProvider(direction);
     return Scaffold(
-      appBar: AppBar(title: const Text('포켐머니 이용내역')),
+      appBar: AppBar(title: const Text('POKEM 머니 이용내역')),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.read(provider.notifier).refresh();

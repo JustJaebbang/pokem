@@ -30,7 +30,7 @@ NOTIFICATIONS_SQL = """
  UNION ALL
  SELECT CONCAT('money:',event_id),
         CASE WHEN kind='refund' THEN '취소 환불이 반영되었습니다' ELSE '판매대금이 입금되었습니다' END,
-        '포켐머니 이용내역에서 금액을 확인해주세요.', occurred_at, 'wallet', NULL, user_user_id
+        'POKEM 머니 이용내역에서 금액을 확인해주세요.', occurred_at, 'wallet', NULL, user_user_id
  FROM (
 """ + LEDGER_SQL + """
  ) credits WHERE kind IN ('refund','sale_credit')

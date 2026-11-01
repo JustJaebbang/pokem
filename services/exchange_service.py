@@ -55,7 +55,7 @@ def create_exchange(db, exchange: ExchangeCreate) -> ExchangeCreateResponse:
             if cursor.rowcount != 1:
                 raise HTTPException(status_code=409, detail="잔액을 변경할 수 없습니다. 다시 확인해주세요.")
             result = ExchangeCreateResponse(
-                message="포켐머니 환전이 완료되었습니다.",
+                message="POKEM 머니 환전이 완료되었습니다.",
                 exchange_seq=exchange_seq,
                 user_id=exchange.user_id,
                 exchange_date=now,

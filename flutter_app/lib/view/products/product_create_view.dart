@@ -1,3 +1,5 @@
+import 'package:pokem_app/vm/products/product_guide_vm.dart';
+import 'package:pokem_app/view/products/widgets/card_info_guide_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +14,8 @@ class ProductCreateView extends ConsumerStatefulWidget {
 }
 
 class _ProductCreateViewState extends ConsumerState<ProductCreateView> {
+  bool _autoGuideShown = false;
+  bool _guideOpen = false;
   final _form = GlobalKey<FormState>();
   final _controllers = {
     for (final field in [
@@ -29,11 +33,41 @@ class _ProductCreateViewState extends ConsumerState<ProductCreateView> {
   @override
   void initState() {
     super.initState();
+    ref.listenManual(productGuideVmProvider, (previous, next) {
+      if (next.ready && !_autoGuideShown) {
+        _autoGuideShown = true;
+        if (!next.hidden) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _openGuide();
+          });
+          WidgetsBinding.instance.ensureVisualUpdate();
+        }
+      }
+    }, fireImmediately: true);
     Future.microtask(() {
       if (mounted) {
         ref.read(productCreateVmProvider.notifier).pickPhoto(recover: true);
       }
     });
+  }
+
+  Future<void> _openGuide() async {
+    if (_guideOpen || ref.read(productCreateVmProvider).busy) return;
+    _guideOpen = true;
+    FocusScope.of(context).unfocus();
+    ref.read(productGuideVmProvider.notifier).prepare();
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        isDismissible: false,
+        enableDrag: false,
+        builder: (_) => const CardInfoGuideSheet(),
+      );
+    } finally {
+      _guideOpen = false;
+    }
   }
 
   @override
@@ -72,6 +106,7 @@ class _ProductCreateViewState extends ConsumerState<ProductCreateView> {
     int lines = 1,
     int? limit,
     bool money = false,
+    String? example,
   }) {
     final state = ref.watch(productCreateVmProvider);
     return Padding(
@@ -88,6 +123,7 @@ class _ProductCreateViewState extends ConsumerState<ProductCreateView> {
             : null,
         decoration: InputDecoration(
           labelText: label,
+          hintText: example == null ? null : '예: $example',
           counterText: '',
           suffixText: money ? '원' : null,
         ),
@@ -108,6 +144,13 @@ class _ProductCreateViewState extends ConsumerState<ProductCreateView> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('상품 등록'),
+          actions: [
+            IconButton(
+              tooltip: '카드 정보 입력 안내',
+              onPressed: state.busy ? null : _openGuide,
+              icon: const Icon(Icons.help_outline),
+            ),
+          ],
           automaticallyImplyLeading: !state.busy,
         ),
         body: SafeArea(
@@ -130,7 +173,7 @@ class _ProductCreateViewState extends ConsumerState<ProductCreateView> {
                         child: Container(
                           clipBehavior: Clip.antiAlias,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE5ECD8),
+                            color: const Color(0xFFEDF2FA),
                             borderRadius: BorderRadius.circular(18),
                           ),
                           child: AspectRatio(
@@ -188,30 +231,41 @@ class _ProductCreateViewState extends ConsumerState<ProductCreateView> {
                         'JPEG·PNG·WebP / 최대 5MB',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF67716A),
+                          color: Color(0xFF69788E),
                         ),
                       ),
                       const SizedBox(height: 24),
                       _field('title', '상품명', limit: 100),
-                      Text('카드 정보', style: theme.textTheme.titleMedium),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '카드 정보',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: state.busy ? null : _openGuide,
+                            icon: const Icon(Icons.info_outline, size: 18),
+                            label: const Text('입력 안내'),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                       const Text(
                         '카드에 표시된 정보를 입력해주세요.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF67716A),
+                          color: Color(0xFF69788E),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _field('regulation', '레귤레이션'),
-                      _field('packType', '카드 팩 구분'),
-                      _field('element', '세트 구성'),
-                      _field('setNumber', '세트 번호'),
-                      _field('rarity', '레어도'),
+                      for (final field in cardInfoGuideFields)
+                        _field(field.key, field.label, example: field.example),
                       _field('description', '상품 설명', lines: 4, limit: 500),
                       const Text(
                         '일반 판매 · 검수 등급 미지정',
-                        style: TextStyle(color: Color(0xFF67716A)),
+                        style: TextStyle(color: Color(0xFF69788E)),
                       ),
                       const SizedBox(height: 16),
                       _field('price', '가격', limit: 10, money: true),

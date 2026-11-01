@@ -1,3 +1,6 @@
+import 'package:pokem_app/core/theme/app_theme.dart';
+import 'package:pokem_app/view/push/push_bridge.dart';
+import 'package:pokem_app/view/inspection/inspection_results_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,41 +30,22 @@ class PokemApp extends ConsumerWidget {
         });
       }
     });
-    const ink = Color(0xFF252C29);
-    const green = Color(0xFF245844);
     return MaterialApp(
-      title: '포켐',
+      title: 'POKEM',
+      builder: (context, child) => PushBridge(
+        child: child ?? const SizedBox.shrink(),
+        onOpen: (target) {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute<void>(
+              builder: (_) =>
+                  InspectionResultsView(number: target.requestNumber),
+            ),
+          );
+        },
+      ),
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: green,
-          primary: green,
-          surface: const Color(0xFFFAF9F5),
-        ),
-        scaffoldBackgroundColor: const Color(0xFFFAF9F5),
-        textTheme: ThemeData.light().textTheme.apply(
-          bodyColor: ink,
-          displayColor: ink,
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 18,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFDDDFD8)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFDDDFD8)),
-          ),
-        ),
-      ),
+      theme: AppTheme.light,
       home: state.restoring
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
           : state.session == null

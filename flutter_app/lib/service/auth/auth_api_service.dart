@@ -11,6 +11,15 @@ class AuthApiService {
   final http.Client _client;
   final String _baseUrl;
 
+  Future<Map<String, dynamic>> requestRecovery(Map<String, Object?> data) =>
+      _request(
+        '/auth/recovery/request',
+        body: data,
+        timeout: const Duration(seconds: 30),
+      );
+  Future<Map<String, dynamic>> completeRecovery(Map<String, Object?> data) =>
+      _request('/auth/recovery/complete', body: data);
+
   Future<Map<String, dynamic>> login(String id, String password) =>
       _request('/auth/login', body: {'login_id': id, 'password': password});
   Future<Map<String, dynamic>> register(Map<String, String> data) =>
@@ -36,6 +45,7 @@ class AuthApiService {
     Map<String, Object?>? body,
     String? token,
     bool put = false,
+    Duration timeout = const Duration(seconds: 15),
   }) async {
     try {
       final uri = Uri.parse('$_baseUrl$path');
@@ -53,7 +63,7 @@ class AuthApiService {
                   : put
                   ? _client.put(uri, headers: headers, body: jsonEncode(body))
                   : _client.post(uri, headers: headers, body: jsonEncode(body)))
-              .timeout(const Duration(seconds: 15));
+              .timeout(timeout);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
         if (decoded is! Map<String, dynamic>) {

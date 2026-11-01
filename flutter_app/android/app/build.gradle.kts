@@ -4,6 +4,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Keep builds usable before local Firebase configuration is supplied.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.pokem.pokem_app"
     compileSdk = flutter.compileSdkVersion

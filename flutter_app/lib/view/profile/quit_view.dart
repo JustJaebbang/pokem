@@ -32,12 +32,12 @@ class _QuitViewState extends ConsumerState<QuitView> {
             Text('탈퇴 전에 확인해주세요', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             const Text('''탈퇴하면 이 계정으로 로그인할 수 없습니다.
-포켐머니 잔액을 정리한 후 진행해주세요.
+POKEM 머니 잔액을 정리한 후 진행해주세요.
 탈퇴 후에도 기존 거래내역은 보관됩니다.'''),
             const SizedBox(height: 20),
             if (state.loading) const LinearProgressIndicator(),
             if (state.balance != null)
-              Text('포켐머니 잔액 ${formatWon(state.balance!)}'),
+              Text('POKEM 머니 잔액 ${formatWon(state.balance!)}'),
             const SizedBox(height: 20),
             TextField(
               controller: reason,

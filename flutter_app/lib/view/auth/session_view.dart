@@ -10,7 +10,7 @@ class SessionView extends ConsumerWidget {
     final state = ref.watch(loginVmProvider);
     final account = state.session!.account;
     return Scaffold(
-      appBar: AppBar(title: const Text('포켐')),
+      appBar: AppBar(title: const Text('POKEM')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(28),

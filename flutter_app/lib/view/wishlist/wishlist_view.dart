@@ -1,9 +1,7 @@
+import 'package:pokem_app/view/products/widgets/product_listing_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pokem_app/core/formatters/money.dart';
 import 'package:pokem_app/view/products/product_detail_view.dart';
-import 'package:pokem_app/view/products/widgets/product_image.dart';
-import 'package:pokem_app/view/wishlist/widgets/wishlist_button.dart';
 import 'package:pokem_app/vm/wishlist/wishlist_vm.dart';
 
 class WishlistView extends ConsumerWidget {
@@ -68,72 +66,16 @@ class WishlistView extends ConsumerWidget {
                   crossAxisCount: constraints.crossAxisExtent >= 700 ? 3 : 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 16,
-                  mainAxisExtent: 245,
+                  mainAxisExtent: 250,
                 ),
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final p = state.products[index];
-                  return Card(
-                    clipBehavior: Clip.antiAlias,
-                    margin: EdgeInsets.zero,
-                    child: InkWell(
-                      key: ValueKey('wished-product-${p.code}'),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => ProductDetailView(code: p.code),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                ProductImage(url: p.image),
-                                Positioned(
-                                  top: 0,
-                                  right: 0,
-                                  child: WishlistButton(product: p),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  p.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  p.status,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: p.isForSale
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  formatWon(p.price),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                  return ProductListingCard(
+                    product: p,
+                    actionKey: ValueKey('wished-product-${p.code}'),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ProductDetailView(code: p.code),
                       ),
                     ),
                   );

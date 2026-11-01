@@ -10,12 +10,12 @@ class ProductImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolved = resolveProductImage(url);
     final placeholder = ColoredBox(
-      color: const Color(0xFFE9EDE5),
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
       child: Center(
         child: Icon(
           Icons.style_outlined,
-          size: 48,
-          color: Theme.of(context).colorScheme.primary,
+          size: 36,
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
         ),
       ),
     );

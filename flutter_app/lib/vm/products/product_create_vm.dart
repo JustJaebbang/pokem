@@ -72,8 +72,8 @@ class ProductCreateVm extends Notifier<ProductCreateState> {
       'price': '가격',
       'regulation': '레귤레이션',
       'packType': '카드 팩 구분',
-      'element': '세트 구성',
-      'setNumber': '세트 번호',
+      'element': '카드 번호 (분자)',
+      'setNumber': '세트 번호 (분모)',
       'rarity': '레어도',
     };
     if (value == null || value.trim().isEmpty) {

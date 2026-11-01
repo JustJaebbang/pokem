@@ -4,6 +4,8 @@ from fastapi import FastAPI, Request
 import asyncio
 from contextlib import asynccontextmanager
 from services.consignment_expiry_worker import expiry_worker
+from services.push_worker import push_worker
+from routers.push import router as push_router
 from pydantic import BaseModel
 import joblib
 
@@ -29,6 +31,7 @@ from routers.return_item import router as return_router
 from routers.post_consign_item import router as post_consign_item_router
 from routers.manager import router as manager_router
 from routers.auth import router as auth_router
+from routers.account_recovery import router as recovery_router
 from routers.cybermoney_pay import router as cybermoney_pay_router
 from routers.inspection_request import router as inspection_request_router
 from routers.pay import router as pay_router
@@ -48,15 +51,18 @@ from routers.discard import router as discard_router
 async def lifespan(app):
     stop = asyncio.Event()
     task = asyncio.create_task(expiry_worker(stop))
+    push_task = asyncio.create_task(push_worker(stop))
     try:
         yield
     finally:
         stop.set()
-        await task
+        await asyncio.gather(task, push_task)
 
 
 app = FastAPI(lifespan=lifespan)
 
+app.include_router(recovery_router)
+app.include_router(push_router)
 app.include_router(user_router)
 app.include_router(public_profile_router)
 app.include_router(notification_router)

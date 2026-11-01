@@ -15,6 +15,7 @@ class ChatRoomsView extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () => ref.read(chatRoomsVmProvider.notifier).refresh(),
       child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           if (state.error != null)
@@ -42,32 +43,37 @@ class ChatRoomsView extends ConsumerWidget {
               child: Text('아직 대화가 없습니다.', textAlign: TextAlign.center),
             ),
           for (final room in state.rooms)
-            ListTile(
-              key: ValueKey('room-${room.id}'),
-              leading: ProfileAvatar(size: 48, url: room.displayOtherImage),
-              title: Text(
-                room.displayOther(userId),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                room.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: room.isClosed
-                  ? const Text('종료')
-                  : const Icon(Icons.chevron_right),
-              onTap: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => ChatRoomView(roomId: room.id),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Card(
+                child: ListTile(
+                  key: ValueKey('room-${room.id}'),
+                  leading: ProfileAvatar(size: 48, url: room.displayOtherImage),
+                  title: Text(
+                    room.displayOther(userId),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                );
-                if (context.mounted) {
-                  ref.read(chatRoomsVmProvider.notifier).refresh();
-                }
-              },
+                  subtitle: Text(
+                    room.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: room.isClosed
+                      ? const Text('종료')
+                      : const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ChatRoomView(roomId: room.id),
+                      ),
+                    );
+                    if (context.mounted) {
+                      ref.read(chatRoomsVmProvider.notifier).refresh();
+                    }
+                  },
+                ),
+              ),
             ),
           if (state.hasMore)
             Padding(

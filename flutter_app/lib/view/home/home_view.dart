@@ -1,15 +1,13 @@
+import 'package:pokem_app/view/products/widgets/product_listing_card.dart';
 import 'package:pokem_app/view/home/product_filters.dart';
 import 'package:pokem_app/view/inspection/inspection_history_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:pokem_app/core/formatters/money.dart';
 import 'package:pokem_app/vm/auth/login_vm.dart';
 import 'package:pokem_app/model/products/product.dart';
 import 'package:pokem_app/vm/products/products_vm.dart';
 import 'package:pokem_app/view/products/product_detail_view.dart';
-import 'package:pokem_app/view/products/widgets/product_image.dart';
-import 'package:pokem_app/view/wishlist/widgets/wishlist_button.dart';
 
 class HomeView extends ConsumerWidget {
   const HomeView({super.key});
@@ -31,32 +29,75 @@ class HomeView extends ConsumerWidget {
                 children: [
                   Text(
                     '${ref.watch(loginVmProvider).session?.account.name ?? '수집가'}님, 반가워요.',
-                    style: theme.textTheme.titleMedium,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE5ECD8),
-                      borderRadius: BorderRadius.circular(20),
+                      color: theme.colorScheme.secondary,
+                      borderRadius: BorderRadius.circular(24),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          '다음 컬렉션을\n발견하는 즐거움',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'CARD MARKET',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                '당신의 다음 카드',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  color: theme.colorScheme.onSecondary,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '검수부터 거래까지, 한곳에서.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSecondary
+                                      .withValues(alpha: 0.75),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        const Text('좋아하는 카드의 새로운 주인을 찾아보세요.'),
+                        const SizedBox(width: 12),
+                        Transform.rotate(
+                          angle: 0.15,
+                          child: Container(
+                            width: 56,
+                            height: 78,
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: theme.colorScheme.primary,
+                                width: 1.5,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.style_outlined,
+                              color: theme.colorScheme.primary,
+                              size: 30,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   const ProductFilters(),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
@@ -66,7 +107,7 @@ class HomeView extends ConsumerWidget {
                     icon: const Icon(Icons.fact_check_outlined),
                     label: const Text('검수신청'),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Row(
                     children: [
                       Expanded(
@@ -78,6 +119,13 @@ class HomeView extends ConsumerWidget {
                         ),
                       ),
                       DropdownButton<ProductSort>(
+                        underline: const SizedBox.shrink(),
+                        borderRadius: BorderRadius.circular(14),
+                        style: theme.textTheme.labelLarge,
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 20,
+                        ),
                         value: state.sort,
                         items: [
                           for (final sort in ProductSort.values)
@@ -159,68 +207,13 @@ class HomeView extends ConsumerWidget {
                               index,
                             ) {
                               final p = products[index];
-                              return Card(
-                                clipBehavior: Clip.antiAlias,
-                                margin: EdgeInsets.zero,
-                                child: InkWell(
-                                  key: ValueKey('product-${p.code}'),
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) =>
-                                          ProductDetailView(code: p.code),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      Expanded(
-                                        child: Stack(
-                                          fit: StackFit.expand,
-                                          children: [
-                                            ProductImage(url: p.image),
-                                            Positioned(
-                                              top: 4,
-                                              right: 4,
-                                              child: Material(
-                                                color:
-                                                    theme.colorScheme.surface,
-                                                shape: const CircleBorder(),
-                                                child: WishlistButton(
-                                                  product: p,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(10),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              p.title,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              formatWon(p.price),
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w800,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 3),
-                                            Text(
-                                              p.status,
-                                              style: theme.textTheme.labelSmall,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+                              return ProductListingCard(
+                                product: p,
+                                actionKey: ValueKey('product-${p.code}'),
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) =>
+                                        ProductDetailView(code: p.code),
                                   ),
                                 ),
                               );
@@ -230,7 +223,7 @@ class HomeView extends ConsumerWidget {
                                   crossAxisCount: columns,
                                   crossAxisSpacing: 12,
                                   mainAxisSpacing: 16,
-                                  mainAxisExtent: 245,
+                                  mainAxisExtent: 250,
                                 ),
                           );
                         },
