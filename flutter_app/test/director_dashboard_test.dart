@@ -136,6 +136,12 @@ Map<String, Object?> dashboard(String status) => {
       },
     ],
   },
+  'settings': {
+    'low_stock_threshold': 10,
+    'delivery_delay_days': 3,
+    'inspection_unit_price': 10000,
+    'updated_at': '2026-11-01 10:00:00',
+  },
 };
 
 DirectorRepository repository() {
@@ -150,6 +156,17 @@ DirectorRepository repository() {
               (jsonDecode(request.body) as Map)['proposal_status'] as String;
           return fixtures.response(proposal(status));
         }
+        if (request.url.path.startsWith('/director/statistics/')) {
+          return fixtures.response({
+            'kind': 'inspections',
+            'total': 1,
+            'limit': 20,
+            'offset': 0,
+            'items': [
+              {'inspect_code': 'INS-1', 'inspect_status': '검수완료'},
+            ],
+          });
+        }
         expect(request.url.path, '/director/dashboard');
         return fixtures.response(dashboard(status));
       }),
@@ -159,6 +176,32 @@ DirectorRepository repository() {
 }
 
 void main() {
+  test(
+    'director reference-data API sends authenticated POST payloads',
+    () async {
+      final requests = <String>[];
+      final api = DirectorApiService(
+        MockClient((request) async {
+          requests.add('${request.method} ${request.url.path} ${request.body}');
+          return fixtures.response(jsonDecode(request.body) as Object);
+        }),
+        baseUrl: 'http://test.local',
+      );
+      await api.createReferenceData('director-token', '/case', {
+        'case_serial_no': 'CASE-SERIAL',
+        'case_stock': 0,
+      });
+      await api.createReferenceData('director-token', '/card_info', {
+        'cardinfo_serial_code': 'J_m6a_010_103_C',
+        'cardinfo_category': '카드',
+        'cardinfo_brand': '포켓몬',
+        'cardinfo_standard': '63 × 88 mm',
+      });
+      expect(requests[0], contains('POST /case'));
+      expect(requests[1], contains('POST /card_info'));
+    },
+  );
+
   test('director loads dashboard and reviews a pending proposal', () async {
     final container = ProviderContainer(
       overrides: [
@@ -244,6 +287,35 @@ void main() {
     );
     expect(find.text('미입고 발주'), findsOneWidget);
     expect(find.byType(DataTable), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reference-data tab exposes four registration forms', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          loginVmProvider.overrideWith(DirectorLogin.new),
+          directorRepositoryProvider.overrideWithValue(repository()),
+        ],
+        child: const PokemApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('기준정보'));
+    await tester.pumpAndSettle();
+    expect(find.text('기준정보 등록'), findsOneWidget);
+    expect(find.text('케이스'), findsOneWidget);
+    expect(find.text('배송업체'), findsOneWidget);
+    expect(find.text('제조업체'), findsOneWidget);
+    expect(find.text('카드 카탈로그'), findsOneWidget);
+    expect(find.text('새 데이터 등록'), findsNWidgets(4));
     expect(tester.takeException(), isNull);
   });
 

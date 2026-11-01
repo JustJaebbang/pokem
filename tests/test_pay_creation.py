@@ -19,7 +19,9 @@ class PayCreationTests(unittest.TestCase):
 
     def test_creation_uses_inspection_ids_and_same_date_for_number(self):
         self.cursor.fetchone.side_effect = [
-            {"user_user_id": "user01", "manager_manager_id": "manager01", "inspection_request_amount": 2}, None
+            {"user_user_id": "user01", "manager_manager_id": "manager01", "inspection_request_amount": 2},
+            None,
+            {"inspection_unit_price": 10000},
         ]
         with patch("services.pay_service.datetime") as clock:
             clock.now.return_value = datetime(2026, 10, 28, 20, 30, 45, tzinfo=ZoneInfo("Asia/Seoul"))
@@ -79,7 +81,10 @@ class PayCreationTests(unittest.TestCase):
         for amount in (None, 0, -1, True, 214749):
             with self.subTest(amount=amount):
                 self.cursor.fetchone.side_effect = [
-                    {"user_user_id":"u", "manager_manager_id":"m", "inspection_request_amount":amount}, None]
+                    {"user_user_id":"u", "manager_manager_id":"m", "inspection_request_amount":amount},
+                    None,
+                    {"inspection_unit_price": 10000},
+                ]
                 with self.assertRaises(HTTPException) as error:
                     pay_service.create_pay(self.db, self.request)
                 self.assertEqual(error.exception.status_code, 409)

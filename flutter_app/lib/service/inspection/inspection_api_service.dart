@@ -79,6 +79,18 @@ class InspectionApiService {
     }
   }
 
+  Future<int> pricing(String token) async {
+    try {
+      final json = await _request(
+        token,
+        path: '/inspection_request/pricing',
+      ) as Map<String, dynamic>;
+      return (json['inspection_unit_price'] as num).toInt();
+    } on TypeError {
+      throw const InspectionException('검수 단가를 확인할 수 없습니다.');
+    }
+  }
+
   Future<InspectionRequest> create(int amount, String token) async {
     try {
       return InspectionRequest.fromJson(

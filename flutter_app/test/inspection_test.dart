@@ -26,6 +26,8 @@ const request = InspectionRequest(
 
 class FakeInspectionRepository implements InspectionRepository {
   @override
+  Future<int> pricing(String token) async => 10000;
+  @override
   Future<List<InspectionResult>> results(String number, String token) async =>
       [];
   @override

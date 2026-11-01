@@ -41,6 +41,7 @@ from routers.director import router as director_router
 from routers.case import router as case_router
 from routers.delivery_company import router as delivery_company_router
 from routers.product_company import router as product_company_router
+from routers.card_info import router as card_info_router
 from routers.proposal import router as proposal_router
 from routers.order import router as order_router
 from routers.receive import router as receive_router
@@ -94,6 +95,7 @@ app.include_router(director_router)
 app.include_router(case_router)
 app.include_router(delivery_company_router)
 app.include_router(product_company_router)
+app.include_router(card_info_router)
 app.include_router(proposal_router)
 app.include_router(order_router)
 app.include_router(receive_router)

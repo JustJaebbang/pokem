@@ -24,6 +24,8 @@ class _InspectionCreateViewState extends ConsumerState<InspectionCreateView> {
   Widget build(BuildContext context) {
     final state = ref.watch(inspectionCreateVmProvider);
     final vm = ref.read(inspectionCreateVmProvider.notifier);
+    final pricing = ref.watch(inspectionUnitPriceProvider);
+    final unitPrice = pricing.value;
     return PopScope(
       canPop: !state.submitting,
       child: Scaffold(
@@ -64,7 +66,12 @@ class _InspectionCreateViewState extends ConsumerState<InspectionCreateView> {
                 const SizedBox(height: 12),
                 const Text('검수를 맡길 카드의 수량을 입력해주세요.'),
                 const SizedBox(height: 8),
-                const Text('검수비는 카드 1장당 10,000원입니다.'),
+                pricing.when(
+                  data: (price) => Text('검수비는 카드 1장당 ${formatWon(price)}입니다.'),
+                  loading: () => const Text('최신 검수 단가를 확인하고 있습니다.'),
+                  error: (_, _) =>
+                      const Text('검수 단가를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.'),
+                ),
                 const SizedBox(height: 24),
                 TextFormField(
                   controller: _amount,
@@ -78,12 +85,14 @@ class _InspectionCreateViewState extends ConsumerState<InspectionCreateView> {
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(10),
                   ],
-                  validator: vm.validateAmount,
+                  validator: (value) => vm.validateAmount(value, unitPrice),
                 ),
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _amount,
                   builder: (_, value, _) {
-                    final price = vm.estimatedPrice(value.text);
+                    final price = unitPrice == null
+                        ? null
+                        : vm.estimatedPrice(value.text, unitPrice);
                     return Padding(
                       padding: const EdgeInsets.only(top: 16),
                       child: Text(
@@ -112,7 +121,7 @@ class _InspectionCreateViewState extends ConsumerState<InspectionCreateView> {
                   )
                 else
                   FilledButton(
-                    onPressed: state.submitting
+                    onPressed: state.submitting || unitPrice == null
                         ? null
                         : () {
                             if (_form.currentState!.validate()) {

@@ -20,6 +20,7 @@ from schemas.director import (
     DirectorOutstandingOrder,
     DirectorQuitTypeStat,
     DirectorReturnWithoutDelivery,
+    DirectorSettingsResponse,
     DirectorWithdrawalResponse,
 )
 from schemas.manager import ManagerResponse
@@ -132,6 +133,12 @@ class DirectorDashboardTests(unittest.TestCase):
                         manager_id="manager1",
                     )
                 ],
+            ),
+            settings=DirectorSettingsResponse(
+                low_stock_threshold=10,
+                delivery_delay_days=3,
+                inspection_unit_price=10000,
+                updated_at="2026-11-01 10:00:00",
             ),
         )
         with patch(

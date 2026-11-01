@@ -276,9 +276,13 @@ class DirectorManager {
     required this.department,
     this.phone,
     this.email,
+    this.active = true,
+    this.updatedAt,
   });
   final String id, name, department;
   final String? phone, email;
+  final bool active;
+  final String? updatedAt;
   factory DirectorManager.fromJson(Map<String, dynamic> json) =>
       DirectorManager(
         id: json['manager_id'] as String,
@@ -286,6 +290,52 @@ class DirectorManager {
         department: json['manager_dept'] as String,
         phone: json['manager_phone'] as String?,
         email: json['manager_email'] as String?,
+        active:
+            json['manager_active'] == null ||
+            json['manager_active'] == true ||
+            json['manager_active'] == 1,
+        updatedAt: json['manager_updated_at'] as String?,
+      );
+}
+
+class DirectorSettings {
+  const DirectorSettings({
+    required this.lowStockThreshold,
+    required this.deliveryDelayDays,
+    required this.inspectionUnitPrice,
+    required this.updatedAt,
+  });
+  final int lowStockThreshold, deliveryDelayDays, inspectionUnitPrice;
+  final String updatedAt;
+  factory DirectorSettings.fromJson(Map<String, dynamic> json) =>
+      DirectorSettings(
+        lowStockThreshold: (json['low_stock_threshold'] as num).toInt(),
+        deliveryDelayDays: (json['delivery_delay_days'] as num).toInt(),
+        inspectionUnitPrice: (json['inspection_unit_price'] as num).toInt(),
+        updatedAt: json['updated_at'] as String,
+      );
+}
+
+class DirectorStatisticsPage {
+  const DirectorStatisticsPage({
+    required this.kind,
+    required this.total,
+    required this.limit,
+    required this.offset,
+    required this.items,
+  });
+  final String kind;
+  final int total, limit, offset;
+  final List<Map<String, dynamic>> items;
+  factory DirectorStatisticsPage.fromJson(Map<String, dynamic> json) =>
+      DirectorStatisticsPage(
+        kind: json['kind'] as String,
+        total: (json['total'] as num).toInt(),
+        limit: (json['limit'] as num).toInt(),
+        offset: (json['offset'] as num).toInt(),
+        items: (json['items'] as List)
+            .map((item) => (item as Map).cast<String, dynamic>())
+            .toList(),
       );
 }
 
@@ -316,6 +366,7 @@ class DirectorDashboard {
     required this.cases,
     required this.withdrawals,
     required this.statistics,
+    required this.settings,
   });
   final DirectorMetrics metrics;
   final List<DirectorProposal> proposals;
@@ -323,6 +374,7 @@ class DirectorDashboard {
   final List<DirectorCase> cases;
   final List<DirectorWithdrawal> withdrawals;
   final DirectorOperationsStatistics statistics;
+  final DirectorSettings settings;
   factory DirectorDashboard.fromJson(Map<String, dynamic> json) =>
       DirectorDashboard(
         metrics: DirectorMetrics.fromJson(
@@ -346,6 +398,9 @@ class DirectorDashboard {
             .toList(),
         statistics: DirectorOperationsStatistics.fromJson(
           json['statistics'] as Map<String, dynamic>,
+        ),
+        settings: DirectorSettings.fromJson(
+          json['settings'] as Map<String, dynamic>,
         ),
       );
 }

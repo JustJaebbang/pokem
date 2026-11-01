@@ -26,7 +26,7 @@ def get_current_account(
             return UserLoginResponse(account=account)
     elif claims["role"] == "manager":
         account = manager_service.get_manager_id(db, claims["sub"])
-        if account is not None:
+        if account is not None and account.manager_active:
             return ManagerLoginResponse(account=account)
     elif claims["role"] == "director":
         account = director_service.get_director_id(db, claims["sub"])

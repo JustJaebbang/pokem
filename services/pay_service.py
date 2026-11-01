@@ -30,8 +30,17 @@ def create_pay(db, request: PayCreate) -> PayResponse:
         if cursor.fetchone() is not None:
             raise HTTPException(status_code=409, detail="이미 결제가 생성된 검수 요청입니다.")
 
+        cursor.execute(
+            "SELECT inspection_unit_price FROM director_settings WHERE settings_id = 1"
+        )
+        pricing = cursor.fetchone()
+        if pricing is None:
+            raise HTTPException(status_code=503, detail="검수 단가 설정을 찾을 수 없습니다.")
         try:
-            price = calculate_inspection_fee(inspection["inspection_request_amount"])
+            price = calculate_inspection_fee(
+                inspection["inspection_request_amount"],
+                int(pricing["inspection_unit_price"]),
+            )
         except ValueError as exc:
             raise HTTPException(status_code=409, detail="검수 수량이 없거나 결제 가능한 범위를 초과했습니다.") from exc
         now = datetime.now(ZoneInfo("Asia/Seoul"))

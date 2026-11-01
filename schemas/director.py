@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 from schemas.case import CaseResponse
@@ -30,6 +30,30 @@ class DirectorResponse(BaseModel):
 class DirectorLoginResponse(BaseModel):
     role: Literal["director"] = "director"
     account: DirectorResponse
+
+
+class DirectorSettingsResponse(BaseModel):
+    low_stock_threshold: int
+    delivery_delay_days: int
+    inspection_unit_price: int
+    updated_at: str
+    director_director_id: str | None = None
+
+
+class DirectorSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    low_stock_threshold: int = Field(ge=0, le=2147483647, strict=True)
+    delivery_delay_days: int = Field(ge=1, le=365, strict=True)
+    inspection_unit_price: int = Field(ge=0, le=2147483647, strict=True)
+
+
+class DirectorStatisticsPage(BaseModel):
+    kind: str
+    total: int
+    limit: int
+    offset: int
+    items: list[dict[str, Any]]
 
 
 class DirectorMetrics(BaseModel):
@@ -127,3 +151,4 @@ class DirectorDashboardResponse(BaseModel):
     cases: list[CaseResponse]
     withdrawals: list[DirectorWithdrawalResponse]
     statistics: DirectorOperationsStatistics
+    settings: DirectorSettingsResponse

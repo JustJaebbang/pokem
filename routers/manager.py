@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from database import get_db
-from dependencies import get_current_manager
-from schemas.manager import ManagerCreate, ManagerResponse
+from dependencies import get_current_director, get_current_manager
+from schemas.manager import ManagerCreate, ManagerResponse, ManagerUpdate
 from services import manager_service
 
 # 관리자 API의 공통 경로와 Swagger 문서의 그룹 이름입니다.
@@ -11,7 +11,11 @@ router = APIRouter(prefix="/manager", tags=["manager"], dependencies=[Depends(ge
 
 # 관리자를 등록합니다.
 @router.post("", response_model=ManagerResponse, status_code=201)
-def create_manager(manager: ManagerCreate, db=Depends(get_db)):
+def create_manager(
+    manager: ManagerCreate,
+    db=Depends(get_db),
+    _director=Depends(get_current_director),
+):
     return manager_service.create_manager(db, manager)
 
 
@@ -28,3 +32,13 @@ def get_manager_id(manager_id: str, db=Depends(get_db)):
     if manager is None:
         raise HTTPException(status_code=404, detail="관리자를 찾을 수 없습니다.")
     return manager
+
+
+@router.patch("/{manager_id}", response_model=ManagerResponse)
+def update_manager(
+    request: ManagerUpdate,
+    manager_id: str,
+    db=Depends(get_db),
+    _director=Depends(get_current_director),
+):
+    return manager_service.update_manager(db, manager_id, request)
