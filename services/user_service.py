@@ -159,14 +159,15 @@ def delete_user_id(db, quit: UserQuitRequest, user_id: str) -> UserQuitResponse 
                 message="회원 탈퇴가 완료되었습니다.",
                 user_id=user_id,
                 quit_date=quit_date,
+                quit_type=quit.quit_type,
                 quit_reason=quit.quit_reason,
             )
             cursor.execute(
                 """
-                INSERT INTO `quit` (user_user_id, quit_date, quit_reason)
-                VALUES (%s, %s, %s)
+                INSERT INTO `quit` (user_user_id, quit_date, quit_type, quit_reason)
+                VALUES (%s, %s, %s, %s)
                 """,
-                (user_id, quit_date, quit.quit_reason),
+                (user_id, quit_date, quit.quit_type, quit.quit_reason),
             )
         db.commit()
     except IntegrityError as exc:

@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 from schemas.case import CaseResponse
@@ -32,6 +32,30 @@ class DirectorLoginResponse(BaseModel):
     account: DirectorResponse
 
 
+class DirectorSettingsResponse(BaseModel):
+    low_stock_threshold: int
+    delivery_delay_days: int
+    inspection_unit_price: int
+    updated_at: str
+    director_director_id: str | None = None
+
+
+class DirectorSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    low_stock_threshold: int = Field(ge=0, le=2147483647, strict=True)
+    delivery_delay_days: int = Field(ge=1, le=365, strict=True)
+    inspection_unit_price: int = Field(ge=0, le=2147483647, strict=True)
+
+
+class DirectorStatisticsPage(BaseModel):
+    kind: str
+    total: int
+    limit: int
+    offset: int
+    items: list[dict[str, Any]]
+
+
 class DirectorMetrics(BaseModel):
     users: int
     managers: int
@@ -46,6 +70,78 @@ class DirectorMetrics(BaseModel):
     payments: int
     refunds: int
     case_stock: int
+    withdrawn_users: int
+
+
+class DirectorWithdrawalResponse(BaseModel):
+    # 탈퇴 관리에 필요한 최소 정보만 총괄책임자에게 제공한다.
+    user_id: str
+    user_nickname: str | None = None
+    quit_date: str | None = None
+    quit_type: str
+    quit_reason: str | None = None
+
+
+class DirectorInspectionPipeline(BaseModel):
+    unassigned_requests: int
+    waiting: int
+    in_progress: int
+    completed: int
+
+
+class DirectorManagerInspectionStat(BaseModel):
+    manager_id: str
+    manager_name: str | None = None
+    total: int
+    completed: int
+    active: int
+
+
+class DirectorLowStockCase(BaseModel):
+    case_code: str
+    case_stock: int
+    threshold: int = 10
+
+
+class DirectorOutstandingOrder(BaseModel):
+    order_no: str
+    order_date: str | None = None
+    case_code: str
+    order_amount: int
+    received_amount: int
+    outstanding_amount: int
+
+
+class DirectorQuitTypeStat(BaseModel):
+    quit_type: str
+    count: int
+
+
+class DirectorDelayedDelivery(BaseModel):
+    delivery_no: str
+    delivery_date: str | None = None
+    delivery_status: str | None = None
+    manager_id: str
+    company_code: str
+
+
+class DirectorReturnWithoutDelivery(BaseModel):
+    return_no: str
+    return_status: str
+    user_id: str
+    manager_id: str | None = None
+
+
+class DirectorOperationsStatistics(BaseModel):
+    pipeline: DirectorInspectionPipeline
+    manager_inspections: list[DirectorManagerInspectionStat]
+    low_stock_cases: list[DirectorLowStockCase]
+    outstanding_orders: list[DirectorOutstandingOrder]
+    delayed_deliveries: int
+    returns_without_delivery: int
+    quit_types: list[DirectorQuitTypeStat]
+    delayed_delivery_items: list[DirectorDelayedDelivery]
+    return_without_delivery_items: list[DirectorReturnWithoutDelivery]
 
 
 class DirectorDashboardResponse(BaseModel):
@@ -53,3 +149,6 @@ class DirectorDashboardResponse(BaseModel):
     proposals: list[ProposalResponse]
     managers: list[ManagerResponse]
     cases: list[CaseResponse]
+    withdrawals: list[DirectorWithdrawalResponse]
+    statistics: DirectorOperationsStatistics
+    settings: DirectorSettingsResponse

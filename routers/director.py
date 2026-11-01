@@ -1,9 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response
 
 from database import get_db
 from dependencies import get_current_director
-from schemas.director import DirectorCreate, DirectorDashboardResponse, DirectorResponse
-from services import director_service
+from schemas.director import (
+    DirectorCreate,
+    DirectorDashboardResponse,
+    DirectorResponse,
+    DirectorSettingsResponse,
+    DirectorSettingsUpdate,
+    DirectorStatisticsPage,
+)
+from services import director_service, director_settings_service
 
 # 하위 권한인 매니저가 상위 계정을 생성하거나 조회할 수 없도록 제한한다.
 router = APIRouter(prefix="/director", tags=["director"], dependencies=[Depends(get_current_director)])
@@ -25,8 +32,83 @@ def get_directors(
 
 # /{director_id}보다 먼저 선언해 dashboard가 ID로 해석되지 않도록 한다.
 @router.get("/dashboard", response_model=DirectorDashboardResponse)
-def get_director_dashboard(db=Depends(get_db)):
-    return director_service.get_director_dashboard(db)
+def get_director_dashboard(
+    date_from: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    date_to: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    manager_id: str | None = Query(default=None, max_length=45),
+    inspect_status: str | None = Query(default=None, max_length=45),
+    db=Depends(get_db),
+):
+    return director_service.get_director_dashboard(
+        db,
+        date_from=date_from,
+        date_to=date_to,
+        manager_id=manager_id,
+        inspect_status=inspect_status,
+    )
+
+
+@router.get("/settings", response_model=DirectorSettingsResponse)
+def get_director_settings(db=Depends(get_db)):
+    return director_settings_service.get_settings(db)
+
+
+@router.patch("/settings", response_model=DirectorSettingsResponse)
+def update_director_settings(
+    request: DirectorSettingsUpdate,
+    db=Depends(get_db),
+    director=Depends(get_current_director),
+):
+    return director_settings_service.update_settings(db, request, director.director_id)
+
+
+@router.get("/statistics/{kind}/export")
+def export_director_statistics(
+    kind: str,
+    format: str = Query(default="csv", pattern=r"^(csv|xlsx)$"),
+    date_from: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    date_to: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    manager_id: str | None = Query(default=None, max_length=45),
+    inspect_status: str | None = Query(default=None, max_length=45),
+    db=Depends(get_db),
+):
+    body, media_type, filename = director_service.export_statistics(
+        db,
+        kind,
+        format,
+        date_from=date_from,
+        date_to=date_to,
+        manager_id=manager_id,
+        inspect_status=inspect_status,
+    )
+    return Response(
+        content=body,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/statistics/{kind}", response_model=DirectorStatisticsPage)
+def get_director_statistics_page(
+    kind: str,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    date_from: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    date_to: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    manager_id: str | None = Query(default=None, max_length=45),
+    inspect_status: str | None = Query(default=None, max_length=45),
+    db=Depends(get_db),
+):
+    return director_service.get_statistics_page(
+        db,
+        kind,
+        limit,
+        offset,
+        date_from=date_from,
+        date_to=date_to,
+        manager_id=manager_id,
+        inspect_status=inspect_status,
+    )
 
 
 @router.get("/{director_id}", response_model=DirectorResponse)

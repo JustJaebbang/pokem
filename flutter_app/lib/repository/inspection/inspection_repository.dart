@@ -6,6 +6,7 @@ class InspectionRepository {
   InspectionRepository(this._api);
   final InspectionApiService _api;
   Future<List<InspectionRequest>> history(String token) => _api.history(token);
+  Future<int> pricing(String token) => _api.pricing(token);
   Future<InspectionRequest> create(int amount, String token) =>
       _api.create(amount, token);
   Future<List<InspectionResult>> results(String number, String token) =>

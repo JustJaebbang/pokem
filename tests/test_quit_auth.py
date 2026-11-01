@@ -34,7 +34,7 @@ class DB:
           PRAGMA foreign_keys=ON;
           CREATE TABLE user(user_id TEXT PRIMARY KEY, user_password TEXT, user_nickname TEXT,
             user_name TEXT, user_phone TEXT, user_email TEXT, user_address TEXT, user_money INTEGER);
-          CREATE TABLE quit(user_user_id TEXT PRIMARY KEY REFERENCES user(user_id),quit_date TEXT,quit_reason TEXT);
+          CREATE TABLE quit(user_user_id TEXT PRIMARY KEY REFERENCES user(user_id),quit_date TEXT,quit_type TEXT,quit_reason TEXT);
           CREATE TABLE history(code TEXT, user_id TEXT REFERENCES user(user_id));
           CREATE TABLE chat_room(chat_room_id TEXT,inquirer_user_id TEXT,seller_user_id TEXT);
           INSERT INTO user VALUES('owner','hash','nickname','name','010','mail','address',0);

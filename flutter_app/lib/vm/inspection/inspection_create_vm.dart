@@ -12,18 +12,23 @@ class InspectionCreateVm extends Notifier<InspectionCreateState> {
     return const InspectionCreateState();
   }
 
-  String? validateAmount(String? value) {
+  String? validateAmount(String? value, [int? unitPrice]) {
     final text = value ?? '';
     final amount = int.tryParse(text);
     if (!RegExp(r'^\d+$').hasMatch(text) || amount == null || amount < 1) {
       return '검수할 카드 수량을 입력해주세요.';
     }
-    if (amount > 214748) return '신청 가능한 수량을 초과했습니다.';
+    final maximum = unitPrice == null || unitPrice == 0
+        ? 214748
+        : 2147483647 ~/ unitPrice;
+    if (amount > maximum) return '현재 검수 단가로 신청 가능한 수량을 초과했습니다.';
     return null;
   }
 
-  int? estimatedPrice(String text) =>
-      validateAmount(text) == null ? int.parse(text) * 10000 : null;
+  int? estimatedPrice(String text, int unitPrice) =>
+      validateAmount(text, unitPrice) == null
+      ? int.parse(text) * unitPrice
+      : null;
 
   Future<void> submit(String text) async {
     if (state.locked) return;
@@ -79,3 +84,14 @@ final inspectionCreateVmProvider =
     NotifierProvider<InspectionCreateVm, InspectionCreateState>(
       InspectionCreateVm.new,
     );
+
+// Director가 변경한 최신 단가를 신청 화면 진입 시 조회한다.
+final inspectionUnitPriceProvider = FutureProvider.autoDispose<int>((
+  ref,
+) async {
+  final session = ref.watch(loginVmProvider.select((state) => state.session));
+  if (session == null || session.isExpired) {
+    throw const InspectionException('로그인이 필요합니다.');
+  }
+  return ref.read(inspectionRepositoryProvider).pricing(session.token);
+});

@@ -55,6 +55,7 @@ Map<String, Object?> dashboard(String status) => {
     'payments': 4,
     'refunds': 2,
     'case_stock': 10,
+    'withdrawn_users': 1,
   },
   'proposals': [proposal(status)],
   'managers': [
@@ -74,6 +75,73 @@ Map<String, Object?> dashboard(String status) => {
       'case_stock': 10,
     },
   ],
+  'withdrawals': [
+    {
+      'user_id': 'retired-user',
+      'user_nickname': '탈퇴사용자',
+      'quit_date': '2026-11-01T12:00:00+09:00',
+      'quit_type': '서비스 불만',
+      'quit_reason': '응답이 느립니다.',
+    },
+  ],
+  'statistics': {
+    'pipeline': {
+      'unassigned_requests': 1,
+      'waiting': 2,
+      'in_progress': 1,
+      'completed': 5,
+    },
+    'manager_inspections': [
+      {
+        'manager_id': 'manager1',
+        'manager_name': '담당자',
+        'total': 8,
+        'completed': 5,
+        'active': 3,
+      },
+    ],
+    'low_stock_cases': [
+      {'case_code': 'CASE1', 'case_stock': 3, 'threshold': 10},
+    ],
+    'outstanding_orders': [
+      {
+        'order_no': 'ORDER1',
+        'order_date': '2026-11-01 09:00:00',
+        'case_code': 'CASE1',
+        'order_amount': 10,
+        'received_amount': 4,
+        'outstanding_amount': 6,
+      },
+    ],
+    'delayed_deliveries': 2,
+    'returns_without_delivery': 1,
+    'quit_types': [
+      {'quit_type': '서비스 불만', 'count': 1},
+    ],
+    'delayed_delivery_items': [
+      {
+        'delivery_no': 'DELIVERY1',
+        'delivery_date': '2026-10-28 09:00:00',
+        'delivery_status': '배송준비',
+        'manager_id': 'manager1',
+        'company_code': 'COMPANY1',
+      },
+    ],
+    'return_without_delivery_items': [
+      {
+        'return_no': 'RETURN1',
+        'return_status': '반환접수',
+        'user_id': 'user1',
+        'manager_id': 'manager1',
+      },
+    ],
+  },
+  'settings': {
+    'low_stock_threshold': 10,
+    'delivery_delay_days': 3,
+    'inspection_unit_price': 10000,
+    'updated_at': '2026-11-01 10:00:00',
+  },
 };
 
 DirectorRepository repository() {
@@ -88,6 +156,17 @@ DirectorRepository repository() {
               (jsonDecode(request.body) as Map)['proposal_status'] as String;
           return fixtures.response(proposal(status));
         }
+        if (request.url.path.startsWith('/director/statistics/')) {
+          return fixtures.response({
+            'kind': 'inspections',
+            'total': 1,
+            'limit': 20,
+            'offset': 0,
+            'items': [
+              {'inspect_code': 'INS-1', 'inspect_status': '검수완료'},
+            ],
+          });
+        }
         expect(request.url.path, '/director/dashboard');
         return fixtures.response(dashboard(status));
       }),
@@ -97,6 +176,32 @@ DirectorRepository repository() {
 }
 
 void main() {
+  test(
+    'director reference-data API sends authenticated POST payloads',
+    () async {
+      final requests = <String>[];
+      final api = DirectorApiService(
+        MockClient((request) async {
+          requests.add('${request.method} ${request.url.path} ${request.body}');
+          return fixtures.response(jsonDecode(request.body) as Object);
+        }),
+        baseUrl: 'http://test.local',
+      );
+      await api.createReferenceData('director-token', '/case', {
+        'case_serial_no': 'CASE-SERIAL',
+        'case_stock': 0,
+      });
+      await api.createReferenceData('director-token', '/card_info', {
+        'cardinfo_serial_code': 'J_m6a_010_103_C',
+        'cardinfo_category': '카드',
+        'cardinfo_brand': '포켓몬',
+        'cardinfo_standard': '63 × 88 mm',
+      });
+      expect(requests[0], contains('POST /case'));
+      expect(requests[1], contains('POST /card_info'));
+    },
+  );
+
   test('director loads dashboard and reviews a pending proposal', () async {
     final container = ProviderContainer(
       overrides: [
@@ -128,6 +233,92 @@ void main() {
     );
   });
 
+  testWidgets('director can inspect withdrawal type and reason', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          loginVmProvider.overrideWith(DirectorLogin.new),
+          directorRepositoryProvider.overrideWithValue(repository()),
+        ],
+        child: const PokemApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('회원 탈퇴'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('종류: 서비스 불만'), findsOneWidget);
+    expect(find.textContaining('사유: 응답이 느립니다.'), findsOneWidget);
+  });
+
+  testWidgets('analytics tab renders graphs and operational tables', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          loginVmProvider.overrideWith(DirectorLogin.new),
+          directorRepositoryProvider.overrideWithValue(repository()),
+        ],
+        child: const PokemApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('상세 통계'));
+    await tester.pumpAndSettle();
+    expect(find.text('검수 단계별 현황'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsWidgets);
+    expect(find.text('매니저별 검수 상세'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('미입고 발주'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('미입고 발주'), findsOneWidget);
+    expect(find.byType(DataTable), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reference-data tab exposes four registration forms', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          loginVmProvider.overrideWith(DirectorLogin.new),
+          directorRepositoryProvider.overrideWithValue(repository()),
+        ],
+        child: const PokemApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('기준정보'));
+    await tester.pumpAndSettle();
+    expect(find.text('기준정보 등록'), findsOneWidget);
+    expect(find.text('케이스'), findsOneWidget);
+    expect(find.text('배송업체'), findsOneWidget);
+    expect(find.text('제조업체'), findsOneWidget);
+    expect(find.text('카드 카탈로그'), findsOneWidget);
+    expect(find.text('새 데이터 등록'), findsNWidgets(4));
+    expect(tester.takeException(), isNull);
+  });
+
   for (final size in [
     const Size(1280, 800),
     const Size(768, 1024),
@@ -154,6 +345,8 @@ void main() {
 
       expect(find.text('총괄 대시보드'), findsOneWidget);
       expect(find.text('결재 대기'), findsOneWidget);
+      expect(find.text('운영 위험 요약'), findsOneWidget);
+      expect(find.text('상세 통계 보기'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

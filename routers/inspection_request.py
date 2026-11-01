@@ -7,11 +7,22 @@ from schemas.inspection_request import (
     InspectionRequestCreateRequest,
     InspectionRequestManagerUpdate,
     InspectionRequestManagerRequest,
+    InspectionPricingResponse,
     InspectionRequestResponse,
 )
-from services import inspection_request_service
+from services import director_settings_service, inspection_request_service
 
 router = APIRouter(prefix="/inspection_request", tags=["inspection_request"])
+
+
+# 동적 경로보다 먼저 선언하여 pricing이 신청번호로 해석되지 않게 한다.
+@router.get("/pricing", response_model=InspectionPricingResponse)
+def get_inspection_pricing(db=Depends(get_db), _current=Depends(get_current_account)):
+    settings = director_settings_service.get_settings(db)
+    return InspectionPricingResponse(
+        inspection_unit_price=settings.inspection_unit_price,
+        updated_at=settings.updated_at,
+    )
 
 
 # 검수 요청 생성: 번호 발급과 DB 저장은 service에서 처리한다.

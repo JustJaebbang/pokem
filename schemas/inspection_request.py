@@ -21,6 +21,12 @@ class InspectionRequestResponse(BaseModel):
     manager_manager_id: str | None = None
 
 
+class InspectionPricingResponse(BaseModel):
+    # 단가 변경 시각도 프로젝트 날짜 정책에 맞춰 VARCHAR 문자열로 전달한다.
+    inspection_unit_price: int
+    updated_at: str
+
+
 class InspectionRequestCreateRequest(InspectionRequestCreate):
     user_user_id: str | None = Field(default=None, min_length=1)
 

@@ -12,11 +12,17 @@ class QuitRepository {
     return json['user_money'] as int;
   }
 
-  Future<void> quit(String id, String token, String reason) async {
+  Future<void> quit(
+    String id,
+    String token,
+    String reason, {
+    String quitType = '기타',
+  }) async {
     final json = await _api.request(
       id,
       token,
       deleting: true,
+      quitType: quitType,
       reason: reason.isEmpty ? null : reason,
     );
     if (json['user_id'] != id ||
