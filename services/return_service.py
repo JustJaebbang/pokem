@@ -5,7 +5,7 @@ from services.inspection_common import _require
 
 
 RETURN_SELECT = """
-    SELECT return_no, inspect_inspect_code, user_user_id, manager_manager_id
+    SELECT return_no, inspect_inspect_code, user_user_id, manager_manager_id, return_status
     FROM `return`
 """
 
@@ -20,9 +20,9 @@ def ensure_return(c, inspect):
         return
     c.execute(
         """INSERT INTO `return` (
-            return_no, inspect_inspect_code, user_user_id
-        ) VALUES (%s, %s, %s)""",
-        (f"RET_{uuid4().hex}", inspect["inspect_code"], inspect["user_user_id"]),
+            return_no, inspect_inspect_code, user_user_id, return_status
+        ) VALUES (%s, %s, %s, %s)""",
+        (f"RET_{uuid4().hex}", inspect["inspect_code"], inspect["user_user_id"], "반환접수"),
     )
 
 
@@ -63,9 +63,10 @@ def assign_manager(db, return_no, manager_id):
                      "이미 담당자가 배정된 반환입니다.")
             c.execute("SELECT manager_id FROM manager WHERE manager_id = %s FOR UPDATE", (manager_id,))
             _require(c.fetchone() is not None, "매니저를 찾을 수 없습니다.", 404)
-            c.execute("""UPDATE `return` SET manager_manager_id = %s
+            # 담당자가 정해지면 배송사를 선택할 수 있는 배송대기 단계로 이동한다.
+            c.execute("""UPDATE `return` SET manager_manager_id = %s, return_status = %s
                          WHERE return_no = %s AND manager_manager_id IS NULL""",
-                      (manager_id, return_no))
+                      (manager_id, "배송대기", return_no))
             _require(c.rowcount == 1, "담당 매니저를 배정할 수 없습니다.")
         result = get_return(db, return_no)
         db.commit()

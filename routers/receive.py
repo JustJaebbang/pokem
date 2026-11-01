@@ -33,3 +33,8 @@ def get_receive(
     if result is None:
         raise HTTPException(status_code=404, detail="입고 내역을 찾을 수 없습니다.")
     return result
+
+
+@router.delete("/{receive_no}", response_model=ReceiveResponse)
+def cancel_receive(receive_no: str, db=Depends(get_db), manager=Depends(get_current_manager_only)):
+    return receive_service.cancel_receive(db, receive_no, manager.manager_id)

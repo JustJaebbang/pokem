@@ -67,7 +67,8 @@ class ReturnTests(unittest.TestCase):
                 return_no TEXT PRIMARY KEY,
                 inspect_inspect_code TEXT NOT NULL UNIQUE REFERENCES inspect(inspect_code),
                 user_user_id TEXT NOT NULL REFERENCES user(user_id),
-                manager_manager_id TEXT REFERENCES manager(manager_id));
+                manager_manager_id TEXT REFERENCES manager(manager_id),
+                return_status TEXT NOT NULL DEFAULT '반환접수');
             INSERT INTO user VALUES ('owner'), ('other');
             INSERT INTO manager VALUES ('M'), ('M2');
             INSERT INTO inspection_request VALUES ('req', 'owner');
@@ -144,7 +145,7 @@ class ReturnTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()['manager_manager_id'], 'M')
         self.assertEqual(set(response.json()), {
-            'return_no', 'inspect_inspect_code', 'user_user_id', 'manager_manager_id',
+            'return_no', 'inspect_inspect_code', 'user_user_id', 'manager_manager_id', 'return_status',
         })
         self.assertEqual(self.client.patch(path+'/manager', json={}).status_code, 409)
         self.manager('M2')
@@ -179,7 +180,7 @@ class ReturnTests(unittest.TestCase):
         self.db.connection.execute("""INSERT INTO inspect VALUES (
             'INS_2', 'card', 2, 'req', '검수완료', NULL, 'A', 'good',
             '반환', '2026-10-30T10:00:00+09:00', 'M')""")
-        self.db.connection.execute("INSERT INTO `return` VALUES ('AAA', 'INS_2', 'owner', NULL)")
+        self.db.connection.execute("INSERT INTO `return` VALUES ('AAA', 'INS_2', 'owner', NULL, '반환접수')")
         self.db.connection.commit()
         latest = return_service.get_returns(self.db, user_id='owner', limit=1)
         self.assertEqual(latest[0].return_no, 'AAA')

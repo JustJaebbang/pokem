@@ -4,18 +4,44 @@ import 'package:pokem_app/service/manager/manager_api_service.dart';
 class ManagerRepository {
   ManagerRepository(this._api);
   final ManagerApiService _api;
+
+  Future<List<Map<String, dynamic>>> _allPages(
+    String token,
+    String path,
+  ) async {
+    const pageSize = 100;
+    final rows = <Map<String, dynamic>>[];
+    for (var offset = 0; ; offset += pageSize) {
+      // 서버 제한인 100건씩 끝까지 읽어 100건 이후 데이터가 누락되지 않게 한다.
+      final separator = path.contains('?') ? '&' : '?';
+      final page = await _api.list(
+        token,
+        '$path${separator}limit=$pageSize&offset=$offset',
+      );
+      rows.addAll(page);
+      if (page.length < pageSize) return rows;
+    }
+  }
+
   Future<ManagerDashboard> load(String token) async {
     try {
       final results = await Future.wait([
         _api.list(token, '/inspection_request'),
         _api.list(token, '/inspect'),
         _api.list(token, '/post_consign_item'),
-        _api.list(token, '/proposal?limit=100'),
-        _api.list(token, '/order?limit=100'),
-        _api.list(token, '/receive?limit=100'),
-        _api.list(token, '/case?limit=100'),
-        _api.list(token, '/product_company?limit=100'),
-        _api.list(token, '/delivery_company?limit=100'),
+        _allPages(token, '/proposal'),
+        _allPages(token, '/order'),
+        _allPages(token, '/receive'),
+        _allPages(token, '/case'),
+        _allPages(token, '/product_company'),
+        _allPages(token, '/delivery_company'),
+        _allPages(token, '/return'),
+        _allPages(token, '/delivery'),
+        _allPages(token, '/pay'),
+        _allPages(token, '/receipt'),
+        _allPages(token, '/deposit_refund'),
+        _allPages(token, '/discard'),
+        _allPages(token, '/purchase_item/manager/all'),
       ]);
       return ManagerDashboard(
         requests: results[0].map(InspectionRequest.fromJson).toList(),
@@ -27,6 +53,13 @@ class ManagerRepository {
         cases: results[6].map(CaseRecord.fromJson).toList(),
         productCompanies: results[7].map(CompanyRecord.product).toList(),
         deliveryCompanies: results[8].map(CompanyRecord.delivery).toList(),
+        returns: results[9].map(ReturnRecord.fromJson).toList(),
+        deliveries: results[10].map(DeliveryRecord.fromJson).toList(),
+        pays: results[11].map(PayRecord.fromJson).toList(),
+        receipts: results[12].map(ReceiptRecord.fromJson).toList(),
+        refunds: results[13].map(RefundRecord.fromJson).toList(),
+        discards: results[14].map(DiscardRecord.fromJson).toList(),
+        purchases: results[15].map(PurchaseRecord.fromJson).toList(),
       );
     } on TypeError {
       throw const ManagerException('매니저 응답 형식을 확인해주세요.');
@@ -69,4 +102,46 @@ class ManagerRepository {
 
   Future<void> createReceive(String token, Map<String, dynamic> body) =>
       _api.createReceive(token, body);
+
+  Future<void> assignReturn(String token, String number) =>
+      _api.assignReturn(token, number);
+  Future<void> createDelivery(String token, Map<String, dynamic> body) =>
+      _api.createDelivery(token, body);
+  Future<void> updateDeliveryStatus(
+    String token,
+    String number,
+    String status,
+  ) => _api.updateDeliveryStatus(token, number, status);
+  Future<void> setConsignmentReturnCompany(
+    String token,
+    String code,
+    String company,
+  ) => _api.setConsignmentReturnCompany(token, code, company);
+  Future<void> updatePayStatus(String token, String number, String status) =>
+      _api.updatePayStatus(token, number, status);
+  Future<void> createReceipt(String token, Map<String, dynamic> body) =>
+      _api.createReceipt(token, body);
+  Future<void> createRefund(String token, String payNumber) =>
+      _api.createRefund(token, payNumber);
+  Future<void> createCase(String token, Map<String, dynamic> body) =>
+      _api.createCase(token, body);
+  Future<void> createProductCompany(String token, Map<String, dynamic> body) =>
+      _api.createProductCompany(token, body);
+  Future<void> createDeliveryCompany(String token, Map<String, dynamic> body) =>
+      _api.createDeliveryCompany(token, body);
+  Future<void> createDiscard(String token, String productCode) =>
+      _api.createDiscard(token, productCode);
+  Future<void> updateCase(
+    String token,
+    String code,
+    Map<String, dynamic> body,
+  ) => _api.updateCase(token, code, body);
+  Future<void> updateProductCompany(String token, String code, String name) =>
+      _api.updateProductCompany(token, code, name);
+  Future<void> updateDeliveryCompany(String token, String code, String name) =>
+      _api.updateDeliveryCompany(token, code, name);
+  Future<void> cancelReceive(String token, String number) =>
+      _api.cancelReceive(token, number);
+  Future<void> cancelReceipt(String token, String number) =>
+      _api.cancelReceipt(token, number);
 }

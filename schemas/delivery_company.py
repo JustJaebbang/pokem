@@ -12,3 +12,8 @@ class DeliveryCompanyCreate(BaseModel):
 class DeliveryCompanyResponse(BaseModel):
     delivery_company_code: str
     delivery_company_name: str | None = None
+
+
+class DeliveryCompanyUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    delivery_company_name: str = Field(min_length=1, max_length=100)

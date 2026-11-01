@@ -178,6 +178,160 @@ class CompanyRecord {
   );
 }
 
+class ReturnRecord {
+  const ReturnRecord({
+    required this.number,
+    required this.inspectionCode,
+    required this.userId,
+    required this.status,
+    this.managerId,
+  });
+  final String number, inspectionCode, userId, status;
+  final String? managerId;
+  factory ReturnRecord.fromJson(Map<String, dynamic> json) => ReturnRecord(
+    number: json['return_no'] as String,
+    inspectionCode: json['inspect_inspect_code'] as String,
+    userId: json['user_user_id'] as String,
+    status: (json['return_status'] as String?) ?? '반환접수',
+    managerId: json['manager_manager_id'] as String?,
+  );
+}
+
+class DeliveryRecord {
+  const DeliveryRecord({
+    required this.number,
+    required this.status,
+    required this.userId,
+    required this.managerId,
+    required this.companyCode,
+    this.purchaseCode,
+    this.returnNumber,
+    this.productCode,
+    this.inspectionCode,
+    this.date,
+  });
+  final String number, status, userId, managerId, companyCode;
+  final String? purchaseCode, returnNumber, productCode, inspectionCode, date;
+  factory DeliveryRecord.fromJson(Map<String, dynamic> json) => DeliveryRecord(
+    number: json['delivery_no'] as String,
+    status: (json['delivery_status'] as String?) ?? '배송준비',
+    userId: json['user_user_id'] as String,
+    managerId: json['manager_manager_id'] as String,
+    companyCode: json['delivery_company_delivery_company_code'] as String,
+    purchaseCode: json['purchase_item_code'] as String?,
+    returnNumber: json['return_no'] as String?,
+    productCode: json['sell_product_sell_product_code'] as String?,
+    inspectionCode: json['inspect_inspect_code'] as String?,
+    date: json['delivery_date'] as String?,
+  );
+}
+
+class PayRecord {
+  const PayRecord({
+    required this.number,
+    required this.status,
+    required this.userId,
+    required this.managerId,
+    required this.requestNumber,
+    this.price,
+    this.date,
+  });
+  final String number, status, userId, managerId, requestNumber;
+  final int? price;
+  final String? date;
+  factory PayRecord.fromJson(Map<String, dynamic> json) => PayRecord(
+    number: json['pay_no'] as String,
+    status: json['pay_status'] as String,
+    userId: json['user_user_id'] as String,
+    managerId: json['manager_manager_id'] as String,
+    requestNumber: json['inspection_request_inspection_request_no'] as String,
+    price: (json['pay_price'] as num?)?.toInt(),
+    date: json['pay_date'] as String?,
+  );
+}
+
+class ReceiptRecord {
+  const ReceiptRecord({
+    required this.number,
+    required this.payNumber,
+    required this.productCode,
+    required this.userId,
+    required this.managerId,
+    this.amount,
+    this.date,
+  });
+  final String number, payNumber, productCode, userId, managerId;
+  final int? amount;
+  final String? date;
+  factory ReceiptRecord.fromJson(Map<String, dynamic> json) => ReceiptRecord(
+    number: json['receipt_no'] as String,
+    payNumber: json['pay_pay_no'] as String,
+    productCode: json['sell_product_sell_product_code'] as String,
+    userId: json['user_user_id'] as String,
+    managerId: json['manager_manager_id'] as String,
+    amount: (json['receipt_amount'] as num?)?.toInt(),
+    date: json['receipt_date'] as String?,
+  );
+}
+
+class RefundRecord {
+  const RefundRecord({
+    required this.number,
+    required this.payNumber,
+    required this.userId,
+    required this.managerId,
+    this.price,
+    this.date,
+  });
+  final String number, payNumber, userId, managerId;
+  final int? price;
+  final String? date;
+  factory RefundRecord.fromJson(Map<String, dynamic> json) => RefundRecord(
+    number: json['deposit_refund_no'] as String,
+    payNumber: json['pay_pay_no'] as String,
+    userId: json['user_user_id'] as String,
+    managerId: json['manager_manager_id'] as String,
+    price: (json['deposit_refund_price'] as num?)?.toInt(),
+    date: json['deposit_refund_date'] as String?,
+  );
+}
+
+class DiscardRecord {
+  const DiscardRecord({
+    required this.productCode,
+    required this.managerId,
+    this.date,
+  });
+  final String productCode, managerId;
+  final String? date;
+  factory DiscardRecord.fromJson(Map<String, dynamic> json) => DiscardRecord(
+    productCode: json['sell_product_sell_product_code'] as String,
+    managerId: json['manager_manager_id'] as String,
+    date: json['discard_date'] as String?,
+  );
+}
+
+class PurchaseRecord {
+  const PurchaseRecord({
+    required this.code,
+    required this.userId,
+    required this.productCode,
+    required this.status,
+    this.date,
+    this.title,
+  });
+  final String code, userId, productCode, status;
+  final String? date, title;
+  factory PurchaseRecord.fromJson(Map<String, dynamic> json) => PurchaseRecord(
+    code: json['purchase_item_code'] as String,
+    userId: json['user_user_id'] as String,
+    productCode: json['sell_product_sell_product_code'] as String,
+    status: (json['purchase_item_status'] as String?) ?? '거래중',
+    date: json['purchase_item_date'] as String?,
+    title: json['sell_product_title'] as String?,
+  );
+}
+
 class ManagerDashboard {
   const ManagerDashboard({
     required this.requests,
@@ -189,6 +343,13 @@ class ManagerDashboard {
     required this.cases,
     required this.productCompanies,
     required this.deliveryCompanies,
+    required this.returns,
+    required this.deliveries,
+    required this.pays,
+    required this.receipts,
+    required this.refunds,
+    required this.discards,
+    required this.purchases,
   });
   final List<InspectionRequest> requests;
   final List<InspectionItem> inspections;
@@ -198,12 +359,26 @@ class ManagerDashboard {
   final List<ReceiveRecord> receives;
   final List<CaseRecord> cases;
   final List<CompanyRecord> productCompanies, deliveryCompanies;
+  final List<ReturnRecord> returns;
+  final List<DeliveryRecord> deliveries;
+  final List<PayRecord> pays;
+  final List<ReceiptRecord> receipts;
+  final List<RefundRecord> refunds;
+  final List<DiscardRecord> discards;
+  final List<PurchaseRecord> purchases;
   int countStatus(String status) =>
       inspections.where((item) => item.status == status).length;
   int get unassignedRequests =>
       requests.where((item) => item.managerId == null).length;
   int get pendingProposals =>
       proposals.where((item) => item.status == '대기').length;
+  int get unassignedReturns =>
+      returns.where((item) => item.managerId == null).length;
+  int receivedAmount(String orderNumber) => receives
+      .where((item) => item.orderNumber == orderNumber)
+      .fold(0, (sum, item) => sum + (item.amount ?? 0));
+  int remainingAmount(OrderRecord order) =>
+      ((order.amount ?? 0) - receivedAmount(order.number)).clamp(0, 2147483647);
   List<InspectionItem> get consignmentCandidates {
     final registered = consignments.map((item) => item.inspectionCode).toSet();
     return inspections

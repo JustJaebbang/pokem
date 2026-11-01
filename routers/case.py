@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from database import get_db
 from dependencies import get_current_manager
-from schemas.case import CaseCreate, CaseResponse
+from schemas.case import CaseCreate, CaseResponse, CaseUpdate
 from services import case_service
 
 # get_current_manager는 상위 권한인 director도 허용한다.
@@ -29,3 +29,8 @@ def get_case_code(case_code: str = Path(min_length=1, max_length=45), db=Depends
     if case is None:
         raise HTTPException(status_code=404, detail="케이스를 찾을 수 없습니다.")
     return case
+
+
+@router.patch("/{case_code}", response_model=CaseResponse)
+def update_case(case_code: str, request: CaseUpdate, db=Depends(get_db)):
+    return case_service.update_case(db, case_code, request)

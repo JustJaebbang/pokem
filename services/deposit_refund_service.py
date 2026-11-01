@@ -86,6 +86,7 @@ def create_deposit_refund(db, request: DepositRefundCreate) -> DepositRefundResp
                     refund.manager_manager_id, refund.pay_pay_no,
                 ),
             )
+            # 한 결제에서 검수가 나뉘어 끝나면 여러 차례 환급될 수 있으므로 결제완료 상태는 유지한다.
         db.commit()
         return refund
     except IntegrityError as exc:

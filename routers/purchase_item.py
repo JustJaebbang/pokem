@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from database import get_db
-from dependencies import get_current_account, get_current_user, ensure_self, ensure_account_access, resolve_user_id
+from dependencies import get_current_account, get_current_user, get_current_manager, ensure_self, ensure_account_access, resolve_user_id
 from schemas.purchase_item import PurchaseItemCreate, PurchaseItemRequest, PurchaseItemResponse, PurchaseItemDetailResponse, PurchaseItemConfirmResponse
 from services import purchase_item_service
 
@@ -20,6 +20,17 @@ def create_purchase_item(purchase: PurchaseItemRequest, db=Depends(get_db), curr
 def get_purchase_item(user_id: str | None = None, db=Depends(get_db), current=Depends(get_current_account)):
     user_id = resolve_user_id(current, user_id)
     return purchase_item_service.get_purchase_item(db, user_id)
+
+
+# 동적 /{purchase_item_code}보다 먼저 선언해 "manager"가 구매코드로 해석되지 않게 한다.
+@router.get("/manager/all", response_model=list[PurchaseItemDetailResponse])
+def get_purchase_items_for_manager(
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db=Depends(get_db),
+    manager=Depends(get_current_manager),
+):
+    return purchase_item_service.get_purchase_items_for_manager(db, limit, offset)
 
 
 @router.get("/{purchase_item_code}", response_model=PurchaseItemDetailResponse)

@@ -1,3 +1,4 @@
+from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
@@ -11,7 +12,7 @@ class PayUpdate(BaseModel):
     # 금액은 수량으로 자동 계산하므로 상태만 수정한다.
     model_config = ConfigDict(extra="forbid")
 
-    pay_status: str | None = Field(default=None, min_length=1, max_length=45, pattern=r"\S")
+    pay_status: Literal["결제대기", "결제완료", "결제취소", "환급완료"] | None = None
 
     @model_validator(mode="after")
     def validate_changes(self):

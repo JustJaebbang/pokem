@@ -36,3 +36,8 @@ def get_receipt(
     if receipt is None:
         raise HTTPException(status_code=404, detail="접수 내역을 찾을 수 없습니다.")
     return receipt
+
+
+@router.delete("/{receipt_no}", response_model=ReceiptResponse)
+def cancel_receipt(receipt_no: str, db=Depends(get_db), manager=Depends(get_current_manager_only)):
+    return receipt_service.cancel_receipt(db, receipt_no, manager.manager_id)

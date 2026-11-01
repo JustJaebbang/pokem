@@ -84,6 +84,34 @@ def create_receive(db, request: ReceiveCreate) -> ReceiveResponse:
         raise
 
 
+def cancel_receive(db, receive_no: str, manager_id: str) -> ReceiveResponse:
+    """오입고를 취소하고 증가시킨 케이스 재고를 같은 트랜잭션에서 복구한다."""
+    try:
+        db.begin()
+        with db.cursor() as cursor:
+            cursor.execute("SELECT * FROM receive WHERE receive_no=%s FOR UPDATE", (receive_no,))
+            row = cursor.fetchone()
+            if row is None:
+                raise HTTPException(status_code=404, detail="입고 내역을 찾을 수 없습니다.")
+            if row["manager_manager_id"] != manager_id:
+                raise HTTPException(status_code=403, detail="입고 담당자만 취소할 수 있습니다.")
+            cursor.execute("SELECT case_case_code FROM `order` WHERE order_no=%s FOR UPDATE", (row["order_order_no"],))
+            order = cursor.fetchone()
+            cursor.execute("SELECT case_stock FROM `case` WHERE case_code=%s FOR UPDATE", (order["case_case_code"],))
+            case = cursor.fetchone()
+            if case is None or case["case_stock"] < row["receive_amount"]:
+                raise HTTPException(status_code=409, detail="복구할 케이스 재고를 확인해주세요.")
+            result = ReceiveResponse(**row)
+            cursor.execute("DELETE FROM receive WHERE receive_no=%s", (receive_no,))
+            cursor.execute("UPDATE `case` SET case_stock=case_stock-%s WHERE case_code=%s",
+                           (row["receive_amount"], order["case_case_code"]))
+        db.commit()
+        return result
+    except Exception:
+        db.rollback()
+        raise
+
+
 def get_receives(db, limit: int = 20, offset: int = 0, manager_id: str | None = None) -> list[ReceiveResponse]:
     owner_filter = "WHERE manager_manager_id = %s" if manager_id is not None else ""
     params = (manager_id, limit, offset) if manager_id is not None else (limit, offset)

@@ -11,3 +11,4 @@ class ReturnResponse(BaseModel):
     inspect_inspect_code: str
     user_user_id: str
     manager_manager_id: str | None
+    return_status: str = "반환접수"

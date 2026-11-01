@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from database import get_db
 from dependencies import get_current_manager
-from schemas.product_company import ProductCompanyCreate, ProductCompanyResponse
+from schemas.product_company import ProductCompanyCreate, ProductCompanyResponse, ProductCompanyUpdate
 from services import product_company_service
 
 # 매니저와 상위 권한 director가 제조업체를 등록하고 조회한다.
@@ -31,3 +31,8 @@ def get_product_company_code(
     if company is None:
         raise HTTPException(status_code=404, detail="제조업체를 찾을 수 없습니다.")
     return company
+
+
+@router.patch("/{product_company_code}", response_model=ProductCompanyResponse)
+def update_product_company(product_company_code: str, request: ProductCompanyUpdate, db=Depends(get_db)):
+    return product_company_service.update_product_company(db, product_company_code, request)

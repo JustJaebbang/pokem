@@ -30,6 +30,7 @@ class ManagerApiService {
       final response = await switch (method) {
         'POST' => _client.post(uri, headers: headers, body: encodedBody),
         'PATCH' => _client.patch(uri, headers: headers, body: encodedBody),
+        'DELETE' => _client.delete(uri, headers: headers, body: encodedBody),
         _ => _client.get(uri, headers: headers),
       }.timeout(const Duration(seconds: 15));
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -128,4 +129,102 @@ class ManagerApiService {
 
   Future<void> createReceive(String token, Map<String, dynamic> body) =>
       _request(token, '/receive', method: 'POST', body: body);
+
+  Future<void> assignReturn(String token, String number) => _request(
+    token,
+    '/return/${Uri.encodeComponent(number)}/manager',
+    method: 'PATCH',
+    body: const {},
+  );
+
+  Future<void> createDelivery(String token, Map<String, dynamic> body) =>
+      _request(token, '/delivery', method: 'POST', body: body);
+
+  Future<void> updateDeliveryStatus(
+    String token,
+    String number,
+    String status,
+  ) => _request(
+    token,
+    '/delivery/${Uri.encodeComponent(number)}/status',
+    method: 'PATCH',
+    body: {'delivery_status': status},
+  );
+
+  Future<void> setConsignmentReturnCompany(
+    String token,
+    String code,
+    String company,
+  ) => _request(
+    token,
+    '/post_consign_item/${Uri.encodeComponent(code)}/return-company',
+    method: 'PATCH',
+    body: {'return_delivery_company_code': company},
+  );
+
+  Future<void> updatePayStatus(String token, String number, String status) =>
+      _request(
+        token,
+        '/pay/${Uri.encodeComponent(number)}',
+        method: 'PATCH',
+        body: {'pay_status': status},
+      );
+
+  Future<void> createReceipt(String token, Map<String, dynamic> body) =>
+      _request(token, '/receipt', method: 'POST', body: body);
+
+  Future<void> createRefund(String token, String payNumber) => _request(
+    token,
+    '/deposit_refund',
+    method: 'POST',
+    body: {'pay_pay_no': payNumber},
+  );
+
+  Future<void> createCase(String token, Map<String, dynamic> body) =>
+      _request(token, '/case', method: 'POST', body: body);
+  Future<void> createProductCompany(String token, Map<String, dynamic> body) =>
+      _request(token, '/product_company', method: 'POST', body: body);
+  Future<void> createDeliveryCompany(String token, Map<String, dynamic> body) =>
+      _request(token, '/delivery_company', method: 'POST', body: body);
+  Future<void> createDiscard(String token, String productCode) => _request(
+    token,
+    '/discard',
+    method: 'POST',
+    body: {'sell_product_sell_product_code': productCode},
+  );
+
+  Future<void> updateCase(
+    String token,
+    String code,
+    Map<String, dynamic> body,
+  ) => _request(
+    token,
+    '/case/${Uri.encodeComponent(code)}',
+    method: 'PATCH',
+    body: body,
+  );
+  Future<void> updateProductCompany(String token, String code, String name) =>
+      _request(
+        token,
+        '/product_company/${Uri.encodeComponent(code)}',
+        method: 'PATCH',
+        body: {'product_company_name': name},
+      );
+  Future<void> updateDeliveryCompany(String token, String code, String name) =>
+      _request(
+        token,
+        '/delivery_company/${Uri.encodeComponent(code)}',
+        method: 'PATCH',
+        body: {'delivery_company_name': name},
+      );
+  Future<void> cancelReceive(String token, String number) => _request(
+    token,
+    '/receive/${Uri.encodeComponent(number)}',
+    method: 'DELETE',
+  );
+  Future<void> cancelReceipt(String token, String number) => _request(
+    token,
+    '/receipt/${Uri.encodeComponent(number)}',
+    method: 'DELETE',
+  );
 }
