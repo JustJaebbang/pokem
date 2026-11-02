@@ -47,6 +47,18 @@ Map<String, Object?> inspectionRow(String status) => {
   'inspect_status': status,
   'user_user_id': 'collector',
 };
+final productRow = {
+  'sell_product_code': 'SELL-001',
+  'sell_product_serial_code': 'CARD-001',
+  'sell_product_title': '판매 중인 카드',
+  'sell_product_image': '',
+  'sell_product_contents': '상품 설명',
+  'sell_product_sell_price': 15000,
+  'sell_product_grade': 'A',
+  'sell_product_sell_status': '판매중',
+  'seller_user_id': 'inspection-owner',
+  'sale_type': 'consign',
+};
 
 void main() {
   test(
@@ -387,6 +399,117 @@ void main() {
     expect(find.byKey(const Key('selectConsignmentPhoto')), findsOneWidget);
     expect(find.text('상품 사진 선택'), findsOneWidget);
     expect(find.text('상품 이미지 URL'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('selling products tab is between dashboard and requests', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = ManagerRepository(
+      ManagerApiService(
+        MockClient((request) async {
+          if (request.url.path == '/sell_product') {
+            expect(request.url.queryParameters['status'], '판매중');
+            expect(request.url.queryParameters['sort'], 'newest');
+            return fixtures.response([productRow]);
+          }
+          return fixtures.response([]);
+        }),
+        baseUrl: 'http://test.local',
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          loginVmProvider.overrideWith(ManagerLogin.new),
+          managerRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const PokemApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final dashboardTop = tester.getTopLeft(find.text('통합')).dy;
+    final productsTop = tester.getTopLeft(find.text('판매상품')).dy;
+    final requestsTop = tester.getTopLeft(find.text('검수신청')).dy;
+    expect(productsTop, greaterThan(dashboardTop));
+    expect(productsTop, lessThan(requestsTop));
+
+    await tester.tap(find.text('판매상품'));
+    await tester.pumpAndSettle();
+    expect(find.text('판매 중 상품'), findsOneWidget);
+    expect(find.text('판매 중인 카드'), findsOneWidget);
+    await tester.tap(find.text('판매 중인 카드'));
+    await tester.pumpAndSettle();
+    expect(find.text('판매상품 상세'), findsOneWidget);
+    expect(find.text('15000원'), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text('inspection-owner'),
+      120,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('managerDetail')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(find.text('inspection-owner'), findsOneWidget);
+    expect(find.text('대리판매'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('manager menus scroll when destinations exceed the viewport', (
+    tester,
+  ) async {
+    Future<void> pumpAt(Size size) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      final repository = ManagerRepository(
+        ManagerApiService(
+          MockClient((_) async => fixtures.response([])),
+          baseUrl: 'http://test.local',
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            loginVmProvider.overrideWith(ManagerLogin.new),
+            managerRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: const PokemApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await pumpAt(const Size(800, 420));
+    final vertical = tester.state<ScrollableState>(
+      find
+          .descendant(
+            of: find.byKey(const Key('managerNavigationScroll')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(vertical.position.maxScrollExtent, greaterThan(0));
+
+    await pumpAt(const Size(600, 960));
+    final horizontal = tester.state<ScrollableState>(
+      find
+          .descendant(
+            of: find.byKey(const Key('managerBottomNavigationScroll')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(horizontal.position.maxScrollExtent, greaterThan(0));
     expect(tester.takeException(), isNull);
   });
 

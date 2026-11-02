@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/model/manager/manager_dashboard.dart';
 import 'package:pokem_app/model/products/product_photo.dart';
+import 'package:pokem_app/view/products/widgets/product_image.dart';
 import 'package:pokem_app/vm/auth/login_vm.dart';
 import 'package:pokem_app/vm/manager/manager_dashboard_vm.dart';
 
@@ -11,6 +12,7 @@ class ManagerDashboardView extends ConsumerWidget {
 
   static const _titles = [
     '통합 대시보드',
+    '판매 중 상품',
     '검수신청 접수',
     '검수 작업',
     '대리판매 등록',
@@ -80,42 +82,21 @@ class ManagerDashboardView extends ConsumerWidget {
       bottomNavigationBar: MediaQuery.sizeOf(context).width < 720
           ? Builder(
               builder: (context) {
-                const compact = [
-                  ManagerSection.dashboard,
-                  ManagerSection.inspections,
-                  ManagerSection.consignments,
-                  ManagerSection.returnsDelivery,
-                  ManagerSection.settlements,
-                ];
-                final selected = compact.indexOf(state.section);
-                return NavigationBar(
-                  labelBehavior:
-                      NavigationDestinationLabelBehavior.onlyShowSelected,
-                  selectedIndex: selected < 0 ? 0 : selected,
-                  onDestinationSelected: (index) =>
-                      vm.selectSection(compact[index]),
-                  destinations: const [
-                    NavigationDestination(
-                      icon: Icon(Icons.dashboard_outlined),
-                      label: '통합',
+                const itemWidth = 88.0;
+                return SingleChildScrollView(
+                  key: const Key('managerBottomNavigationScroll'),
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: ManagerSection.values.length * itemWidth,
+                    child: NavigationBar(
+                      labelBehavior:
+                          NavigationDestinationLabelBehavior.alwaysShow,
+                      selectedIndex: state.section.index,
+                      onDestinationSelected: (index) =>
+                          vm.selectSection(ManagerSection.values[index]),
+                      destinations: _compactDestinations,
                     ),
-                    NavigationDestination(
-                      icon: Icon(Icons.fact_check_outlined),
-                      label: '검수',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.storefront_outlined),
-                      label: '판매',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.local_shipping_outlined),
-                      label: '물류',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.payments_outlined),
-                      label: '정산',
-                    ),
-                  ],
+                  ),
                 );
               },
             )
@@ -123,54 +104,95 @@ class ManagerDashboardView extends ConsumerWidget {
     );
   }
 
+  static const _compactDestinations = [
+    NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: '통합'),
+    NavigationDestination(icon: Icon(Icons.sell_outlined), label: '판매상품'),
+    NavigationDestination(icon: Icon(Icons.inbox_outlined), label: '검수신청'),
+    NavigationDestination(icon: Icon(Icons.fact_check_outlined), label: '검수작업'),
+    NavigationDestination(icon: Icon(Icons.storefront_outlined), label: '대리판매'),
+    NavigationDestination(icon: Icon(Icons.description_outlined), label: '품의'),
+    NavigationDestination(
+      icon: Icon(Icons.inventory_2_outlined),
+      label: '발주/수주',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.local_shipping_outlined),
+      label: '반환/배송',
+    ),
+    NavigationDestination(icon: Icon(Icons.payments_outlined), label: '결제/정산'),
+    NavigationDestination(icon: Icon(Icons.settings_outlined), label: '기초정보'),
+    NavigationDestination(icon: Icon(Icons.delete_outline), label: '폐기'),
+  ];
+
   Widget _navigationRail(ManagerDashboardState state, ManagerDashboardVm vm) =>
-      NavigationRail(
-        selectedIndex: state.section.index,
-        labelType: NavigationRailLabelType.all,
-        onDestinationSelected: (index) =>
-            vm.selectSection(ManagerSection.values[index]),
-        destinations: const [
-          NavigationRailDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            label: Text('통합'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(Icons.inbox_outlined),
-            label: Text('검수신청'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(Icons.fact_check_outlined),
-            label: Text('검수 작업'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(Icons.storefront_outlined),
-            label: Text('대리판매'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(Icons.description_outlined),
-            label: Text('품의'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(Icons.inventory_2_outlined),
-            label: Text('발주/수주'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(Icons.local_shipping_outlined),
-            label: Text('반환/배송'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(Icons.payments_outlined),
-            label: Text('결제/정산'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(Icons.settings_outlined),
-            label: Text('기초정보'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(Icons.delete_outline),
-            label: Text('폐기'),
-          ),
-        ],
+      SizedBox(
+        width: 112,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final destinationsHeight = ManagerSection.values.length * 64.0 + 24;
+            final railHeight = constraints.maxHeight > destinationsHeight
+                ? constraints.maxHeight
+                : destinationsHeight;
+            return SingleChildScrollView(
+              key: const Key('managerNavigationScroll'),
+              child: SizedBox(
+                height: railHeight,
+                child: NavigationRail(
+                  selectedIndex: state.section.index,
+                  labelType: NavigationRailLabelType.all,
+                  onDestinationSelected: (index) =>
+                      vm.selectSection(ManagerSection.values[index]),
+                  destinations: const [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.dashboard_outlined),
+                      label: Text('통합'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.sell_outlined),
+                      label: Text('판매상품'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.inbox_outlined),
+                      label: Text('검수신청'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.fact_check_outlined),
+                      label: Text('검수 작업'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.storefront_outlined),
+                      label: Text('대리판매'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.description_outlined),
+                      label: Text('품의'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.inventory_2_outlined),
+                      label: Text('발주/수주'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.local_shipping_outlined),
+                      label: Text('반환/배송'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.payments_outlined),
+                      label: Text('결제/정산'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.settings_outlined),
+                      label: Text('기초정보'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.delete_outline),
+                      label: Text('폐기'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       );
 
   Widget _content(
@@ -310,6 +332,7 @@ class ManagerDashboardView extends ConsumerWidget {
 
   String _subtitle(ManagerSection section) => switch (section) {
     ManagerSection.dashboard => '검수부터 발주·수주까지 오늘의 업무를 확인하세요.',
+    ManagerSection.products => '현재 판매 중인 전체 상품과 등록 정보를 확인합니다.',
     ManagerSection.requests => '접수된 검수신청을 승인하고 실물 카드를 등록합니다.',
     ManagerSection.inspections => '검수를 시작하고 등급과 판정 사유를 기록합니다.',
     ManagerSection.consignments => '대리판매를 선택한 검수 완료 상품을 판매 등록합니다.',
@@ -528,6 +551,17 @@ class ManagerDashboardView extends ConsumerWidget {
     final data = state.data!;
     final rows = <_RowData>[];
     switch (state.section) {
+      case ManagerSection.products:
+        for (final item in data.products) {
+          rows.add(
+            _RowData(
+              item.code,
+              item.title,
+              '${item.code} · 등급 ${item.grade}',
+              '${item.price}원',
+            ),
+          );
+        }
       case ManagerSection.requests:
         for (final item in data.requests) {
           final registered = data.inspections
@@ -820,6 +854,35 @@ class ManagerDashboardView extends ConsumerWidget {
     final enabled = !state.loading && !state.submitting;
     final children = <Widget>[];
     switch (state.section) {
+      case ManagerSection.products:
+        final item = data.products
+            .where((value) => value.code == state.selectedId)
+            .firstOrNull;
+        if (item == null) break;
+        children.addAll([
+          _heading(context, '판매상품 상세'),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              height: 240,
+              child: ProductImage(url: item.image, fit: BoxFit.contain),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _info('상품코드', item.code),
+          _info('카탈로그', item.serialCode),
+          _info('상품명', item.title),
+          _info('가격', '${item.price}원'),
+          _info('등급', item.grade),
+          _info('상태', item.status),
+          _info('판매자', item.sellerId ?? '-'),
+          _info('등록유형', switch (item.saleType) {
+            'direct' => '유저판매',
+            'consign' => '대리판매',
+            _ => '-',
+          }),
+          _info('설명', item.description),
+        ]);
       case ManagerSection.requests:
         final item = data.requests
             .where((value) => value.number == state.selectedId)

@@ -17,11 +17,15 @@ class DB:
         CREATE TABLE cardinfo(cardinfo_serial_code TEXT, cardinfo_category TEXT, cardinfo_brand TEXT);
         INSERT INTO cardinfo VALUES('SV_A_1','포켓몬','A'),('SV-A2','포켓몬','B'),('SV_B_4','유희왕','A'),('SV_B_3','포켓몬','A');
         CREATE TABLE sell_product(sell_product_code TEXT PRIMARY KEY,sell_product_serial_code TEXT,seq INTEGER,sell_product_title TEXT,sell_product_image TEXT,sell_product_contents TEXT,sell_product_sell_price INTEGER,sell_product_grade TEXT,sell_product_sell_status TEXT);
-        CREATE TABLE post_item(sell_product_sell_product_code TEXT,post_item_post_date TEXT);
-        CREATE TABLE post_consign_item(sell_product_sell_product_code TEXT,post_consign_item_date TEXT);
+        CREATE TABLE post_item(sell_product_sell_product_code TEXT,post_item_post_date TEXT,user_user_id TEXT);
+        CREATE TABLE post_consign_item(sell_product_sell_product_code TEXT,post_consign_item_date TEXT,inspect_inspect_code TEXT);
+        CREATE TABLE inspect(inspect_code TEXT,inspect_requested_no TEXT);
+        CREATE TABLE inspection_request(inspection_request_no TEXT,user_user_id TEXT);
         INSERT INTO sell_product VALUES('P1','SV_A_1',1,'피카츄 100% 카드','','깨끗한 카드',10000,'Unrank','판매중'),('P2','SV-A2',2,'리자몽','','설명',5000,'Unrank','판매중'),('P3','SV_B_3',3,'피카츄','','설명',20000,'Unrank','거래완료'),('P4','SV_B_4',4,'특가!','','설명',5000,'Unrank','판매중'),('P5','SV_B_5',5,'피카츄','','설명',4000,'Unrank','거래중');
-        INSERT INTO post_item VALUES('P1','2026-10-30 10:00:00'),('P2','2026-10-31T10:00:00+09:00'),('P3','2026-10-31T11:00:00+09:00'),('P4','2026-10-30 12:00:00'),('P5','2026-10-31 13:00:00');
-        INSERT INTO post_consign_item VALUES('P4','2026-10-31T12:00:00+09:00');
+        INSERT INTO post_item VALUES('P1','2026-10-30 10:00:00','sellerA'),('P3','2026-10-31T11:00:00+09:00','sellerB'),('P4','2026-10-30 12:00:00','sellerC'),('P5','2026-10-31 13:00:00','sellerD');
+        INSERT INTO post_consign_item VALUES('P2','2026-10-31T10:00:00+09:00','I2'),('P4','2026-10-31T12:00:00+09:00','I4');
+        INSERT INTO inspect VALUES('I2','R2'),('I4','R4');
+        INSERT INTO inspection_request VALUES('R2','consignSeller'),('R4','duplicateSeller');
         """)
     def cursor(self):return Cursor(self.conn)
 class ProductBrowseTests(unittest.TestCase):
@@ -35,6 +39,13 @@ class ProductBrowseTests(unittest.TestCase):
     def test_filter_before_pagination_and_no_duplicate_registration_rows(self):
         self.assertEqual(self.codes(status='판매중',sort='newest',limit=1,offset=1),['P2'])
         self.assertEqual(len(self.codes(status='판매중',sort='newest')),3)
+    def test_list_exposes_direct_and_consignment_actual_sellers(self):
+        rows=get_sell_product(self.db,status='판매중',sort='newest')
+        by_code={row.sell_product_code:row for row in rows}
+        self.assertEqual((by_code['P1'].seller_user_id,by_code['P1'].sale_type),('sellerA','direct'))
+        self.assertEqual((by_code['P2'].seller_user_id,by_code['P2'].sale_type),('consignSeller','consign'))
+        self.assertIsNone(by_code['P4'].seller_user_id)
+        self.assertIsNone(by_code['P4'].sale_type)
     def test_keyword_and_literal_wildcards_are_parameterized(self):
         for query,expected in [('피카츄',['P1']),('100%',['P1']),('SV_A_',['P1']),('특가!',['P4']),('깨끗한',['P1']), ("' OR 1=1 --",[])]:
             with self.subTest(query=query):self.assertEqual(self.codes(status='판매중',q=query),expected)

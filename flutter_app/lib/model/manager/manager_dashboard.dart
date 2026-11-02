@@ -1,3 +1,5 @@
+import 'package:pokem_app/model/products/product.dart';
+
 class InspectionRequest {
   const InspectionRequest({
     required this.number,
@@ -334,6 +336,7 @@ class PurchaseRecord {
 
 class ManagerDashboard {
   const ManagerDashboard({
+    required this.products,
     required this.requests,
     required this.inspections,
     required this.consignments,
@@ -351,6 +354,7 @@ class ManagerDashboard {
     required this.discards,
     required this.purchases,
   });
+  final List<Product> products;
   final List<InspectionRequest> requests;
   final List<InspectionItem> inspections;
   final List<ConsignmentRecord> consignments;

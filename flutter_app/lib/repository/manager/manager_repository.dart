@@ -1,4 +1,5 @@
 import 'package:pokem_app/model/manager/manager_dashboard.dart';
+import 'package:pokem_app/model/products/product.dart';
 import 'package:pokem_app/service/manager/manager_api_service.dart';
 
 class ManagerRepository {
@@ -26,6 +27,10 @@ class ManagerRepository {
   Future<ManagerDashboard> load(String token) async {
     try {
       final results = await Future.wait([
+        _allPages(
+          token,
+          '/sell_product?status=${Uri.encodeComponent('판매중')}&sort=newest',
+        ),
         _api.list(token, '/inspection_request'),
         _api.list(token, '/inspect'),
         _api.list(token, '/post_consign_item'),
@@ -44,22 +49,23 @@ class ManagerRepository {
         _allPages(token, '/purchase_item/manager/all'),
       ]);
       return ManagerDashboard(
-        requests: results[0].map(InspectionRequest.fromJson).toList(),
-        inspections: results[1].map(InspectionItem.fromJson).toList(),
-        consignments: results[2].map(ConsignmentRecord.fromJson).toList(),
-        proposals: results[3].map(ProposalRecord.fromJson).toList(),
-        orders: results[4].map(OrderRecord.fromJson).toList(),
-        receives: results[5].map(ReceiveRecord.fromJson).toList(),
-        cases: results[6].map(CaseRecord.fromJson).toList(),
-        productCompanies: results[7].map(CompanyRecord.product).toList(),
-        deliveryCompanies: results[8].map(CompanyRecord.delivery).toList(),
-        returns: results[9].map(ReturnRecord.fromJson).toList(),
-        deliveries: results[10].map(DeliveryRecord.fromJson).toList(),
-        pays: results[11].map(PayRecord.fromJson).toList(),
-        receipts: results[12].map(ReceiptRecord.fromJson).toList(),
-        refunds: results[13].map(RefundRecord.fromJson).toList(),
-        discards: results[14].map(DiscardRecord.fromJson).toList(),
-        purchases: results[15].map(PurchaseRecord.fromJson).toList(),
+        products: results[0].map(Product.fromJson).toList(),
+        requests: results[1].map(InspectionRequest.fromJson).toList(),
+        inspections: results[2].map(InspectionItem.fromJson).toList(),
+        consignments: results[3].map(ConsignmentRecord.fromJson).toList(),
+        proposals: results[4].map(ProposalRecord.fromJson).toList(),
+        orders: results[5].map(OrderRecord.fromJson).toList(),
+        receives: results[6].map(ReceiveRecord.fromJson).toList(),
+        cases: results[7].map(CaseRecord.fromJson).toList(),
+        productCompanies: results[8].map(CompanyRecord.product).toList(),
+        deliveryCompanies: results[9].map(CompanyRecord.delivery).toList(),
+        returns: results[10].map(ReturnRecord.fromJson).toList(),
+        deliveries: results[11].map(DeliveryRecord.fromJson).toList(),
+        pays: results[12].map(PayRecord.fromJson).toList(),
+        receipts: results[13].map(ReceiptRecord.fromJson).toList(),
+        refunds: results[14].map(RefundRecord.fromJson).toList(),
+        discards: results[15].map(DiscardRecord.fromJson).toList(),
+        purchases: results[16].map(PurchaseRecord.fromJson).toList(),
       );
     } on TypeError {
       throw const ManagerException('매니저 응답 형식을 확인해주세요.');

@@ -140,14 +140,31 @@ def get_sell_product(db, *, q=None, status=None, sort=None, limit=None, offset=0
     if sort not in (None,'newest','price_asc','price_desc'):
         raise HTTPException(status_code=422,detail='정렬 조건을 확인해주세요.')
     sql = """
-        SELECT sp.* FROM sell_product sp
+        SELECT sp.*, registrations.seller_user_id, registrations.sale_type
+        FROM sell_product sp
         LEFT JOIN (
-          SELECT product_code, MAX(REPLACE(SUBSTRING(registered_at,1,19),'T',' ')) AS posted_at FROM (
-            SELECT sell_product_sell_product_code AS product_code, post_item_post_date AS registered_at FROM post_item
+          SELECT product_code,
+                 MAX(REPLACE(SUBSTRING(registered_at,1,19),'T',' ')) AS posted_at,
+                 CASE WHEN COUNT(*) = 1 THEN MAX(seller_user_id) END AS seller_user_id,
+                 CASE WHEN COUNT(*) = 1 THEN MAX(registration_type) END AS sale_type
+          FROM (
+            SELECT sell_product_sell_product_code AS product_code,
+                   post_item_post_date AS registered_at,
+                   user_user_id AS seller_user_id,
+                   'direct' AS registration_type
+            FROM post_item
             UNION ALL
-            SELECT sell_product_sell_product_code, post_consign_item_date FROM post_consign_item
-          ) registrations GROUP BY product_code
-        ) dates ON dates.product_code=sp.sell_product_code
+            SELECT pci.sell_product_sell_product_code,
+                   pci.post_consign_item_date,
+                   ir.user_user_id,
+                   'consign' AS registration_type
+            FROM post_consign_item pci
+            LEFT JOIN inspect i ON i.inspect_code = pci.inspect_inspect_code
+            LEFT JOIN inspection_request ir
+                   ON ir.inspection_request_no = i.inspect_requested_no
+          ) registration_rows
+          GROUP BY product_code
+        ) registrations ON registrations.product_code=sp.sell_product_code
     """
     conditions=[]
     params=[]
@@ -171,7 +188,7 @@ def get_sell_product(db, *, q=None, status=None, sort=None, limit=None, offset=0
         params.extend(codes)
     if conditions: sql+=' WHERE '+' AND '.join(conditions)
     order={'price_asc':'sp.sell_product_sell_price ASC,','price_desc':'sp.sell_product_sell_price DESC,'}.get(sort,'')
-    sql+=' ORDER BY '+order+' dates.posted_at DESC, sp.sell_product_code DESC'
+    sql+=' ORDER BY '+order+' registrations.posted_at DESC, sp.sell_product_code DESC'
     if limit is not None:
         sql+=' LIMIT %s OFFSET %s';params.extend([limit,offset])
     with db.cursor() as cursor:
