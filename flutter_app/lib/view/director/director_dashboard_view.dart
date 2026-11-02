@@ -1161,9 +1161,11 @@ class DirectorDashboardView extends ConsumerWidget {
     String title,
   ) async {
     final form = GlobalKey<FormState>();
-    final controllers = <String, TextEditingController>{};
+    // 다이얼로그 닫기 애니메이션 중 Controller를 먼저 dispose하면 입력 필드가
+    // 폐기된 Controller를 참조할 수 있으므로 값만 보관하는 방식으로 구성한다.
+    final fieldValues = <String, String>{};
     void add(String name, [String value = '']) {
-      controllers[name] = TextEditingController(text: value);
+      fieldValues[name] = value;
     }
 
     switch (type) {
@@ -1224,12 +1226,13 @@ class DirectorDashboardView extends ConsumerWidget {
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: controllers.entries
+                children: fieldValues.entries
                     .map(
                       (entry) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: TextFormField(
-                          controller: entry.value,
+                          initialValue: entry.value,
+                          onChanged: (value) => fieldValues[entry.key] = value,
                           keyboardType: numericFields.contains(entry.key)
                               ? TextInputType.number
                               : TextInputType.text,
@@ -1267,8 +1270,8 @@ class DirectorDashboardView extends ConsumerWidget {
             onPressed: () {
               if (form.currentState?.validate() != true) return;
               final values = <String, dynamic>{};
-              for (final entry in controllers.entries) {
-                final value = entry.value.text.trim();
+              for (final entry in fieldValues.entries) {
+                final value = entry.value.trim();
                 if (numericFields.contains(entry.key)) {
                   if (value.isNotEmpty) values[entry.key] = int.parse(value);
                 } else if (value.isNotEmpty) {
@@ -1282,9 +1285,6 @@ class DirectorDashboardView extends ConsumerWidget {
         ],
       ),
     );
-    for (final controller in controllers.values) {
-      controller.dispose();
-    }
     if (result == null || !context.mounted) return;
     final path = switch (type) {
       'case' => '/case',
@@ -1397,11 +1397,9 @@ class DirectorDashboardView extends ConsumerWidget {
     WidgetRef ref,
     DirectorSettings settings,
   ) async {
-    final stock = TextEditingController(text: '${settings.lowStockThreshold}');
-    final delay = TextEditingController(text: '${settings.deliveryDelayDays}');
-    final price = TextEditingController(
-      text: '${settings.inspectionUnitPrice}',
-    );
+    var stock = '${settings.lowStockThreshold}';
+    var delay = '${settings.deliveryDelayDays}';
+    var price = '${settings.inspectionUnitPrice}';
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1411,18 +1409,21 @@ class DirectorDashboardView extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: stock,
+              TextFormField(
+                initialValue: stock,
+                onChanged: (value) => stock = value,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: '재고 부족 기준 (개 이하)'),
               ),
-              TextField(
-                controller: delay,
+              TextFormField(
+                initialValue: delay,
+                onChanged: (value) => delay = value,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: '배송 지연 기준 (일)'),
               ),
-              TextField(
-                controller: price,
+              TextFormField(
+                initialValue: price,
+                onChanged: (value) => price = value,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: '검수신청 1개당 가격 (원)'),
               ),
@@ -1445,9 +1446,9 @@ class DirectorDashboardView extends ConsumerWidget {
     );
     if (saved == true && context.mounted) {
       final values = [
-        int.tryParse(stock.text),
-        int.tryParse(delay.text),
-        int.tryParse(price.text),
+        int.tryParse(stock),
+        int.tryParse(delay),
+        int.tryParse(price),
       ];
       if (values.any((value) => value == null) ||
           values[0]! < 0 ||
@@ -1466,9 +1467,6 @@ class DirectorDashboardView extends ConsumerWidget {
             );
       }
     }
-    stock.dispose();
-    delay.dispose();
-    price.dispose();
   }
 
   Future<void> _managerDialog(
@@ -1477,12 +1475,14 @@ class DirectorDashboardView extends ConsumerWidget {
     DirectorDashboard data, {
     DirectorManager? manager,
   }) async {
-    final id = TextEditingController(text: manager?.id ?? '');
-    final password = TextEditingController();
-    final name = TextEditingController(text: manager?.name ?? '');
-    final phone = TextEditingController(text: manager?.phone ?? '');
-    final email = TextEditingController(text: manager?.email ?? '');
-    final department = TextEditingController(text: manager?.department ?? '');
+    final fields = <String, String>{
+      'id': manager?.id ?? '',
+      'password': '',
+      'name': manager?.name ?? '',
+      'phone': manager?.phone ?? '',
+      'email': manager?.email ?? '',
+      'department': manager?.department ?? '',
+    };
     var active = manager?.active ?? true;
     String? replacement;
     final result = await showDialog<Map<String, dynamic>>(
@@ -1496,31 +1496,37 @@ class DirectorDashboardView extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(
-                    controller: id,
+                  TextFormField(
+                    initialValue: fields['id'],
+                    onChanged: (value) => fields['id'] = value,
                     enabled: manager == null,
                     decoration: const InputDecoration(labelText: '매니저 ID'),
                   ),
                   if (manager == null)
-                    TextField(
-                      controller: password,
+                    TextFormField(
+                      initialValue: fields['password'],
+                      onChanged: (value) => fields['password'] = value,
                       obscureText: true,
                       decoration: const InputDecoration(labelText: '비밀번호'),
                     ),
-                  TextField(
-                    controller: name,
+                  TextFormField(
+                    initialValue: fields['name'],
+                    onChanged: (value) => fields['name'] = value,
                     decoration: const InputDecoration(labelText: '이름'),
                   ),
-                  TextField(
-                    controller: department,
+                  TextFormField(
+                    initialValue: fields['department'],
+                    onChanged: (value) => fields['department'] = value,
                     decoration: const InputDecoration(labelText: '부서'),
                   ),
-                  TextField(
-                    controller: phone,
+                  TextFormField(
+                    initialValue: fields['phone'],
+                    onChanged: (value) => fields['phone'] = value,
                     decoration: const InputDecoration(labelText: '전화번호'),
                   ),
-                  TextField(
-                    controller: email,
+                  TextFormField(
+                    initialValue: fields['email'],
+                    onChanged: (value) => fields['email'] = value,
                     decoration: const InputDecoration(labelText: '이메일'),
                   ),
                   if (manager != null)
@@ -1560,22 +1566,22 @@ class DirectorDashboardView extends ConsumerWidget {
             FilledButton(
               onPressed: () {
                 if ([
-                      id.text,
-                      name.text,
-                      department.text,
-                      phone.text,
-                      email.text,
+                      fields['id']!,
+                      fields['name']!,
+                      fields['department']!,
+                      fields['phone']!,
+                      fields['email']!,
                     ].any((value) => value.trim().isEmpty) ||
-                    (manager == null && password.text.isEmpty)) {
+                    (manager == null && fields['password']!.isEmpty)) {
                   return;
                 }
                 Navigator.pop(context, {
-                  if (manager == null) 'manager_id': id.text.trim(),
-                  if (manager == null) 'manager_password': password.text,
-                  'manager_name': name.text.trim(),
-                  'manager_phone': phone.text.trim(),
-                  'manager_email': email.text.trim(),
-                  'manager_dept': department.text.trim(),
+                  if (manager == null) 'manager_id': fields['id']!.trim(),
+                  if (manager == null) 'manager_password': fields['password']!,
+                  'manager_name': fields['name']!.trim(),
+                  'manager_phone': fields['phone']!.trim(),
+                  'manager_email': fields['email']!.trim(),
+                  'manager_dept': fields['department']!.trim(),
                   if (manager != null) 'manager_active': active,
                   if (manager != null && !active && replacement != null)
                     'reassign_to_manager_id': replacement,
@@ -1594,9 +1600,6 @@ class DirectorDashboardView extends ConsumerWidget {
       } else {
         await vm.updateManager(manager.id, result);
       }
-    }
-    for (final controller in [id, password, name, phone, email, department]) {
-      controller.dispose();
     }
   }
 
