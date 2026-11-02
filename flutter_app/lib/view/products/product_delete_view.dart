@@ -52,7 +52,7 @@ class _ProductDeleteViewState extends ConsumerState<ProductDeleteView> {
                 const SizedBox(height: 24),
               ],
               const Text(
-                '삭제한 상품은 복구할 수 없습니다. 관심상품·채팅·거래 등 연결된 기록이 있으면 삭제할 수 없습니다.',
+                '삭제하면 판매가 취소되어 상품 목록과 내 상품 관리에서 제외됩니다. 거래중이거나 거래완료된 상품은 삭제할 수 없습니다.',
               ),
               if (state.error != null)
                 Padding(

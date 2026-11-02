@@ -104,6 +104,7 @@ class MypageMenu extends ConsumerWidget {
           ),
         if (mode == MypageMode.selling)
           ListTile(
+            leading: const Icon(Icons.cancel_outlined),
             title: const Text('취소 요청'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(

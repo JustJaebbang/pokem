@@ -127,7 +127,7 @@ void main() {
     expect(c.read(productDeleteVmProvider('P1')).deleted, isTrue);
   });
   test(
-    'unknown result blocks repeat DELETE and reconciles only on 404',
+    'unknown result blocks repeat DELETE and reconciles on 404',
     () async {
       final repo = FakeDelete()
         ..deleteError = const ProductDeleteException(
@@ -146,6 +146,17 @@ void main() {
       expect(c.read(productDeleteVmProvider('P1')).deleted, isTrue);
     },
   );
+  test('unknown result reconciles when product is sale cancelled', () async {
+    final repo = FakeDelete()
+      ..deleteError = const ProductDeleteException('timeout', uncertain: true);
+    final c = await start(repo);
+    final vm = c.read(productDeleteVmProvider('P1').notifier);
+    await vm.submit();
+    repo.value = edit.product(status: '판매취소');
+    await vm.load();
+    expect(c.read(productDeleteVmProvider('P1')).deleted, isTrue);
+    expect(repo.deletes, 1);
+  });
   test('server refusal requires reloading eligibility before retry', () async {
     final repo = FakeDelete()
       ..deleteError = const ProductDeleteException('거래중입니다.', status: 409);

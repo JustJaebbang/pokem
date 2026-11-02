@@ -75,5 +75,10 @@ class SaleHistoryTests(unittest.TestCase):
             response = client.get('/sale_history?user_id=other')
         self.assertEqual(response.status_code, 200)
         self.assertEqual([r['sale_code'] for r in response.json()], ['S1', 'C1'])
+    def test_cancelled_sale_is_hidden_but_trading_sale_remains(self):
+        self.db.db.execute("UPDATE sell_product SET sell_product_sell_status='판매취소' WHERE sell_product_code='P3'")
+        rows = get_sale_history(self.db, 'seller')
+        self.assertEqual([row.product_code for row in rows], ['P1'])
+
     def test_empty_history(self):
         self.assertEqual(get_sale_history(self.db, 'missing'), [])

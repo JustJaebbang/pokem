@@ -37,6 +37,11 @@ class ProductDeleteVm extends Notifier<ProductDeleteState> {
           product.saleType != 'direct') {
         throw const ProductException('본인이 등록한 일반판매 상품만 삭제할 수 있습니다.');
       }
+      if (uncertain && product.status == '판매취소') {
+        state = const ProductDeleteState(loading: false, deleted: true);
+        refresh();
+        return;
+      }
       if (!product.isForSale) {
         throw const ProductException('판매중인 상품만 삭제할 수 있습니다.');
       }

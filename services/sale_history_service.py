@@ -38,6 +38,7 @@ def get_sale_history(db, user_id):
                 WHERE ir.user_user_id = %s
             ) r
             LEFT JOIN sell_product sp ON sp.sell_product_code = r.product_code
+            WHERE sp.sell_product_sell_status <> '판매취소' OR sp.sell_product_code IS NULL
             ORDER BY COALESCE(r.completed_at, r.posted_at) DESC, r.sale_code DESC
         ''', (user_id, user_id))
         rows = cursor.fetchall()

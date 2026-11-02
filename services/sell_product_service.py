@@ -1,6 +1,5 @@
 from services.sale_registration_service import get_sale_registrations
 from fastapi import HTTPException
-from pymysql.err import IntegrityError
 
 from schemas.sell_product import SellProductCreate, SellProductResponse, SellProductUpdate, SellProductDelete
 from services import post_item_service
@@ -269,8 +268,8 @@ def delete_sell_product_code(db, sell_product_code: str) -> SellProductDelete | 
 
             cursor.execute(
                 """
-                DELETE
-                FROM sell_product
+                UPDATE sell_product
+                SET sell_product_sell_status = '판매취소'
                 WHERE sell_product_code = %s
                 """,
                 (sell_product_code,),
@@ -278,11 +277,6 @@ def delete_sell_product_code(db, sell_product_code: str) -> SellProductDelete | 
 
         db.commit()
     
-    except IntegrityError as exc:
-        db.rollback()
-        if exc.args[0] == 1451:
-            raise HTTPException(status_code=409, detail="관심상품·채팅·거래 등 연결된 기록이 있어 삭제할 수 없습니다.") from exc
-        raise
     except Exception:
         db.rollback()
         raise
@@ -297,7 +291,7 @@ def delete_sell_product_code(db, sell_product_code: str) -> SellProductDelete | 
         "sell_product_contents": product['sell_product_contents'],
         "sell_product_sell_price": product['sell_product_sell_price'],
         "sell_product_grade": product['sell_product_grade'],
-        "sell_product_sell_status": product['sell_product_sell_status'],
+        "sell_product_sell_status": "판매취소",
     }
 
 # 환불 승인된 상품만 판매자가 명시적으로 재판매합니다.

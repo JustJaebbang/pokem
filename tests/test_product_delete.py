@@ -18,11 +18,13 @@ class ProductDeleteTests(unittest.TestCase):
         calls=self.cursor.execute.call_args_list
         self.assertIn("FOR UPDATE",calls[0].args[0])
         self.assertEqual(calls[0].args[1],("P1",))
-        self.assertIn("DELETE",calls[1].args[0])
+        self.assertIn("UPDATE sell_product",calls[1].args[0])
+        self.assertIn("판매취소",calls[1].args[0])
+        self.assertEqual(result["sell_product_sell_status"], "판매취소")
         self.assertEqual(calls[1].args[1],("P1",))
         self.db.commit.assert_called_once()
     def test_in_progress_completed_and_returning_products_cannot_be_deleted(self):
-        for status in ["거래중","거래완료","반환대기"]:
+        for status in ["거래중","거래완료","반환대기","판매취소"]:
             with self.subTest(status=status):
                 self.db.reset_mock()
                 self.cursor.fetchone.return_value={**self.product,"sell_product_sell_status":status}
@@ -31,10 +33,9 @@ class ProductDeleteTests(unittest.TestCase):
                 self.assertEqual(self.cursor.execute.call_count,1)
                 self.db.commit.assert_not_called()
                 self.db.rollback.assert_called_once()
-    def test_foreign_key_conflict_is_409_and_rolls_back(self):
-        self.cursor.execute.side_effect=[None,IntegrityError(1451,"linked")]
-        with self.assertRaises(HTTPException) as e: delete_sell_product_code(self.db,"P1")
-        self.assertEqual(e.exception.status_code,409)
+    def test_write_failure_rolls_back(self):
+        self.cursor.execute.side_effect=[None,RuntimeError("write failed")]
+        with self.assertRaises(RuntimeError): delete_sell_product_code(self.db,"P1")
         self.db.rollback.assert_called_once()
         self.db.commit.assert_not_called()
     def test_missing_returns_none_without_delete(self):
