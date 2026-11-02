@@ -213,6 +213,26 @@ void main() {
   );
 
   test(
+    'DB history sync receives messages published by another API server',
+    () async {
+      final repo = FakeChatRepository();
+      final c = await start(repo);
+      expect(c.read(chatRoomVmProvider('CR_1')).messages, isEmpty);
+
+      // 다른 컴퓨터의 FastAPI 프로세스가 저장한 메시지는 이 프로세스의
+      // WebSocket 방송 목록에 없으므로 공유 DB 조회를 통해 수신한다.
+      repo.history.add(message(1, text: '다른 서버 메시지'));
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
+
+      expect(
+        c.read(chatRoomVmProvider('CR_1')).messages.single.text,
+        '다른 서버 메시지',
+      );
+      expect(repo.cursors, contains(0));
+    },
+  );
+
+  test(
     'send waits for server echo and rejects blank or long messages',
     () async {
       final repo = FakeChatRepository();

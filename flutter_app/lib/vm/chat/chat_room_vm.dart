@@ -13,13 +13,14 @@ class ChatRoomVm extends Notifier<ChatRoomState> {
   final String roomId;
   ChatConnection? _connection;
   StreamSubscription<Object?>? _subscription;
-  Timer? _retryTimer, _readyTimer, _ackTimer;
+  Timer? _retryTimer, _readyTimer, _ackTimer, _historySyncTimer;
   int _epoch = 0,
       _version = 0,
       _attempt = 0,
       _historyCursor = 0,
       _pendingAfter = 0;
   bool _stopped = false;
+  bool _historySyncing = false;
   int? _connectingEpoch, _startingEpoch;
   String? _pendingText;
   bool _valid(int epoch, int version) =>
@@ -39,6 +40,7 @@ class ChatRoomVm extends Notifier<ChatRoomState> {
       _retryTimer?.cancel();
       _readyTimer?.cancel();
       _ackTimer?.cancel();
+      _historySyncTimer?.cancel();
       unawaited(_drop());
     });
     Future.microtask(() => _start(epoch));
@@ -47,6 +49,7 @@ class ChatRoomVm extends Notifier<ChatRoomState> {
 
   Future<void> _drop() async {
     _readyTimer?.cancel();
+    _historySyncTimer?.cancel();
     final sub = _subscription;
     _subscription = null;
     final connection = _connection;
@@ -140,6 +143,7 @@ class ChatRoomVm extends Notifier<ChatRoomState> {
           }
           _readyTimer?.cancel();
           await _recover(epoch, version);
+          _startHistorySync(epoch, version);
         case 'message':
           _merge([ChatMessage.fromJson(j['data'] as Map<String, dynamic>)]);
         case 'error':
@@ -237,10 +241,65 @@ class ChatRoomVm extends Notifier<ChatRoomState> {
     );
   }
 
+  void _startHistorySync(int epoch, int version) {
+    _historySyncTimer?.cancel();
+    if (!_valid(epoch, version) || state.closed || !state.ready) return;
+
+    // WebSocket 방송 목록은 FastAPI 프로세스마다 별도이므로, 서로 다른
+    // API 서버에 접속한 사용자 사이의 메시지는 DB 증분 조회로 보완한다.
+    _historySyncTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => unawaited(_syncHistory(epoch, version)),
+    );
+  }
+
+  Future<void> _syncHistory(int epoch, int version) async {
+    if (_historySyncing ||
+        !_valid(epoch, version) ||
+        state.closed ||
+        !state.ready) {
+      return;
+    }
+    final session = ref.read(authRepositoryProvider).session;
+    if (session == null) {
+      await ref.read(loginVmProvider.notifier).logout(expired: true);
+      return;
+    }
+
+    _historySyncing = true;
+    try {
+      final repository = ref.read(chatRepositoryProvider);
+      var cursor = _historyCursor;
+      while (_valid(epoch, version)) {
+        final batch = await repository.messages(roomId, session.token, cursor);
+        if (!_valid(epoch, version)) return;
+        if (batch.any((m) => m.roomId != roomId || m.seq <= cursor)) {
+          throw const ChatException('새 메시지 응답을 확인하지 못했습니다.');
+        }
+        _merge(batch);
+        if (batch.isNotEmpty) {
+          cursor = batch.map((m) => m.seq).reduce((a, b) => a > b ? a : b);
+          _historyCursor = cursor;
+        }
+        if (batch.length < 100) break;
+      }
+    } catch (error) {
+      if (_valid(epoch, version) &&
+          error is ChatException &&
+          error.status == 401) {
+        await _fail(error, epoch);
+      }
+      // 일시적인 조회 실패는 다음 주기에 재시도하며 기존 WebSocket은 유지한다.
+    } finally {
+      _historySyncing = false;
+    }
+  }
+
   void _lost(int epoch, int version, {bool fatal = false}) {
     if (!_valid(epoch, version) || _stopped) return;
     _version++;
     _ackTimer?.cancel();
+    _historySyncTimer?.cancel();
     unawaited(_drop());
     state = state.copyWith(
       ready: false,
