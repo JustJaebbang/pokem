@@ -1427,8 +1427,6 @@ class DirectorDashboardView extends ConsumerWidget {
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: '검수신청 1개당 가격 (원)'),
               ),
-              const SizedBox(height: 10),
-              const Text('변경 시각은 DB에 VARCHAR 문자열로 저장됩니다.'),
             ],
           ),
         ),
