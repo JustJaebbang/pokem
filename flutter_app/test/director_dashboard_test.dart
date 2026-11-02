@@ -316,6 +316,15 @@ void main() {
     expect(find.text('제조업체'), findsOneWidget);
     expect(find.text('카드 카탈로그'), findsOneWidget);
     expect(find.text('새 데이터 등록'), findsNWidgets(4));
+
+    // 취소 후 닫기 애니메이션에서도 입력 필드가 폐기된 Controller를 참조하지 않아야 한다.
+    await tester.tap(find.text('새 데이터 등록').first);
+    await tester.pumpAndSettle();
+    expect(find.text('케이스 등록'), findsOneWidget);
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+    expect(find.text('케이스 등록'), findsNothing);
+    expect(find.text('기준정보 등록'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
