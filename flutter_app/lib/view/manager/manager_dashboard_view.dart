@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/model/manager/manager_dashboard.dart';
+import 'package:pokem_app/model/products/product_photo.dart';
 import 'package:pokem_app/vm/auth/login_vm.dart';
 import 'package:pokem_app/vm/manager/manager_dashboard_vm.dart';
 
@@ -1364,44 +1366,269 @@ class ManagerDashboardView extends ConsumerWidget {
   Future<void> _consignmentCreateDialog(
     BuildContext context,
     WidgetRef ref,
-    ManagerDashboard data,
-  ) => _simpleDialog(
-    context,
-    ref,
-    title: '대리판매 작성',
-    fields: [
-      _DialogField(
-        'inspection',
-        '검수 완료 상품',
-        options: {
-          for (final item in data.consignmentCandidates)
-            item.code: '${item.code} · ${item.userId} · ${item.grade ?? '-'}',
-        },
-      ),
-      const _DialogField('title', '상품명'),
-      const _DialogField('image', '상품 이미지 URL'),
-      const _DialogField('contents', '상품 설명', maxLines: 4),
-      const _DialogField('price', '판매가', numeric: true),
-      _DialogField(
-        'company',
-        '반환 배송업체',
-        options: {
-          for (final company in data.deliveryCompanies)
-            company.code: company.name ?? company.code,
-        },
-      ),
-    ],
-    submit: (values) => ref
-        .read(managerDashboardVmProvider.notifier)
-        .createConsignment(
-          inspectionCode: values['inspection']!,
-          title: values['title']!,
-          image: values['image']!,
-          contents: values['contents']!,
-          price: values['price']!,
-          returnCompanyCode: values['company']!,
+    ManagerDashboard data, {
+    InspectionItem? selectedItem,
+  }) async {
+    final formKey = GlobalKey<FormState>();
+    final values = <String, String>{
+      'inspection': selectedItem?.code ?? data.consignmentCandidates.first.code,
+      'title': '',
+      'contents': '',
+      'price': '',
+      'company': data.deliveryCompanies.isEmpty
+          ? ''
+          : data.deliveryCompanies.first.code,
+    };
+    ProductPhoto? photo;
+    var picking = false;
+    String? photoError;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => Consumer(
+          builder: (dialogContext, ref, _) {
+            final state = ref.watch(managerDashboardVmProvider);
+            return PopScope(
+              canPop: !state.submitting && !picking,
+              child: AlertDialog(
+                title: const Text('대리판매 작성'),
+                content: SizedBox(
+                  width: 500,
+                  child: SingleChildScrollView(
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          DropdownButtonFormField<String>(
+                            isExpanded: true,
+                            initialValue: values['inspection'],
+                            decoration: const InputDecoration(
+                              labelText: '검수 완료 상품',
+                            ),
+                            items: data.consignmentCandidates
+                                .map(
+                                  (item) => DropdownMenuItem(
+                                    value: item.code,
+                                    child: Text(
+                                      '${item.code} · ${item.userId} · ${item.grade ?? '-'}',
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: state.submitting || selectedItem != null
+                                ? null
+                                : (value) => values['inspection'] = value!,
+                          ),
+                          const SizedBox(height: 14),
+                          InkWell(
+                            key: const Key('selectConsignmentPhoto'),
+                            onTap: state.submitting || picking
+                                ? null
+                                : () async {
+                                    setDialogState(() {
+                                      picking = true;
+                                      photoError = null;
+                                    });
+                                    try {
+                                      final selected = await ref
+                                          .read(
+                                            managerDashboardVmProvider.notifier,
+                                          )
+                                          .pickConsignmentPhoto();
+                                      if (!dialogContext.mounted) return;
+                                      setDialogState(() {
+                                        picking = false;
+                                        if (selected != null) photo = selected;
+                                      });
+                                    } catch (_) {
+                                      if (!dialogContext.mounted) return;
+                                      setDialogState(() {
+                                        picking = false;
+                                        photoError = '사진을 불러오지 못했습니다. JPEG·PNG·WebP, 5MB 이하 파일인지 확인해주세요.';
+                                      });
+                                    }
+                                  },
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              height: 190,
+                              width: double.infinity,
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                color: Theme.of(dialogContext)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: photo == null
+                                  ? Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.add_photo_alternate_outlined,
+                                          size: 44,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          picking ? '사진을 불러오는 중…' : '상품 사진 선택',
+                                        ),
+                                      ],
+                                    )
+                                  : Image.memory(
+                                      photo!.bytes,
+                                      fit: BoxFit.contain,
+                                    ),
+                            ),
+                          ),
+                          if (photo != null)
+                            TextButton(
+                              onPressed: state.submitting || picking
+                                  ? null
+                                  : () => setDialogState(() => photo = null),
+                              child: const Text('사진 다시 선택'),
+                            ),
+                          if (photoError != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                photoError!,
+                                style: TextStyle(
+                                  color: Theme.of(dialogContext)
+                                      .colorScheme
+                                      .error,
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            initialValue: values['title'],
+                            enabled: !state.submitting,
+                            maxLength: 100,
+                            decoration: const InputDecoration(labelText: '상품명'),
+                            onChanged: (value) => values['title'] = value,
+                            validator: (value) => value?.trim().isEmpty == false
+                                ? null
+                                : '상품명을 입력해주세요.',
+                          ),
+                          TextFormField(
+                            initialValue: values['contents'],
+                            enabled: !state.submitting,
+                            maxLines: 4,
+                            maxLength: 500,
+                            decoration: const InputDecoration(
+                              labelText: '상품 설명',
+                            ),
+                            onChanged: (value) => values['contents'] = value,
+                            validator: (value) => value?.trim().isEmpty == false
+                                ? null
+                                : '상품 설명을 입력해주세요.',
+                          ),
+                          TextFormField(
+                            initialValue: values['price'],
+                            enabled: !state.submitting,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            decoration: const InputDecoration(
+                              labelText: '판매가',
+                              suffixText: '원',
+                            ),
+                            onChanged: (value) => values['price'] = value,
+                            validator: (value) {
+                              final price = int.tryParse(value ?? '');
+                              return price != null && price > 0
+                                  ? null
+                                  : '1원 이상의 판매가를 입력해주세요.';
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            isExpanded: true,
+                            initialValue: values['company']!.isEmpty
+                                ? null
+                                : values['company'],
+                            decoration: const InputDecoration(
+                              labelText: '반환 배송업체',
+                            ),
+                            items: data.deliveryCompanies
+                                .map(
+                                  (company) => DropdownMenuItem(
+                                    value: company.code,
+                                    child: Text(company.name ?? company.code),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: state.submitting
+                                ? null
+                                : (value) => values['company'] = value!,
+                            validator: (value) =>
+                                value == null ? '반환 배송업체를 선택해주세요.' : null,
+                          ),
+                          if (state.error != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Text(
+                                state.error!,
+                                style: TextStyle(
+                                  color: Theme.of(dialogContext)
+                                      .colorScheme
+                                      .error,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: state.submitting || picking
+                        ? null
+                        : () => Navigator.pop(dialogContext),
+                    child: const Text('취소'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: state.submitting || picking
+                        ? null
+                        : () async {
+                            final valid =
+                                formKey.currentState?.validate() == true;
+                            if (photo == null) {
+                              setDialogState(
+                                () => photoError = '상품 사진을 선택해주세요.',
+                              );
+                            }
+                            if (!valid || photo == null) return;
+                            final success = await ref
+                                .read(managerDashboardVmProvider.notifier)
+                                .createConsignmentWithPhoto(
+                                  inspectionCode: values['inspection']!,
+                                  title: values['title']!,
+                                  photo: photo!,
+                                  contents: values['contents']!,
+                                  price: values['price']!,
+                                  returnCompanyCode: values['company']!,
+                                );
+                            if (success && dialogContext.mounted) {
+                              Navigator.pop(dialogContext);
+                            }
+                          },
+                    icon: const Icon(Icons.cloud_upload_outlined),
+                    label: Text(state.submitting ? '업로드 중…' : '사진 업로드 후 등록'),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
-  );
+      ),
+    );
+  }
 
   Future<void> _proposalDialog(
     BuildContext context,
@@ -1437,35 +1664,7 @@ class ManagerDashboardView extends ConsumerWidget {
     WidgetRef ref,
     ManagerDashboard data,
     InspectionItem item,
-  ) => _simpleDialog(
-    context,
-    ref,
-    title: '대리판매 등록',
-    fields: [
-      _DialogField('title', '상품명'),
-      const _DialogField('image', '상품 이미지 URL'),
-      const _DialogField('contents', '상품 설명', maxLines: 4),
-      const _DialogField('price', '판매가', numeric: true),
-      _DialogField(
-        'company',
-        '반환 배송업체',
-        options: {
-          for (final company in data.deliveryCompanies)
-            company.code: company.name ?? company.code,
-        },
-      ),
-    ],
-    submit: (values) => ref
-        .read(managerDashboardVmProvider.notifier)
-        .createConsignment(
-          inspectionCode: item.code,
-          title: values['title']!,
-          image: values['image']!,
-          contents: values['contents']!,
-          price: values['price']!,
-          returnCompanyCode: values['company']!,
-        ),
-  );
+  ) => _consignmentCreateDialog(context, ref, data, selectedItem: item);
 
   Future<void> _orderDialog(
     BuildContext context,

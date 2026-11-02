@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,9 @@ import 'package:pokem_app/model/manager/manager_dashboard.dart';
 import 'package:pokem_app/model/auth/auth_session.dart';
 import 'package:pokem_app/repository/manager/manager_repository.dart';
 import 'package:pokem_app/service/manager/manager_api_service.dart';
+import 'package:pokem_app/model/products/product_photo.dart';
+import 'package:pokem_app/repository/products/product_publish_repository.dart';
+import 'package:pokem_app/service/products/product_publish_api_service.dart';
 import 'package:pokem_app/vm/manager/manager_dashboard_vm.dart';
 import 'package:pokem_app/vm/auth/login_vm.dart';
 
@@ -45,6 +49,96 @@ Map<String, Object?> inspectionRow(String status) => {
 };
 
 void main() {
+  test(
+    'consignment photo is uploaded before the returned URL is registered',
+    () async {
+      Map<String, dynamic>? consignmentBody;
+      var uploads = 0;
+      final managerRepository = ManagerRepository(
+        ManagerApiService(
+          MockClient((request) async {
+            if (request.method == 'POST' &&
+                request.url.path == '/post_consign_item') {
+              consignmentBody =
+                  jsonDecode(request.body) as Map<String, dynamic>;
+              return fixtures.response({});
+            }
+            return fixtures.response(switch (request.url.path) {
+              '/inspect' => [
+                {
+                  'inspect_code': 'INS-CONSIGN-1',
+                  'inspect_requested_no': '20261102000001',
+                  'inspect_serial_code': 'J_m6a_001_103_C',
+                  'inspect_status': '검수완료',
+                  'inspect_user_choice': '대리판매',
+                  'user_user_id': 'collector',
+                  'manager_manager_id': 'manager1',
+                },
+              ],
+              '/delivery_company' => [
+                {
+                  'delivery_company_code': 'D1',
+                  'delivery_company_name': '배송업체',
+                },
+              ],
+              _ => [],
+            });
+          }),
+          baseUrl: 'http://test.local',
+        ),
+      );
+      final publishRepository = ProductPublishRepository(
+        ProductPublishApiService(
+          MockClient((request) async {
+            expect(request.method, 'POST');
+            expect(request.url.path, '/sell_product/image');
+            uploads++;
+            return fixtures.response({
+              'sell_product_image': '/media/products/manager-photo.jpg',
+            }, 201);
+          }),
+          baseUrl: 'http://test.local',
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          loginVmProvider.overrideWith(ManagerLogin.new),
+          managerRepositoryProvider.overrideWithValue(managerRepository),
+          productPublishRepositoryProvider.overrideWithValue(publishRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        managerDashboardVmProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      await Future<void>.delayed(Duration.zero);
+
+      final success = await container
+          .read(managerDashboardVmProvider.notifier)
+          .createConsignmentWithPhoto(
+            inspectionCode: 'INS-CONSIGN-1',
+            title: '대리판매 카드',
+            photo: ProductPhoto(
+              bytes: Uint8List.fromList([1, 2, 3]),
+              filename: 'card.jpg',
+            ),
+            contents: '상품 설명',
+            price: '12000',
+            returnCompanyCode: 'D1',
+          );
+
+      expect(success, isTrue);
+      expect(uploads, 1);
+      expect(
+        consignmentBody?['sell_product_image'],
+        '/media/products/manager-photo.jpg',
+      );
+      expect(consignmentBody?['inspect_inspect_code'], 'INS-CONSIGN-1');
+    },
+  );
+
   test(
     'authenticated API load and inspection transitions follow server contract',
     () async {
@@ -241,6 +335,59 @@ void main() {
     expect(calls[16], contains('PATCH /product_company/P1'));
     expect(calls[17], contains('PATCH /delivery_company/D1'));
     expect(calls[18], contains('DELETE /receive/RECEIVE1'));
+  });
+
+  testWidgets('consignment form selects a photo instead of entering an URL', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = ManagerRepository(
+      ManagerApiService(
+        MockClient(
+          (request) async => fixtures.response(switch (request.url.path) {
+            '/inspect' => [
+              {
+                'inspect_code': 'INS-CONSIGN-1',
+                'inspect_requested_no': '20261102000001',
+                'inspect_serial_code': 'J_m6a_001_103_C',
+                'inspect_status': '검수완료',
+                'inspect_user_choice': '대리판매',
+                'user_user_id': 'collector',
+                'manager_manager_id': 'manager1',
+              },
+            ],
+            '/delivery_company' => [
+              {'delivery_company_code': 'D1', 'delivery_company_name': '배송업체'},
+            ],
+            _ => [],
+          }),
+        ),
+        baseUrl: 'http://test.local',
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          loginVmProvider.overrideWith(ManagerLogin.new),
+          managerRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const PokemApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('대리판매').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('대리판매 작성'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('selectConsignmentPhoto')), findsOneWidget);
+    expect(find.text('상품 사진 선택'), findsOneWidget);
+    expect(find.text('상품 이미지 URL'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   for (final size in [

@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokem_app/core/providers/data_providers.dart';
 import 'package:pokem_app/model/manager/manager_dashboard.dart';
 import 'package:pokem_app/model/auth/auth_session.dart';
+import 'package:pokem_app/model/products/product.dart';
+import 'package:pokem_app/model/products/product_photo.dart';
 import 'package:pokem_app/vm/auth/login_vm.dart';
 
 enum ManagerSection {
@@ -233,6 +235,46 @@ class ManagerDashboardVm extends Notifier<ManagerDashboardState> {
       }),
     );
   }
+
+  Future<bool> createConsignmentWithPhoto({
+    required String inspectionCode,
+    required String title,
+    required ProductPhoto photo,
+    required String contents,
+    required String price,
+    required String returnCompanyCode,
+  }) {
+    final amount = int.tryParse(price.trim());
+    if (inspectionCode.isEmpty ||
+        title.trim().isEmpty ||
+        title.trim().length > 100 ||
+        photo.bytes.isEmpty ||
+        contents.trim().isEmpty ||
+        contents.trim().length > 500 ||
+        amount == null ||
+        amount <= 0 ||
+        returnCompanyCode.isEmpty) {
+      state = state.copyWith(error: '검수상품·사진·상품명·설명·판매가·반환 배송업체를 확인해주세요.');
+      return Future.value(false);
+    }
+    return _mutate((token) async {
+      // 사진 업로드가 성공한 뒤 서버가 반환한 안전한 경로만 판매상품에 저장한다.
+      final imageUrl = await ref
+          .read(productPublishRepositoryProvider)
+          .uploadPhoto(photo, token);
+      await ref.read(managerRepositoryProvider).createConsignment(token, {
+        'inspect_inspect_code': inspectionCode,
+        'sell_product_title': title.trim(),
+        'sell_product_image': imageUrl,
+        'sell_product_contents': contents.trim(),
+        'sell_product_sell_price': amount,
+        'return_delivery_company_code': returnCompanyCode,
+      });
+    });
+  }
+
+  Future<ProductPhoto?> pickConsignmentPhoto() =>
+      ref.read(productPhotoPickerProvider).pick();
 
   Future<bool> createProposal({
     required String name,
@@ -495,9 +537,11 @@ class ManagerDashboardVm extends Notifier<ManagerDashboardState> {
     (token) => ref.read(managerRepositoryProvider).cancelReceipt(token, number),
   );
 
-  String _message(Object error) => error is ManagerException
-      ? error.message
-      : '관리자 데이터를 처리하지 못했습니다. 다시 시도해주세요.';
+  String _message(Object error) => switch (error) {
+    ManagerException() => error.message,
+    ProductException() => error.message,
+    _ => '관리자 데이터를 처리하지 못했습니다. 다시 시도해주세요.',
+  };
 }
 
 final managerDashboardVmProvider =
