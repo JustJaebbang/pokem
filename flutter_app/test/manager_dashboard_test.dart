@@ -294,7 +294,7 @@ void main() {
       'return_no': 'R1',
       'delivery_company_delivery_company_code': 'D1',
     });
-    await api.updateDeliveryStatus('token', 'D1', '배송중');
+    await api.updateDeliveryStatus('token', 'D1', '배송중', memo: '택배사 인계');
     await api.setConsignmentReturnCompany('token', 'C1', 'D1');
     await api.createReceipt('token', {
       'pay_pay_no': 'PAY1',
@@ -336,6 +336,7 @@ void main() {
     expect(calls[5], startsWith('PATCH /return/R1/manager'));
     expect(calls[6], contains('POST /delivery'));
     expect(calls[7], contains('PATCH /delivery/D1/status'));
+    expect(calls[7], contains('"memo":"택배사 인계"'));
     expect(calls[8], contains('PATCH /post_consign_item/C1/return-company'));
     expect(calls[9], contains('POST /receipt'));
     expect(calls[10], contains('POST /deposit_refund'));
@@ -510,6 +511,98 @@ void main() {
           .first,
     );
     expect(horizontal.position.maxScrollExtent, greaterThan(0));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('delivery detail shows history and submits manager memo', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    Map<String, dynamic>? patchBody;
+    var status = '배송준비';
+    Map<String, Object?> delivery() => {
+      'delivery_no': 'D-001',
+      'delivery_date': '2026-11-02 18:00:00',
+      'delivery_status': status,
+      'purchase_item_code': 'BUY-001',
+      'return_no': null,
+      'user_user_id': 'buyer1',
+      'manager_manager_id': 'manager1',
+      'delivery_company_delivery_company_code': 'CJ',
+      'sell_product_sell_product_code': 'SELL-001',
+      'inspect_inspect_code': null,
+    };
+    final repository = ManagerRepository(
+      ManagerApiService(
+        MockClient((request) async {
+          if (request.method == 'PATCH' &&
+              request.url.path == '/delivery/D-001/status') {
+            patchBody = jsonDecode(request.body) as Map<String, dynamic>;
+            status = patchBody!['delivery_status'] as String;
+            return fixtures.response(delivery());
+          }
+          return fixtures.response(switch (request.url.path) {
+            '/delivery' => [delivery()],
+            '/delivery/status-history' => [
+              {
+                'history_id': 1,
+                'delivery_no': 'D-001',
+                'previous_status': null,
+                'changed_status': '배송준비',
+                'manager_id': 'manager1',
+                'changed_at': '2026-11-02 18:00:00',
+                'memo': '배송 등록',
+              },
+            ],
+            _ => [],
+          });
+        }),
+        baseUrl: 'http://test.local',
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          loginVmProvider.overrideWith(ManagerLogin.new),
+          managerRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const PokemApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(PokemApp)),
+    );
+    container
+        .read(managerDashboardVmProvider.notifier)
+        .selectSection(ManagerSection.returnsDelivery);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('D-001'));
+    await tester.pumpAndSettle();
+    final detailScroll = find
+        .descendant(
+          of: find.byKey(const Key('managerDetail')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.drag(detailScroll, const Offset(0, -420));
+    await tester.pumpAndSettle();
+    expect(find.text('처리 이력'), findsOneWidget);
+    expect(find.text('manager1 · 2026-11-02 18:00:00\n배송 등록'), findsOneWidget);
+
+    await tester.drag(detailScroll, const Offset(0, 420));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('배송 시작'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).last, '택배사 인계');
+    await tester.tap(find.text('저장'));
+    await tester.pumpAndSettle();
+
+    expect(patchBody, {'delivery_status': '배송중', 'memo': '택배사 인계'});
     expect(tester.takeException(), isNull);
   });
 

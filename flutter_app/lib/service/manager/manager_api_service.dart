@@ -143,12 +143,13 @@ class ManagerApiService {
   Future<void> updateDeliveryStatus(
     String token,
     String number,
-    String status,
-  ) => _request(
+    String status, {
+    String? memo,
+  }) => _request(
     token,
     '/delivery/${Uri.encodeComponent(number)}/status',
     method: 'PATCH',
-    body: {'delivery_status': status},
+    body: {'delivery_status': status, 'memo': ?memo},
   );
 
   Future<void> setConsignmentReturnCompany(

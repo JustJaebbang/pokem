@@ -1160,6 +1160,9 @@ class ManagerDashboardView extends ConsumerWidget {
               )
               .firstOrNull;
           if (item == null) break;
+          final histories = data.deliveryHistories
+              .where((history) => history.deliveryNumber == item.number)
+              .toList();
           children.addAll([
             _heading(context, '배송 상세'),
             _info('배송번호', item.number),
@@ -1173,22 +1176,32 @@ class ManagerDashboardView extends ConsumerWidget {
             if (item.status != '배송완료')
               FilledButton.icon(
                 onPressed: enabled
-                    ? () async {
-                        final next = item.status == '배송준비' ? '배송중' : '배송완료';
-                        if (next == '배송완료' &&
-                            !await _confirm(
-                              context,
-                              '배송 완료 처리',
-                              '완료 후 이전 상태로 되돌릴 수 없습니다.',
-                            )) {
-                          return;
-                        }
-                        await vm.updateDeliveryStatus(item.number, next);
-                      }
+                    ? () => _deliveryStatusDialog(context, ref, item)
                     : null,
                 icon: const Icon(Icons.arrow_forward),
                 label: Text(item.status == '배송준비' ? '배송 시작' : '배송 완료'),
               ),
+            const SizedBox(height: 24),
+            _heading(context, '처리 이력'),
+            if (histories.isEmpty)
+              const Text('기록된 처리 이력이 없습니다.')
+            else
+              for (final history in histories)
+                Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    leading: const Icon(Icons.history),
+                    title: Text(
+                      history.previousStatus == null
+                          ? history.changedStatus
+                          : '${history.previousStatus} → ${history.changedStatus}',
+                    ),
+                    subtitle: Text(
+                      '${history.managerId} · ${history.changedAt}'
+                      '${history.memo == null ? '' : '\n${history.memo}'}',
+                    ),
+                  ),
+                ),
           ]);
         }
       case ManagerSection.settlements:
@@ -2127,6 +2140,37 @@ class ManagerDashboardView extends ConsumerWidget {
         .updateCompany(item.code, values['name']!, delivery: delivery),
   );
 
+  Future<void> _deliveryStatusDialog(
+    BuildContext context,
+    WidgetRef ref,
+    DeliveryRecord item,
+  ) {
+    final next = item.status == '배송준비' ? '배송중' : '배송완료';
+    return _simpleDialog(
+      context,
+      ref,
+      title: next == '배송중' ? '배송 시작 처리' : '배송 완료 처리',
+      fields: const [
+        _DialogField(
+          'memo',
+          '처리 메모 (선택)',
+          maxLines: 3,
+          maxLength: 500,
+          isRequired: false,
+        ),
+      ],
+      submit: (values) async {
+        if (next == '배송완료' &&
+            !await _confirm(context, '배송 완료 처리', '완료 후 이전 상태로 되돌릴 수 없습니다.')) {
+          return false;
+        }
+        return ref
+            .read(managerDashboardVmProvider.notifier)
+            .updateDeliveryStatus(item.number, next, memo: values['memo']!);
+      },
+    );
+  }
+
   Future<bool> _confirm(
     BuildContext context,
     String title,
@@ -2215,16 +2259,26 @@ class ManagerDashboardView extends ConsumerWidget {
                                     controller: controllers[field.key],
                                     enabled: !state.submitting,
                                     maxLines: field.maxLines,
+                                    maxLength: field.maxLength,
                                     keyboardType: field.numeric
                                         ? TextInputType.number
                                         : TextInputType.text,
                                     decoration: InputDecoration(
                                       labelText: field.label,
                                     ),
-                                    validator: (value) =>
-                                        value == null || value.trim().isEmpty
-                                        ? '${field.label}을 입력해주세요.'
-                                        : null,
+                                    validator: (value) {
+                                      if (field.isRequired &&
+                                          (value == null ||
+                                              value.trim().isEmpty)) {
+                                        return '${field.label}을 입력해주세요.';
+                                      }
+                                      if (field.maxLength != null &&
+                                          (value?.trim().length ?? 0) >
+                                              field.maxLength!) {
+                                        return '${field.maxLength}자까지 입력해주세요.';
+                                      }
+                                      return null;
+                                    },
                                   ),
                           ),
                         if (state.error != null)
@@ -2307,10 +2361,14 @@ class _DialogField {
     this.maxLines = 1,
     this.numeric = false,
     this.options,
+    this.maxLength,
+    this.isRequired = true,
   });
   final String key, label;
   final int maxLines;
   final bool numeric;
+  final int? maxLength;
+  final bool isRequired;
   final Map<String, String>? options;
 }
 

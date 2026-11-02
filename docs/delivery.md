@@ -38,8 +38,19 @@
 매니저는 `PATCH /delivery/{delivery_no}/status`로 배송 상태를 변경합니다.
 
 ```json
-{"delivery_status": "배송중"}
+{
+  "delivery_status": "배송중",
+  "memo": "택배사 인계"
+}
 ```
+
+`memo`는 선택 입력이며 최대 500자입니다. 상태가 실제로 변경되면 처리 매니저,
+변경 전·후 상태, 변경 시각, 메모가 `delivery_status_history`에 기록됩니다.
+매니저 화면의 배송 상세 `처리 이력`에서 시간순으로 확인할 수 있습니다.
+
+특정 배송 이력은 `GET /delivery/status-history?delivery_no={delivery_no}`로 조회합니다.
+이 엔드포인트와 상태 변경은 매니저 전용입니다. 테이블 생성 SQL은
+`sql/delivery_status_history.sql`입니다.
 
 허용된 순서는 `배송준비 → 배송중 → 배송완료`입니다.
 같은 상태를 다시 요청하면 현재 배송을 그대로 반환하고,

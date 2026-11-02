@@ -386,11 +386,26 @@ class ManagerDashboardVm extends Notifier<ManagerDashboardState> {
     );
   }
 
-  Future<bool> updateDeliveryStatus(String number, String status) => _mutate(
-    (token) => ref
-        .read(managerRepositoryProvider)
-        .updateDeliveryStatus(token, number, status),
-  );
+  Future<bool> updateDeliveryStatus(
+    String number,
+    String status, {
+    String memo = '',
+  }) {
+    if (memo.trim().length > 500) {
+      state = state.copyWith(error: '처리 메모는 500자까지 입력할 수 있습니다.');
+      return Future.value(false);
+    }
+    return _mutate(
+      (token) => ref
+          .read(managerRepositoryProvider)
+          .updateDeliveryStatus(
+            token,
+            number,
+            status,
+            memo: memo.trim().isEmpty ? null : memo.trim(),
+          ),
+    );
+  }
 
   Future<bool> setConsignmentReturnCompany(String code, String company) =>
       _mutate(

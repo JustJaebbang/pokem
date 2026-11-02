@@ -471,6 +471,7 @@ scripts
 !/sql/quit_type.sql
 !/sql/director_operations.sql
 !/sql/product_image_blob.sql
+!/sql/delivery_status_history.sql
 !tests/test_profile_image.py
 
 !tests/test_public_profile.py

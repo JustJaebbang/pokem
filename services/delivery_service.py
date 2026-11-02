@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from pymysql.err import IntegrityError
 
-from schemas.delivery import DeliveryCreate, DeliveryResponse
+from schemas.delivery import DeliveryCreate, DeliveryResponse, DeliveryStatusHistoryResponse
 
 
 DELIVERY_STATUS_TRANSITIONS = {
@@ -113,6 +113,21 @@ def create_delivery(db, request: DeliveryCreate, *, manage_transaction=True) -> 
                  delivery.delivery_company_delivery_company_code,
                  delivery.purchase_item_code, delivery.return_no),
             )
+            # 배송 등록도 첫 처리 단계로 남겨 이후 상태 변경 이력과 함께 조회한다.
+            cursor.execute(
+                """INSERT INTO delivery_status_history (
+                       delivery_delivery_no, previous_status, changed_status,
+                       manager_manager_id, changed_at, memo
+                   ) VALUES (%s, %s, %s, %s, %s, %s)""",
+                (
+                    delivery.delivery_no,
+                    None,
+                    delivery.delivery_status,
+                    delivery.manager_manager_id,
+                    delivery.delivery_date,
+                    "배송 등록",
+                ),
+            )
         if manage_transaction:
             db.commit()
         return delivery
@@ -153,7 +168,13 @@ def get_delivery(db, delivery_no: str, user_id=None) -> DeliveryResponse | None:
     return DeliveryResponse(**row) if row else None
 
 
-def update_delivery_status(db, delivery_no: str, status: str) -> DeliveryResponse:
+def update_delivery_status(
+    db,
+    delivery_no: str,
+    status: str,
+    manager_id: str,
+    memo: str | None = None,
+) -> DeliveryResponse:
     """배송준비 → 배송중 → 배송완료 순서로만 상태를 변경한다."""
     try:
         db.begin()
@@ -190,6 +211,23 @@ def update_delivery_status(db, delivery_no: str, status: str) -> DeliveryRespons
                         "UPDATE `return` SET return_status = %s WHERE return_no = %s",
                         (return_status, row["return_return_no"]),
                     )
+                changed_at = datetime.now(timezone(timedelta(hours=9))).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+                cursor.execute(
+                    """INSERT INTO delivery_status_history (
+                           delivery_delivery_no, previous_status, changed_status,
+                           manager_manager_id, changed_at, memo
+                       ) VALUES (%s, %s, %s, %s, %s, %s)""",
+                    (
+                        delivery_no,
+                        current,
+                        status,
+                        manager_id,
+                        changed_at,
+                        memo or None,
+                    ),
+                )
 
         result = get_delivery(db, delivery_no)
         if result is None:
@@ -199,3 +237,29 @@ def update_delivery_status(db, delivery_no: str, status: str) -> DeliveryRespons
     except Exception:
         db.rollback()
         raise
+
+
+def get_delivery_status_history(
+    db,
+    delivery_no: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[DeliveryStatusHistoryResponse]:
+    """Manager 화면에서 배송별 처리자·시각·메모를 오래된 순서로 조회한다."""
+    where = "WHERE delivery_delivery_no = %s" if delivery_no is not None else ""
+    params = (delivery_no, limit, offset) if delivery_no is not None else (limit, offset)
+    with db.cursor() as cursor:
+        cursor.execute(
+            f"""SELECT history_id,
+                       delivery_delivery_no AS delivery_no,
+                       previous_status, changed_status,
+                       manager_manager_id AS manager_id,
+                       changed_at, memo
+                  FROM delivery_status_history
+                  {where}
+                 ORDER BY history_id ASC
+                 LIMIT %s OFFSET %s""",
+            params,
+        )
+        rows = cursor.fetchall()
+    return [DeliveryStatusHistoryResponse(**row) for row in rows]

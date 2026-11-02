@@ -90,7 +90,11 @@ class DeliveryTests(unittest.TestCase):
         self.assertIsNone(row["sell_product_sell_product_code"])
         self.assertEqual(row["inspect_inspect_code"], "inspect1")
         self.assertIn("FROM `return` WHERE return_no", self.cursor.execute.call_args_list[0].args[0])
-        self.assertEqual(self.cursor.execute.call_args.args[1][-2:], (None, "return1"))
+        delivery_insert = next(
+            call for call in self.cursor.execute.call_args_list
+            if "INSERT INTO delivery (" in call.args[0]
+        )
+        self.assertEqual(delivery_insert.args[1][-2:], (None, "return1"))
         self.db.commit.assert_called_once()
 
     def test_exactly_one_source_is_required(self):
@@ -166,15 +170,53 @@ class DeliveryTests(unittest.TestCase):
 
         response = self.client.patch(
             "/delivery/delivery1/status",
-            json={"delivery_status": "배송중"},
+            json={"delivery_status": "배송중", "memo": "택배사 인계"},
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["delivery_status"], "배송중")
-        update = self.cursor.execute.call_args_list[1]
+        update = next(
+            call for call in self.cursor.execute.call_args_list
+            if "UPDATE delivery SET delivery_status" in call.args[0]
+        )
         self.assertIn("UPDATE delivery SET delivery_status", update.args[0])
         self.assertEqual(update.args[1], ("배송중", "delivery1", "배송준비"))
+        history = next(
+            call for call in self.cursor.execute.call_args_list
+            if "INSERT INTO delivery_status_history" in call.args[0]
+        )
+        self.assertEqual(history.args[1][:4], ("delivery1", "배송준비", "배송중", "manager1"))
+        self.assertEqual(history.args[1][-1], "택배사 인계")
         self.db.commit.assert_called_once()
+
+    def test_manager_reads_delivery_status_history(self):
+        self.cursor.fetchall.return_value = [{
+            "history_id": 1,
+            "delivery_no": "delivery1",
+            "previous_status": "배송준비",
+            "changed_status": "배송중",
+            "manager_id": "manager1",
+            "changed_at": "2026-11-02 18:00:00",
+            "memo": "택배사 인계",
+        }]
+
+        response = self.client.get(
+            "/delivery/status-history",
+            params={"delivery_no": "delivery1"},
+        )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()[0]["manager_id"], "manager1")
+        self.assertEqual(response.json()[0]["memo"], "택배사 인계")
+        self.assertEqual(self.cursor.execute.call_args.args[1], ("delivery1", 100, 0))
+
+    def test_delivery_status_memo_length_is_limited(self):
+        response = self.client.patch(
+            "/delivery/delivery1/status",
+            json={"delivery_status": "배송중", "memo": "x" * 501},
+        )
+        self.assertEqual(response.status_code, 422)
+        self.cursor.execute.assert_not_called()
 
     def test_status_update_is_idempotent_but_rejects_skips_and_invalid_values(self):
         self.cursor.fetchone.side_effect = [
