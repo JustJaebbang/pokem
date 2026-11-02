@@ -1,5 +1,18 @@
 # pokem
 
+## 시연영상 링크
+- user구매기능
+https://youtube.com/shorts/MGaPziNL4UU?si=DsMPuidEDKXyc-BA
+
+- user판매기능
+https://youtu.be/1nRzd6ckfHQ
+
+- 검수신청 후 반환
+https://youtu.be/64SWJHw2X7s
+
+- 검수신청 후 대리판매
+https://youtu.be/t9JedCOvFZQ
+
 card 검수 및 대리판매, 사용자간 중고거래 플랫폼
 
 ## 의존성 설치 및 실행
