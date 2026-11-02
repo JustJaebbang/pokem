@@ -8,6 +8,7 @@ import 'package:pokem_app/vm/auth/login_vm.dart';
 
 enum ManagerSection {
   dashboard,
+  products,
   requests,
   inspections,
   consignments,
