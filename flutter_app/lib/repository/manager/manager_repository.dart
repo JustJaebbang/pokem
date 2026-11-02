@@ -117,6 +117,12 @@ class ManagerRepository {
       _api.assignReturn(token, number);
   Future<void> createDelivery(String token, Map<String, dynamic> body) =>
       _api.createDelivery(token, body);
+  Future<void> assignDeliveryCompany(
+    String token,
+    String number,
+    String companyCode,
+  ) => _api.assignDeliveryCompany(token, number, companyCode);
+
   Future<void> updateDeliveryStatus(
     String token,
     String number,

@@ -27,6 +27,13 @@ Map<String, dynamic> row({
   'delivery_date': '2026-10-31 12:00:00',
 };
 void main() {
+  test('automatic delivery can be read before a company is assigned', () {
+    final data = row()..['delivery_company_delivery_company_code'] = null;
+    final delivery = Delivery.fromJson(data);
+    expect(delivery.companyCode, isNull);
+    expect(delivery.status, '배송준비');
+  });
+
   test(
     'find follows pages and fetches matching purchase detail with token',
     () async {

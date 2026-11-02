@@ -212,14 +212,15 @@ class DeliveryRecord {
     this.inspectionCode,
     this.date,
   });
-  final String number, status, userId, managerId, companyCode;
+  final String number, status, userId, managerId;
+  final String? companyCode;
   final String? purchaseCode, returnNumber, productCode, inspectionCode, date;
   factory DeliveryRecord.fromJson(Map<String, dynamic> json) => DeliveryRecord(
     number: json['delivery_no'] as String,
     status: (json['delivery_status'] as String?) ?? '배송준비',
     userId: json['user_user_id'] as String,
     managerId: json['manager_manager_id'] as String,
-    companyCode: json['delivery_company_delivery_company_code'] as String,
+    companyCode: json['delivery_company_delivery_company_code'] as String?,
     purchaseCode: json['purchase_item_code'] as String?,
     returnNumber: json['return_no'] as String?,
     productCode: json['sell_product_sell_product_code'] as String?,

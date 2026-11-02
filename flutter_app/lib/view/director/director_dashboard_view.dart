@@ -499,7 +499,7 @@ class DirectorDashboardView extends ConsumerWidget {
                   item.date ?? '-',
                   item.status ?? '-',
                   item.managerId,
-                  item.companyCode,
+                  item.companyCode ?? '배송업체 미지정',
                 ],
               )
               .toList(),

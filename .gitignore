@@ -490,3 +490,8 @@ scripts
 **/firebase-adminsdk*.json
 **/*firebase-adminsdk*.json
 /.secrets/
+
+!/sql/delivery_auto_registration.sql
+!tests/test_delivery_auto.py
+
+!tests/test_delivery.py

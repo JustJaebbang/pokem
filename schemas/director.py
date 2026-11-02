@@ -122,7 +122,7 @@ class DirectorDelayedDelivery(BaseModel):
     delivery_date: str | None = None
     delivery_status: str | None = None
     manager_id: str
-    company_code: str
+    company_code: str | None = None
 
 
 class DirectorReturnWithoutDelivery(BaseModel):

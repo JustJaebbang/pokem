@@ -140,6 +140,17 @@ class ManagerApiService {
   Future<void> createDelivery(String token, Map<String, dynamic> body) =>
       _request(token, '/delivery', method: 'POST', body: body);
 
+  Future<void> assignDeliveryCompany(
+    String token,
+    String number,
+    String companyCode,
+  ) => _request(
+    token,
+    '/delivery/${Uri.encodeComponent(number)}/company',
+    method: 'PATCH',
+    body: {'delivery_company_delivery_company_code': companyCode},
+  );
+
   Future<void> updateDeliveryStatus(
     String token,
     String number,

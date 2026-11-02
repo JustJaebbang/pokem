@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime, timedelta, timezone
 import unittest
 from types import SimpleNamespace
 
@@ -9,7 +10,8 @@ from database import get_db
 from dependencies import get_current_account
 from routers.return_item import router
 from schemas.inspect import InspectChoice
-from services import inspect_service, return_service
+from services import inspect_service, return_service, delivery_service, consignment_expiry_service
+from tests.test_delivery_auto import install_delivery_schema
 
 
 class Cursor:
@@ -23,10 +25,17 @@ class Cursor:
     def execute(self, sql, params=()):
         if self.db.fail_on and self.db.fail_on in sql:
             raise RuntimeError("injected failure")
-        return self.cursor.execute(sql.replace("FOR UPDATE", "").replace("%s", "?"), params)
+        sql = sql.replace("FOR UPDATE", "").replace("%s", "?")
+        sql = sql.replace("ON DUPLICATE KEY UPDATE last_seq = last_seq + 1", "ON CONFLICT(delivery_date) DO UPDATE SET last_seq = last_seq + 1")
+        return self.cursor.execute(sql, params)
     def fetchone(self):
         row = self.cursor.fetchone()
-        return dict(row) if row is not None else None
+        if row is None:
+            return None
+        result = dict(row)
+        if result.get('post_consign_item_expires_at') is not None:
+            result['post_consign_item_expires_at'] = datetime.fromisoformat(result['post_consign_item_expires_at'])
+        return result
     def fetchall(self):
         return [dict(row) for row in self.cursor.fetchall()]
     @property
@@ -74,6 +83,7 @@ class ReturnTests(unittest.TestCase):
             INSERT INTO inspection_request VALUES ('req', 'owner');
             INSERT INTO inspect VALUES ('INS_1', 'card', 1, 'req', '검수완료', NULL, 'A', 'good', '의사확인대기', NULL, 'M');
         """)
+        install_delivery_schema(self.db.connection)
         app = FastAPI()
         app.include_router(router)
         self.app = app
@@ -101,6 +111,84 @@ class ReturnTests(unittest.TestCase):
         self.assertEqual(rows[0].user_user_id, 'owner')
         self.assertEqual(rows[0].inspect_inspect_code, 'INS_1')
         self.assertIsNone(rows[0].manager_manager_id)
+
+    def test_return_creates_one_delivery_and_initial_history(self):
+        item = self.created()
+        self.choose()
+        deliveries = delivery_service.get_deliveries(self.db)
+        self.assertEqual(len(deliveries), 1)
+        self.assertEqual(deliveries[0].return_no, item.return_no)
+        self.assertEqual(deliveries[0].delivery_status, '배송준비')
+        self.assertIsNone(deliveries[0].delivery_company_delivery_company_code)
+        self.assertEqual(self.db.connection.execute('SELECT COUNT(*) FROM delivery_status_history').fetchone()[0], 1)
+
+    def test_delivery_history_failure_rolls_back_return_and_choice(self):
+        self.db.fail_on = 'INSERT INTO delivery_status_history'
+        with self.assertRaises(RuntimeError):
+            self.choose()
+        self.assertEqual(self.db.connection.execute('SELECT COUNT(*) FROM `return`').fetchone()[0], 0)
+        self.assertEqual(self.db.connection.execute('SELECT COUNT(*) FROM delivery').fetchone()[0], 0)
+        self.assertEqual(self.db.connection.execute('SELECT inspect_user_choice FROM inspect').fetchone()[0], '의사확인대기')
+
+    def test_return_delivery_requires_company_and_records_each_transition(self):
+        item = self.created()
+        delivery = delivery_service.get_deliveries(self.db)[0]
+        self.db.rollback()
+        with self.assertRaises(HTTPException):
+            delivery_service.update_delivery_status(self.db, delivery.delivery_no, '배송중', 'M')
+        assigned = delivery_service.assign_delivery_company(self.db, delivery.delivery_no, 'CO', 'M')
+        self.assertEqual(assigned.delivery_company_delivery_company_code, 'CO')
+        with self.assertRaises(HTTPException):
+            delivery_service.update_delivery_status(self.db, delivery.delivery_no, '배송완료', 'M')
+        delivery_service.update_delivery_status(self.db, delivery.delivery_no, '배송중', 'M')
+        delivery_service.update_delivery_status(self.db, delivery.delivery_no, '배송중', 'M')
+        delivery_service.update_delivery_status(self.db, delivery.delivery_no, '배송완료', 'M')
+        self.assertEqual(return_service.get_return(self.db, item.return_no).return_status, '반환완료')
+        histories = delivery_service.get_delivery_status_history(self.db, delivery.delivery_no)
+        self.assertEqual([h.changed_status for h in histories], ['배송준비', '배송중', '배송완료'])
+
+    def test_company_assignment_rejects_missing_company_and_late_changes(self):
+        self.created()
+        delivery = delivery_service.get_deliveries(self.db)[0]
+        self.db.rollback()
+        with self.assertRaises(HTTPException) as error:
+            delivery_service.assign_delivery_company(self.db, delivery.delivery_no, 'missing', 'M')
+        self.assertEqual(error.exception.status_code, 404)
+        delivery_service.assign_delivery_company(self.db, delivery.delivery_no, 'CO', 'M')
+        delivery_service.update_delivery_status(self.db, delivery.delivery_no, '배송중', 'M')
+        with self.assertRaises(HTTPException) as error:
+            delivery_service.assign_delivery_company(self.db, delivery.delivery_no, 'CO', 'M')
+        self.assertEqual(error.exception.status_code, 409)
+
+    def test_cancelled_purchase_cannot_start_delivery(self):
+        self.db.connection.execute("INSERT INTO purchase_item VALUES ('BUY', 'owner', 'P', '거래취소')")
+        with self.db.cursor() as c:
+            delivery = delivery_service.ensure_automatic_delivery(c, manager_id='M', user_id='owner', purchase_code='BUY', product_code='P')
+        self.db.commit()
+        delivery_service.assign_delivery_company(self.db, delivery.delivery_no, 'CO', 'M')
+        with self.assertRaises(HTTPException) as error:
+            delivery_service.update_delivery_status(self.db, delivery.delivery_no, '배송중', 'M')
+        self.assertEqual(error.exception.status_code, 409)
+        self.assertEqual(self.db.connection.execute('SELECT COUNT(*) FROM delivery_status_history').fetchone()[0], 1)
+
+    def test_expired_consignment_reuses_automatic_return_delivery(self):
+        self.choose('대리판매')
+        self.db.connection.executescript("""
+            CREATE TABLE sell_product(sell_product_code TEXT PRIMARY KEY, sell_product_sell_status TEXT);
+            CREATE TABLE post_consign_item(post_consign_item_code TEXT PRIMARY KEY,
+                sell_product_sell_product_code TEXT, post_consign_item_complete_date TEXT,
+                post_consign_item_intention TEXT, post_consign_item_expires_at TEXT,
+                inspect_inspect_code TEXT, manager_manager_id TEXT, return_delivery_company_code TEXT);
+            INSERT INTO sell_product VALUES ('P', '판매중');
+            INSERT INTO post_consign_item VALUES ('CON', 'P', NULL, '대리판매', '2026-01-01T00:00:00', 'INS_1', 'M', 'CO');
+        """)
+        now = datetime(2026, 11, 2, tzinfo=timezone(timedelta(hours=9)))
+        result = consignment_expiry_service.expire_consignment(self.db, 'CON', now=now)
+        self.assertEqual(result.delivery_status, '배송준비')
+        self.assertIsNone(result.delivery_company_delivery_company_code)
+        self.assertIsNone(consignment_expiry_service.expire_consignment(self.db, 'CON', now=now))
+        self.assertEqual(self.db.connection.execute('SELECT COUNT(*) FROM delivery').fetchone()[0], 1)
+        self.assertEqual(self.db.connection.execute('SELECT COUNT(*) FROM delivery_status_history').fetchone()[0], 1)
 
     def test_consign_does_not_create_return(self):
         self.choose('대리판매')

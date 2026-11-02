@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from database import get_db
 from dependencies import get_current_account, get_current_manager, get_current_manager_only, ensure_manager_self
-from schemas.delivery import DeliveryCreate, DeliveryRequest, DeliveryResponse, DeliveryStatusUpdate, DeliveryStatusHistoryResponse
+from schemas.delivery import DeliveryCompanyUpdate, DeliveryCreate, DeliveryRequest, DeliveryResponse, DeliveryStatusUpdate, DeliveryStatusHistoryResponse
 from services import delivery_service
 
 router = APIRouter(prefix="/delivery", tags=["delivery"])
@@ -26,6 +26,11 @@ def get_deliveries(
     # 일반 사용자는 본인 배송만, 매니저는 전체 배송을 조회한다.
     user_id = current.account.user_id if current.role == "user" else None
     return delivery_service.get_deliveries(db, limit, offset, user_id=user_id)
+
+
+@router.patch("/{delivery_no}/company", response_model=DeliveryResponse)
+def assign_delivery_company(request: DeliveryCompanyUpdate, delivery_no: str = Path(min_length=1, max_length=64), db=Depends(get_db), manager=Depends(get_current_manager_only)):
+    return delivery_service.assign_delivery_company(db, delivery_no, request.delivery_company_delivery_company_code, manager.manager_id)
 
 
 @router.patch("/{delivery_no}/status", response_model=DeliveryResponse)

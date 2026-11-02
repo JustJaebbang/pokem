@@ -2,8 +2,7 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
-from schemas.delivery import DeliveryCreate
-from services.delivery_service import create_delivery
+from services.delivery_service import get_delivery
 from services.inspection_common import _inspect_row, _require
 from services.return_service import ensure_return
 
@@ -37,8 +36,6 @@ def expire_consignment(db, code, *, now=None):
             c.execute('SELECT purchase_item_code FROM purchase_item WHERE sell_product_sell_product_code=%s AND purchase_item_status<>%s FOR UPDATE',
                       (source['sell_product_sell_product_code'], '거래취소'))
             _require(c.fetchone() is None, '구매 진행 중인 물품은 반환할 수 없습니다.')
-            company = item['return_delivery_company_code']
-            _require(bool(company), '반환 배송업체를 지정해주세요.')
             inspect = _inspect_row(c, item['inspect_inspect_code'], lock=True)
             _require(inspect['inspect_user_choice'] == '대리판매', '검수 물품의 대리판매 선택을 확인해주세요.')
             c.execute('UPDATE inspect SET inspect_user_choice=%s, inspect_user_choice_at=%s WHERE inspect_code=%s',
@@ -51,9 +48,11 @@ def expire_consignment(db, code, *, now=None):
             c.execute('UPDATE sell_product SET sell_product_sell_status=%s WHERE sell_product_code=%s',
                       ('반환대기', source['sell_product_sell_product_code']))
             c.execute('UPDATE post_consign_item SET post_consign_item_intention=%s WHERE post_consign_item_code=%s', ('반환', code))
-        delivery = create_delivery(db, DeliveryCreate(return_no=return_no,
-            manager_manager_id=item['manager_manager_id'], delivery_company_delivery_company_code=company),
-            manage_transaction=False)
+        # ensure_return에서 생성한 배송을 재사용한다. 배송업체는 출고 전에 지정한다.
+        with db.cursor() as c:
+            c.execute("SELECT delivery_no FROM delivery WHERE return_return_no = %s", (return_no,))
+            delivery_no = c.fetchone()["delivery_no"]
+        delivery = get_delivery(db, delivery_no)
         db.commit()
         return delivery
     except Exception:

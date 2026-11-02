@@ -61,12 +61,13 @@ def create_delivery(db, request: DeliveryCreate, *, manage_transaction=True) -> 
             )
             if cursor.fetchone() is None:
                 raise HTTPException(status_code=404, detail="매니저를 찾을 수 없습니다.")
-            cursor.execute(
-                "SELECT delivery_company_code FROM delivery_company WHERE delivery_company_code = %s FOR UPDATE",
-                (request.delivery_company_delivery_company_code,),
-            )
-            if cursor.fetchone() is None:
-                raise HTTPException(status_code=404, detail="배송업체를 찾을 수 없습니다.")
+            if request.delivery_company_delivery_company_code is not None:
+                cursor.execute(
+                    "SELECT delivery_company_code FROM delivery_company WHERE delivery_company_code = %s FOR UPDATE",
+                    (request.delivery_company_delivery_company_code,),
+                )
+                if cursor.fetchone() is None:
+                    raise HTTPException(status_code=404, detail="배송업체를 찾을 수 없습니다.")
             # 구매/반송 각각 원본 건당 한 번만 등록한다. DB UNIQUE로도 보호한다.
             cursor.execute(
                 f"SELECT delivery_no FROM delivery WHERE {delivery_key} = %s FOR UPDATE",
@@ -75,59 +76,7 @@ def create_delivery(db, request: DeliveryCreate, *, manage_transaction=True) -> 
             if cursor.fetchone() is not None:
                 raise HTTPException(status_code=409, detail=f"이미 배송 등록된 {source_name} 건입니다.")
 
-            # 서버 시간대와 관계없이 한국 날짜를 배송번호와 순번의 기준으로 삼는다.
-            now = datetime.now(timezone(timedelta(hours=9)))
-            # 날짜별 첫 등록은 1, 이후 등록은 1씩 증가한다.
-            # UPDATE가 잡은 행 잠금은 커밋까지 유지되어 동시 요청의 순번이 겹치지 않는다.
-            cursor.execute(
-                """INSERT INTO delivery_sequence (delivery_date, last_seq) VALUES (%s, 1)
-                ON DUPLICATE KEY UPDATE last_seq = last_seq + 1""",
-                (now.date(),),
-            )
-            cursor.execute(
-                "SELECT last_seq FROM delivery_sequence WHERE delivery_date = %s FOR UPDATE",
-                (now.date(),),
-            )
-            seq = cursor.fetchone()["last_seq"]
-            # 6자리 범위를 초과하면 순번 증가를 포함한 전체 작업을 롤백한다.
-            if seq > 999999:
-                raise HTTPException(status_code=409, detail="일일 배송 등록 한도를 초과했습니다.")
-            # 예: 20261029000001 = 등록일 YYYYMMDD + 일별 순번 000001.
-            delivery = DeliveryResponse(
-                delivery_no=f"{now:%Y%m%d}{seq:06d}",
-                delivery_date=now.strftime("%Y-%m-%d %H:%M:%S"),
-                delivery_status="배송준비",
-                user_user_id=source["user_user_id"],
-                sell_product_sell_product_code=source[target_column] if request.purchase_item_code is not None else None,
-                inspect_inspect_code=source[target_column] if request.return_no is not None else None,
-                **request.model_dump(),
-            )
-            cursor.execute(
-                """INSERT INTO delivery (
-                    delivery_no, delivery_date, delivery_status,
-                    manager_manager_id, delivery_company_delivery_company_code,
-                    purchase_item_purchase_item_code, return_return_no
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                (delivery.delivery_no, delivery.delivery_date, delivery.delivery_status,
-                 delivery.manager_manager_id,
-                 delivery.delivery_company_delivery_company_code,
-                 delivery.purchase_item_code, delivery.return_no),
-            )
-            # 배송 등록도 첫 처리 단계로 남겨 이후 상태 변경 이력과 함께 조회한다.
-            cursor.execute(
-                """INSERT INTO delivery_status_history (
-                       delivery_delivery_no, previous_status, changed_status,
-                       manager_manager_id, changed_at, memo
-                   ) VALUES (%s, %s, %s, %s, %s, %s)""",
-                (
-                    delivery.delivery_no,
-                    None,
-                    delivery.delivery_status,
-                    delivery.manager_manager_id,
-                    delivery.delivery_date,
-                    "배송 등록",
-                ),
-            )
+            delivery = _insert_delivery(cursor, request, source)
         if manage_transaction:
             db.commit()
         return delivery
@@ -143,6 +92,99 @@ def create_delivery(db, request: DeliveryCreate, *, manage_transaction=True) -> 
     except Exception:
         if manage_transaction:
             db.rollback()
+        raise
+
+
+
+def _insert_delivery(cursor, request, source, *, memo="배송 등록"):
+    # 서버 시간대와 관계없이 한국 날짜를 배송번호와 순번의 기준으로 삼는다.
+    now = datetime.now(timezone(timedelta(hours=9)))
+    # 날짜별 첫 등록은 1, 이후 등록은 1씩 증가한다.
+    # UPDATE가 잡은 행 잠금은 커밋까지 유지되어 동시 요청의 순번이 겹치지 않는다.
+    cursor.execute(
+        """INSERT INTO delivery_sequence (delivery_date, last_seq) VALUES (%s, 1)
+        ON DUPLICATE KEY UPDATE last_seq = last_seq + 1""",
+        (now.date(),),
+    )
+    cursor.execute(
+        "SELECT last_seq FROM delivery_sequence WHERE delivery_date = %s FOR UPDATE",
+        (now.date(),),
+    )
+    seq = cursor.fetchone()["last_seq"]
+    # 6자리 범위를 초과하면 순번 증가를 포함한 전체 작업을 롤백한다.
+    if seq > 999999:
+        raise HTTPException(status_code=409, detail="일일 배송 등록 한도를 초과했습니다.")
+    # 예: 20261029000001 = 등록일 YYYYMMDD + 일별 순번 000001.
+    delivery = DeliveryResponse(
+        delivery_no=f"{now:%Y%m%d}{seq:06d}",
+        delivery_date=now.strftime("%Y-%m-%d %H:%M:%S"),
+        delivery_status="배송준비",
+        user_user_id=source["user_user_id"],
+        sell_product_sell_product_code=source["sell_product_sell_product_code"] if request.purchase_item_code is not None else None,
+        inspect_inspect_code=source["inspect_inspect_code"] if request.return_no is not None else None,
+        **request.model_dump(),
+    )
+    cursor.execute(
+        """INSERT INTO delivery (
+            delivery_no, delivery_date, delivery_status,
+            manager_manager_id, delivery_company_delivery_company_code,
+            purchase_item_purchase_item_code, return_return_no
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+        (delivery.delivery_no, delivery.delivery_date, delivery.delivery_status,
+         delivery.manager_manager_id,
+         delivery.delivery_company_delivery_company_code,
+         delivery.purchase_item_code, delivery.return_no),
+    )
+    # 배송 등록도 첫 처리 단계로 남겨 이후 상태 변경 이력과 함께 조회한다.
+    cursor.execute(
+        """INSERT INTO delivery_status_history (
+               delivery_delivery_no, previous_status, changed_status,
+               manager_manager_id, changed_at, memo
+           ) VALUES (%s, %s, %s, %s, %s, %s)""",
+        (
+            delivery.delivery_no,
+            None,
+            delivery.delivery_status,
+            delivery.manager_manager_id,
+            delivery.delivery_date,
+            memo,
+        ),
+    )
+    return delivery
+
+
+def ensure_automatic_delivery(cursor, *, manager_id, user_id, purchase_code=None, return_no=None, product_code=None, inspect_code=None):
+    """원본 행 잠금을 보유한 트랜잭션에서 배송과 최초 이력을 한 번만 만든다."""
+    key = "purchase_item_purchase_item_code" if purchase_code is not None else "return_return_no"
+    cursor.execute(f"SELECT delivery_no FROM delivery WHERE {key} = %s FOR UPDATE", (purchase_code or return_no,))
+    if cursor.fetchone() is not None:
+        return
+    if not manager_id:
+        raise HTTPException(status_code=409, detail="자동 배송을 등록할 담당 매니저를 확인해주세요.")
+    request = DeliveryCreate(purchase_item_code=purchase_code, return_no=return_no, manager_manager_id=manager_id)
+    source = {"user_user_id": user_id, "sell_product_sell_product_code": product_code, "inspect_inspect_code": inspect_code}
+    return _insert_delivery(cursor, request, source, memo="자동 배송 등록 (배송업체 지정 대기)")
+
+
+def assign_delivery_company(db, delivery_no, company_code, manager_id):
+    try:
+        db.begin()
+        with db.cursor() as c:
+            c.execute("SELECT delivery_status FROM delivery WHERE delivery_no = %s FOR UPDATE", (delivery_no,))
+            row = c.fetchone()
+            if row is None:
+                raise HTTPException(status_code=404, detail="배송 내역을 찾을 수 없습니다.")
+            if row["delivery_status"] != "배송준비":
+                raise HTTPException(status_code=409, detail="배송준비 상태에서만 배송업체를 지정할 수 있습니다.")
+            c.execute("SELECT delivery_company_code FROM delivery_company WHERE delivery_company_code = %s", (company_code,))
+            if c.fetchone() is None:
+                raise HTTPException(status_code=404, detail="배송업체를 찾을 수 없습니다.")
+            c.execute("UPDATE delivery SET delivery_company_delivery_company_code = %s, manager_manager_id = %s WHERE delivery_no = %s", (company_code, manager_id, delivery_no))
+        result = get_delivery(db, delivery_no)
+        db.commit()
+        return result
+    except Exception:
+        db.rollback()
         raise
 
 
@@ -180,7 +222,7 @@ def update_delivery_status(
         db.begin()
         with db.cursor() as cursor:
             cursor.execute(
-                "SELECT delivery_status, return_return_no FROM delivery WHERE delivery_no = %s FOR UPDATE",
+                "SELECT delivery_status, return_return_no, purchase_item_purchase_item_code, delivery_company_delivery_company_code FROM delivery WHERE delivery_no = %s FOR UPDATE",
                 (delivery_no,),
             )
             row = cursor.fetchone()
@@ -194,6 +236,13 @@ def update_delivery_status(
                         status_code=409,
                         detail=f"배송 상태를 {current}에서 {status}(으)로 변경할 수 없습니다.",
                     )
+                if row["delivery_company_delivery_company_code"] is None:
+                    raise HTTPException(status_code=409, detail="배송업체를 먼저 지정해주세요.")
+                if row["purchase_item_purchase_item_code"] is not None:
+                    cursor.execute("SELECT purchase_item_status FROM purchase_item WHERE purchase_item_code = %s FOR UPDATE", (row["purchase_item_purchase_item_code"],))
+                    purchase = cursor.fetchone()
+                    if purchase is None or purchase["purchase_item_status"] not in ("거래중", "거래완료"):
+                        raise HTTPException(status_code=409, detail="취소되었거나 취소 요청 중인 구매는 배송할 수 없습니다.")
                 cursor.execute(
                     """UPDATE delivery SET delivery_status = %s
                     WHERE delivery_no = %s AND delivery_status = %s""",

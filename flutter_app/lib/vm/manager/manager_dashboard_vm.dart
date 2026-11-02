@@ -386,6 +386,18 @@ class ManagerDashboardVm extends Notifier<ManagerDashboardState> {
     );
   }
 
+  Future<bool> assignDeliveryCompany(String number, String companyCode) {
+    if (companyCode.isEmpty) {
+      state = state.copyWith(error: '배송업체를 선택해주세요.');
+      return Future.value(false);
+    }
+    return _mutate(
+      (token) => ref
+          .read(managerRepositoryProvider)
+          .assignDeliveryCompany(token, number, companyCode),
+    );
+  }
+
   Future<bool> updateDeliveryStatus(
     String number,
     String status, {

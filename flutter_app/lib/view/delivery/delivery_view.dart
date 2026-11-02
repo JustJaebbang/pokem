@@ -74,7 +74,11 @@ class DeliveryView extends ConsumerWidget {
                   '배송 등록일 ${delivery.date == null ? '확인되지 않음' : formatPurchaseTime(delivery.date)}',
                 ),
                 const SizedBox(height: 12),
-                SelectableText('배송업체 코드 ${delivery.companyCode}'),
+                SelectableText(
+                  delivery.companyCode == null
+                      ? '배송업체 지정 대기'
+                      : '배송업체 코드 ${delivery.companyCode}',
+                ),
               ],
             ],
           ),

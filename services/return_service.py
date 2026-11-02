@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from schemas.return_item import ReturnResponse
 from services.inspection_common import _require
+from services.delivery_service import ensure_automatic_delivery
 
 
 RETURN_SELECT = """
@@ -16,14 +17,18 @@ def ensure_return(c, inspect):
     _require(inspect["inspect_user_choice"] == "반환", "반환을 선택한 물품만 접수할 수 있습니다.")
     c.execute("SELECT return_no FROM `return` WHERE inspect_inspect_code = %s FOR UPDATE",
               (inspect["inspect_code"],))
-    if c.fetchone() is not None:
-        return
-    c.execute(
-        """INSERT INTO `return` (
-            return_no, inspect_inspect_code, user_user_id, return_status
-        ) VALUES (%s, %s, %s, %s)""",
-        (f"RET_{uuid4().hex}", inspect["inspect_code"], inspect["user_user_id"], "반환접수"),
-    )
+    existing = c.fetchone()
+    return_no = existing["return_no"] if existing else f"RET_{uuid4().hex}"
+    if existing is None:
+        c.execute(
+            """INSERT INTO `return` (
+                return_no, inspect_inspect_code, user_user_id, return_status
+            ) VALUES (%s, %s, %s, %s)""",
+            (return_no, inspect["inspect_code"], inspect["user_user_id"], "반환접수"),
+        )
+    ensure_automatic_delivery(c, manager_id=inspect["manager_manager_id"],
+        user_id=inspect["user_user_id"], return_no=return_no, inspect_code=inspect["inspect_code"])
+    return return_no
 
 
 def get_returns(db, user_id=None, limit=20, offset=0, inspect_code=None):
@@ -64,7 +69,8 @@ def assign_manager(db, return_no, manager_id):
             c.execute("SELECT manager_id FROM manager WHERE manager_id = %s FOR UPDATE", (manager_id,))
             _require(c.fetchone() is not None, "매니저를 찾을 수 없습니다.", 404)
             # 담당자가 정해지면 배송사를 선택할 수 있는 배송대기 단계로 이동한다.
-            c.execute("""UPDATE `return` SET manager_manager_id = %s, return_status = %s
+            c.execute("""UPDATE `return` SET manager_manager_id = %s,
+                         return_status = CASE WHEN return_status = '반환접수' THEN %s ELSE return_status END
                          WHERE return_no = %s AND manager_manager_id IS NULL""",
                       (manager_id, "배송대기", return_no))
             _require(c.rowcount == 1, "담당 매니저를 배정할 수 없습니다.")

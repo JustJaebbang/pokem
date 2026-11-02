@@ -5,6 +5,7 @@ from fastapi import HTTPException
 
 from schemas.purchase_item import PurchaseItemCreate, PurchaseItemResponse, PurchaseItemDetailResponse, PurchaseItemConfirmResponse
 from services import cybermoney_pay_service
+from services.delivery_service import ensure_automatic_delivery
 
 
 # 결제·구매 기록·거래중 상태를 하나의 트랜잭션으로 확정합니다. 거래완료일은 구매확정 시 기록합니다.
@@ -51,10 +52,12 @@ def create_purchase_item(db, purchase: PurchaseItemCreate) -> PurchaseItemRespon
                 raise HTTPException(status_code=409, detail="본인이 등록한 상품은 구매할 수 없습니다.")
             if posts[0]["post_item_complete_date"]:
                 raise HTTPException(status_code=409, detail="이미 판매가 완료된 상품입니다.")
+            consignment = None
             if posts[0].get('registration_type') == 'consign':
-                cursor.execute('SELECT post_consign_item_expires_at FROM post_consign_item WHERE sell_product_sell_product_code=%s',
+                cursor.execute('SELECT post_consign_item_expires_at, manager_manager_id FROM post_consign_item WHERE sell_product_sell_product_code=%s',
                                (purchase.sell_product_sell_product_code,))
-                expiry = cursor.fetchone()['post_consign_item_expires_at']
+                consignment = cursor.fetchone()
+                expiry = consignment['post_consign_item_expires_at']
                 if expiry is not None and expiry <= datetime.now(timezone(timedelta(hours=9))).replace(tzinfo=None):
                     raise HTTPException(status_code=409, detail='대리판매 기간이 만료된 상품입니다.')
 
@@ -116,6 +119,10 @@ def create_purchase_item(db, purchase: PurchaseItemCreate) -> PurchaseItemRespon
                 """,
                 ("거래중", purchase.sell_product_sell_product_code),
             )
+            if consignment is not None:
+                ensure_automatic_delivery(cursor, manager_id=consignment["manager_manager_id"],
+                    user_id=purchase.user_user_id, purchase_code=result.purchase_item_code,
+                    product_code=purchase.sell_product_sell_product_code)
         db.commit()
     except Exception:
         db.rollback()

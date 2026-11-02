@@ -10,7 +10,7 @@ class DeliveryCreate(BaseModel):
     purchase_item_code: str | None = Field(default=None, min_length=1, max_length=45)
     return_no: str | None = Field(default=None, min_length=1, max_length=64)
     manager_manager_id: str = Field(min_length=1, max_length=45)
-    delivery_company_delivery_company_code: str = Field(min_length=1, max_length=45)
+    delivery_company_delivery_company_code: str | None = Field(default=None, min_length=1, max_length=45)
 
     @model_validator(mode="after")
     def validate_source(self):
@@ -23,6 +23,11 @@ class DeliveryCreate(BaseModel):
 class DeliveryRequest(DeliveryCreate):
     # API 요청에서는 매니저 ID를 생략할 수 있으며 로그인 계정으로 채운다.
     manager_manager_id: str | None = Field(default=None, min_length=1, max_length=45)
+
+
+class DeliveryCompanyUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    delivery_company_delivery_company_code: str = Field(min_length=1, max_length=45)
 
 
 class DeliveryStatusUpdate(BaseModel):
@@ -50,7 +55,7 @@ class DeliveryResponse(BaseModel):
     delivery_status: str | None = None
     user_user_id: str
     manager_manager_id: str
-    delivery_company_delivery_company_code: str
+    delivery_company_delivery_company_code: str | None = None
     # 구매 배송은 상품 코드, 반송 배송은 검수 코드를 원본에서 조회한다.
     sell_product_sell_product_code: str | None = None
     inspect_inspect_code: str | None = None

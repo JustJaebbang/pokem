@@ -61,6 +61,31 @@ final productRow = {
 };
 
 void main() {
+  test('pending company delivery parses and company assignment uses authenticated PATCH', () async {
+    final record = DeliveryRecord.fromJson({
+      'delivery_no': 'D1',
+      'delivery_status': '배송준비',
+      'user_user_id': 'buyer',
+      'manager_manager_id': 'manager1',
+      'delivery_company_delivery_company_code': null,
+      'purchase_item_code': 'P1',
+    });
+    expect(record.companyCode, isNull);
+    final api = ManagerApiService(
+      MockClient((request) async {
+        expect(request.method, 'PATCH');
+        expect(request.url.path, '/delivery/D1/company');
+        expect(request.headers['Authorization'], 'Bearer manager-token');
+        expect(jsonDecode(request.body), {
+          'delivery_company_delivery_company_code': 'CO',
+        });
+        return fixtures.response({});
+      }),
+      baseUrl: 'http://test.local',
+    );
+    await api.assignDeliveryCompany('manager-token', 'D1', 'CO');
+  });
+
   test(
     'consignment photo is uploaded before the returned URL is registered',
     () async {

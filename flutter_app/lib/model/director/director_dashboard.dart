@@ -158,7 +158,8 @@ class DirectorDelayedDelivery {
     this.date,
     this.status,
   });
-  final String number, managerId, companyCode;
+  final String number, managerId;
+  final String? companyCode;
   final String? date, status;
   factory DirectorDelayedDelivery.fromJson(Map<String, dynamic> json) =>
       DirectorDelayedDelivery(
@@ -166,7 +167,7 @@ class DirectorDelayedDelivery {
         date: json['delivery_date'] as String?,
         status: json['delivery_status'] as String?,
         managerId: json['manager_id'] as String,
-        companyCode: json['company_code'] as String,
+        companyCode: json['company_code'] as String?,
       );
 }
 

@@ -163,7 +163,8 @@ class DeliveryTests(unittest.TestCase):
 
     def test_manager_updates_delivery_status_in_order(self):
         self.cursor.fetchone.side_effect = [
-            {"delivery_status": "배송준비"},
+            {"delivery_status": "배송준비", "return_return_no": None, "purchase_item_purchase_item_code": "purchase1", "delivery_company_delivery_company_code": "company1"},
+            {"purchase_item_status": "거래중"},
             self.delivery_row("배송중"),
         ]
         self.cursor.rowcount = 1
@@ -188,6 +189,18 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(history.args[1][:4], ("delivery1", "배송준비", "배송중", "manager1"))
         self.assertEqual(history.args[1][-1], "택배사 인계")
         self.db.commit.assert_called_once()
+
+    def test_company_assignment_requires_manager_and_updates_pending_delivery(self):
+        path = '/delivery/delivery1/company'
+        body = {'delivery_company_delivery_company_code': 'company1'}
+        self.current = SimpleNamespace(role='user', account=SimpleNamespace(user_id='buyer1'))
+        self.assertEqual(self.client.patch(path, json=body).status_code, 403)
+        self.current = SimpleNamespace(role='manager', account=SimpleNamespace(manager_id='manager1'))
+        self.cursor.fetchone.side_effect = [
+            {'delivery_status': '배송준비'}, {'delivery_company_code': 'company1'}, self.delivery_row('배송준비')]
+        self.assertEqual(self.client.patch(path, json=body).status_code, 200)
+        self.db.commit.assert_called_once()
+        self.assertEqual(self.client.patch(path, json={'delivery_company_delivery_company_code': ''}).status_code, 422)
 
     def test_manager_reads_delivery_status_history(self):
         self.cursor.fetchall.return_value = [{
@@ -233,7 +246,7 @@ class DeliveryTests(unittest.TestCase):
 
         self.db.reset_mock()
         self.cursor.fetchone.side_effect = None
-        self.cursor.fetchone.return_value = {"delivery_status": "배송준비"}
+        self.cursor.fetchone.return_value = {"delivery_status": "배송준비", "return_return_no": None, "purchase_item_purchase_item_code": "purchase1", "delivery_company_delivery_company_code": "company1"}
         response = self.client.patch(
             "/delivery/delivery1/status",
             json={"delivery_status": "배송완료"},

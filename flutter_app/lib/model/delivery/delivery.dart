@@ -10,7 +10,8 @@ class Delivery {
     this.date,
     this.status,
   });
-  final String number, userId, companyCode;
+  final String number, userId;
+  final String? companyCode;
   final String? purchaseCode, returnNo, date, status;
   bool matches(DeliverySource source) => source.purchaseCode != null
       ? purchaseCode == source.purchaseCode && returnNo == null
@@ -18,7 +19,7 @@ class Delivery {
   factory Delivery.fromJson(Map<String, dynamic> json) => Delivery(
     number: json['delivery_no'] as String,
     userId: json['user_user_id'] as String,
-    companyCode: json['delivery_company_delivery_company_code'] as String,
+    companyCode: json['delivery_company_delivery_company_code'] as String?,
     purchaseCode: json['purchase_item_code'] as String?,
     returnNo: json['return_no'] as String?,
     date: json['delivery_date'] as String?,

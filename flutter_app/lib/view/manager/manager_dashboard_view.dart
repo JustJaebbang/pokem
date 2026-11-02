@@ -1169,13 +1169,21 @@ class ManagerDashboardView extends ConsumerWidget {
             _info('구분', item.returnNumber == null ? '구매 배송' : '반환 배송'),
             _info('원본번호', item.returnNumber ?? item.purchaseCode ?? '-'),
             _info('사용자', item.userId),
-            _info('배송업체', item.companyCode),
+            _info('배송업체', item.companyCode ?? '미지정'),
             _info('상태', item.status),
             _info('배송일', item.date ?? '-'),
             const SizedBox(height: 16),
+            if (item.status == '배송준비')
+              OutlinedButton.icon(
+                onPressed: enabled && data.deliveryCompanies.isNotEmpty
+                    ? () => _deliveryCompanyDialog(context, ref, data, item)
+                    : null,
+                icon: const Icon(Icons.local_shipping_outlined),
+                label: Text(item.companyCode == null ? '배송업체 지정' : '배송업체 변경'),
+              ),
             if (item.status != '배송완료')
               FilledButton.icon(
-                onPressed: enabled
+                onPressed: enabled && item.companyCode != null
                     ? () => _deliveryStatusDialog(context, ref, item)
                     : null,
                 icon: const Icon(Icons.arrow_forward),
@@ -2138,6 +2146,21 @@ class ManagerDashboardView extends ConsumerWidget {
     submit: (values) => ref
         .read(managerDashboardVmProvider.notifier)
         .updateCompany(item.code, values['name']!, delivery: delivery),
+  );
+
+  Future<void> _deliveryCompanyDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ManagerDashboard data,
+    DeliveryRecord item,
+  ) => _simpleDialog(
+    context,
+    ref,
+    title: '배송업체 지정',
+    fields: [_companyField(data)],
+    submit: (values) => ref
+        .read(managerDashboardVmProvider.notifier)
+        .assignDeliveryCompany(item.number, values['company']!),
   );
 
   Future<void> _deliveryStatusDialog(
