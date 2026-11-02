@@ -26,9 +26,20 @@ class DeliveryRequest(DeliveryCreate):
 
 
 class DeliveryStatusUpdate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     delivery_status: Literal["배송준비", "배송중", "배송완료"]
+    memo: str | None = Field(default=None, max_length=500)
+
+
+class DeliveryStatusHistoryResponse(BaseModel):
+    history_id: int
+    delivery_no: str
+    previous_status: str | None = None
+    changed_status: str
+    manager_id: str
+    changed_at: str
+    memo: str | None = None
 
 
 class DeliveryResponse(BaseModel):

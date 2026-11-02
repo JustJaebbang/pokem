@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from database import get_db
-from dependencies import get_current_account, get_current_manager, ensure_manager_self
-from schemas.delivery import DeliveryCreate, DeliveryRequest, DeliveryResponse, DeliveryStatusUpdate
+from dependencies import get_current_account, get_current_manager, get_current_manager_only, ensure_manager_self
+from schemas.delivery import DeliveryCreate, DeliveryRequest, DeliveryResponse, DeliveryStatusUpdate, DeliveryStatusHistoryResponse
 from services import delivery_service
 
 router = APIRouter(prefix="/delivery", tags=["delivery"])
@@ -33,10 +33,32 @@ def update_delivery_status(
     request: DeliveryStatusUpdate,
     delivery_no: str = Path(min_length=1, max_length=64),
     db=Depends(get_db),
-    manager=Depends(get_current_manager),
+    manager=Depends(get_current_manager_only),
 ):
-    # 로그인한 매니저 또는 상위 권한만 정해진 순서로 배송 상태를 변경한다.
-    return delivery_service.update_delivery_status(db, delivery_no, request.delivery_status)
+    # 실제 처리한 매니저를 이력에 남기기 위해 매니저 계정만 변경할 수 있다.
+    return delivery_service.update_delivery_status(
+        db,
+        delivery_no,
+        request.delivery_status,
+        manager.manager_id,
+        request.memo,
+    )
+
+
+@router.get("/status-history", response_model=list[DeliveryStatusHistoryResponse])
+def get_delivery_status_histories(
+    delivery_no: str | None = Query(default=None, min_length=1, max_length=64),
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db=Depends(get_db),
+    manager=Depends(get_current_manager_only),
+):
+    return delivery_service.get_delivery_status_history(
+        db,
+        delivery_no=delivery_no,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/{delivery_no}", response_model=DeliveryResponse)

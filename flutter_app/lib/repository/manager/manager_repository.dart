@@ -42,6 +42,7 @@ class ManagerRepository {
         _allPages(token, '/delivery_company'),
         _allPages(token, '/return'),
         _allPages(token, '/delivery'),
+        _allPages(token, '/delivery/status-history'),
         _allPages(token, '/pay'),
         _allPages(token, '/receipt'),
         _allPages(token, '/deposit_refund'),
@@ -61,11 +62,14 @@ class ManagerRepository {
         deliveryCompanies: results[9].map(CompanyRecord.delivery).toList(),
         returns: results[10].map(ReturnRecord.fromJson).toList(),
         deliveries: results[11].map(DeliveryRecord.fromJson).toList(),
-        pays: results[12].map(PayRecord.fromJson).toList(),
-        receipts: results[13].map(ReceiptRecord.fromJson).toList(),
-        refunds: results[14].map(RefundRecord.fromJson).toList(),
-        discards: results[15].map(DiscardRecord.fromJson).toList(),
-        purchases: results[16].map(PurchaseRecord.fromJson).toList(),
+        deliveryHistories: results[12]
+            .map(DeliveryStatusHistoryRecord.fromJson)
+            .toList(),
+        pays: results[13].map(PayRecord.fromJson).toList(),
+        receipts: results[14].map(ReceiptRecord.fromJson).toList(),
+        refunds: results[15].map(RefundRecord.fromJson).toList(),
+        discards: results[16].map(DiscardRecord.fromJson).toList(),
+        purchases: results[17].map(PurchaseRecord.fromJson).toList(),
       );
     } on TypeError {
       throw const ManagerException('매니저 응답 형식을 확인해주세요.');
@@ -116,8 +120,9 @@ class ManagerRepository {
   Future<void> updateDeliveryStatus(
     String token,
     String number,
-    String status,
-  ) => _api.updateDeliveryStatus(token, number, status);
+    String status, {
+    String? memo,
+  }) => _api.updateDeliveryStatus(token, number, status, memo: memo);
   Future<void> setConsignmentReturnCompany(
     String token,
     String code,

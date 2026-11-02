@@ -228,6 +228,31 @@ class DeliveryRecord {
   );
 }
 
+class DeliveryStatusHistoryRecord {
+  const DeliveryStatusHistoryRecord({
+    required this.id,
+    required this.deliveryNumber,
+    required this.changedStatus,
+    required this.managerId,
+    required this.changedAt,
+    this.previousStatus,
+    this.memo,
+  });
+  final int id;
+  final String deliveryNumber, changedStatus, managerId, changedAt;
+  final String? previousStatus, memo;
+  factory DeliveryStatusHistoryRecord.fromJson(Map<String, dynamic> json) =>
+      DeliveryStatusHistoryRecord(
+        id: (json['history_id'] as num).toInt(),
+        deliveryNumber: json['delivery_no'] as String,
+        previousStatus: json['previous_status'] as String?,
+        changedStatus: json['changed_status'] as String,
+        managerId: json['manager_id'] as String,
+        changedAt: json['changed_at'] as String,
+        memo: json['memo'] as String?,
+      );
+}
+
 class PayRecord {
   const PayRecord({
     required this.number,
@@ -348,6 +373,7 @@ class ManagerDashboard {
     required this.deliveryCompanies,
     required this.returns,
     required this.deliveries,
+    required this.deliveryHistories,
     required this.pays,
     required this.receipts,
     required this.refunds,
@@ -365,6 +391,7 @@ class ManagerDashboard {
   final List<CompanyRecord> productCompanies, deliveryCompanies;
   final List<ReturnRecord> returns;
   final List<DeliveryRecord> deliveries;
+  final List<DeliveryStatusHistoryRecord> deliveryHistories;
   final List<PayRecord> pays;
   final List<ReceiptRecord> receipts;
   final List<RefundRecord> refunds;
